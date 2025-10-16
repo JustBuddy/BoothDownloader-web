@@ -7,4 +7,6 @@ Pretty much everything is hardcoded so you might want to adjust the script.
 
 Note: Uses data gathered by BoothDownloader, can not download anything on it's own.  
 
+Feel free to submit PR's if you fixed something, just keep the colors.
+
 ![Preview](https://splash.buddyworks.wtf/PToZOP9z.png)
