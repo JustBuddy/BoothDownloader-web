@@ -6,6 +6,7 @@ Generates: asset_library.html
 Pretty much everything is hardcoded so you might want to adjust the script.
 
 Note: Uses data gathered by BoothDownloader, can not download anything on it's own.  
+Note 2: You must disable AutoZip in the BDConfig.json config.  
 
 Feel free to submit PR's if you fixed something, just keep the colors.
 
