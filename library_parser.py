@@ -46,7 +46,6 @@ html_template = """<!doctype html>
         .nav-btn {{ background: #222; border: 1px solid #333; color: white; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; position: relative; z-index: 2001; }}
         .nav-btn.active {{ border-color: var(--primary); color: var(--primary); }}
         
-        /* Flyout Perimeter and Menu */
         #menuPerimeter {{ display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1999; }}
         .flyout-menu {{
             display: none; position: fixed; top: 75px; right: 30px; width: 320px;
@@ -166,8 +165,19 @@ html_template = """<!doctype html>
 
         function updateGrid(val) {{ document.documentElement.style.setProperty('--grid-size', val + 'px'); localStorage.setItem('gridSize', val); }}
         function updateBlur(d) {{ d ? document.body.classList.add('no-blur') : document.body.classList.remove('no-blur'); localStorage.setItem('disableBlur', d); }}
-        function handleSearch() {{ document.getElementById("clearSearch").style.display = document.getElementById("searchInput").value ? "block" : "none"; applyFilters(); }}
-        function clearSearch() {{ const i = document.getElementById("searchInput"); i.value = ""; handleSearch(); i.focus(); }}
+        
+        function handleSearch() {{ 
+            const val = document.getElementById("searchInput").value;
+            document.getElementById("clearSearch").style.display = val ? "block" : "none"; 
+            applyFilters(); 
+        }}
+        
+        function clearSearch() {{ 
+            const i = document.getElementById("searchInput"); 
+            i.value = ""; 
+            handleSearch(); 
+            i.focus(); 
+        }}
 
         function applyFilters(save = false) {{
             const query = document.getElementById("searchInput").value.toLowerCase();
@@ -184,7 +194,13 @@ html_template = """<!doctype html>
             document.getElementById("searchInput").placeholder = `Search ${{count}} items...`;
         }}
 
-        function tagSearch(tagName) {{ const s = document.getElementById("searchInput"); s.value = tagName; closeModal(); handleSearch(); window.scrollTo({{ top: 0, behavior: 'smooth' }}); }}
+        function tagSearch(tagName) {{ 
+            const s = document.getElementById("searchInput"); 
+            s.value = tagName; 
+            closeModal(); 
+            handleSearch(); 
+            window.scrollTo({{ top: 0, behavior: 'smooth' }}); 
+        }}
 
         function openDetails(assetId) {{
             const item = document.querySelector(`.asset[data-id="${{assetId}}"]`);
@@ -236,7 +252,8 @@ def get_dir_contents(binary_folder):
             for f in filenames:
                 fp = os.path.join(root, f)
                 rel = os.path.relpath(fp, start=os.getcwd())
-                files.append({"name": f, "path": quote(rel), "size": get_readable_size(os.path.getsize(fp))})
+                size = os.path.getsize(fp)
+                files.append({"name": f, "path": quote(rel), "size": get_readable_size(size)})
     return files
 
 def generate_asset_html(asset_id, asset_name, asset_image, binary_folder, tags, is_adult):
