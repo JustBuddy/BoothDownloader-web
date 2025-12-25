@@ -10,4 +10,4 @@ Note 2: You must disable AutoZip in the BDConfig.json config.
 
 Feel free to submit PR's if you fixed something, just keep the colors.
 
-![Preview](https://splash.buddyworks.wtf/PToZOP9z.png)
+![Preview](https://splash.buddyworks.wtf/H8cLmjpX.png)
