@@ -16,7 +16,7 @@ Feel free to submit PR's if you fixed something, just keep the colors.
 
 ## This script can NOT download any assets, the referenced tool can only download assets you own!
 
-![**Demo**](https://justbuddy.github.io/BoothDownloader-web/demo/asset_library.html)
+[**Demo**](https://justbuddy.github.io/BoothDownloader-web/demo/asset_library.html)
 
 ![Preview](https://splash.buddyworks.wtf/xChlrrrg.png)  
 ![Preview2](https://splash.buddyworks.wtf/mcoLNyJj.png)
