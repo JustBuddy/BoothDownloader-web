@@ -3,20 +3,20 @@ import json
 import glob
 import re
 import time
+import sys
 from urllib.parse import quote
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from deep_translator import GoogleTranslator
 
 # Configuration
 ROOT_FOLDER = "BoothDownloaderOut"
 OUTPUT_FILE = "asset_library.html"
 CACHE_FILE = "translation_cache.json"
-SKIP_TRANSLATION = False  # Set to True to skip the Japanese -> English translation step
+SKIP_TRANSLATION = False  
+DEBUG_TRANSLATION = False 
+MAX_WORKERS = 5 
 
-# Keyword detection for Adult content
-ADULT_KEYWORDS_EN = [
-    r"R-?18", r"adult", r"nude", r"semen", r"nsfw", r"sexual", 
-    r"erotic", r"pussy", r"dick", r"vagina", r"penis", r"otimpo", r"otinpo"
-]
+ADULT_KEYWORDS_EN = [r"R-?18", r"adult", r"nude", r"semen", r"nsfw", r"sexual", r"erotic", r"pussy", r"dick", r"vagina", r"penis", r"otimpo", r"otinpo"]
 ADULT_KEYWORDS_JP = ["精液", "だぷだぷ", "ヌード", "エロ", "クリトリス", "おまんこ", "おちんぽ", "おてぃんぽ"]
 
 # --- Translation Logic ---
@@ -31,58 +31,85 @@ if not SKIP_TRANSLATION and os.path.exists(CACHE_FILE):
 def contains_japanese(text):
     return bool(re.search(r'[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]', str(text)))
 
-def translate_segment(segment, translator, separator=" @@@ "):
-    if not segment: return True
-    try:
-        combined = separator.join(segment)
-        translated_combined = translator.translate(combined)
-        if translated_combined:
-            results = [r.strip() for r in translated_combined.split(separator)]
-            if len(results) == len(segment):
-                for original, translated in zip(segment, results):
-                    translation_cache[original] = translated
-                return True
-    except:
-        pass
+def is_noise(text):
+    if not text or len(text.strip()) < 1: return True
+    if text.isdigit(): return True
+    alnum_jp = re.sub(r'[^\w\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]', '', text)
+    if not alnum_jp: return True
+    if len(alnum_jp) / len(text) < 0.15: return True
     return False
 
-def recursive_translate(text_list, translator, depth=0):
-    if not text_list: return
-    if len(text_list) == 1:
-        orig = text_list[0]
+def translate_chunk_task(chunk_data):
+    chunk_index, chunk = chunk_data
+    translator = GoogleTranslator(source='auto', target='en')
+    separator = " @@@ "
+    try:
+        # Clean the chunk items to remove trailing spaces which confuse the API
+        clean_chunk = [t.strip() for t in chunk]
+        combined = separator.join(clean_chunk)
+        translated = translator.translate(combined)
+        
+        if translated:
+            results = [r.strip() for r in translated.split("@@@")]
+            if len(results) == len(clean_chunk):
+                for original, trans in zip(chunk, results):
+                    # Ensure we actually got a translation, not just the original back
+                    if contains_japanese(trans):
+                        # Attempt individual if bulk returned Japanese
+                        try:
+                            res = translator.translate(original.strip())
+                            translation_cache[original] = res if res else original
+                        except: pass
+                    else:
+                        translation_cache[original] = trans
+                return f"Batch {chunk_index} Processed"
+    except Exception:
+        pass
+    
+    # Fallback for the whole batch if anything went wrong
+    for original in chunk:
         try:
-            translation_cache[orig] = translator.translate(orig)
-            time.sleep(0.3)
-        except:
-            pass
-        return
-    if translate_segment(text_list, translator):
-        return
-    mid = len(text_list) // 2
-    recursive_translate(text_list[:mid], translator, depth + 1)
-    recursive_translate(text_list[mid:], translator, depth + 1)
+            res = translator.translate(original.strip())
+            translation_cache[original] = res if res else original
+        except: pass
+    return f"Batch {chunk_index} Fallback Used"
 
 def bulk_translate(text_list):
     if SKIP_TRANSLATION: return
-    unique_to_translate = sorted(list(set(
-        str(t).strip() for t in text_list if t and contains_japanese(t) and t not in translation_cache
-    )))
-    if not unique_to_translate: return
-    print(f"Translating {len(unique_to_translate)} new terms...")
-    starting_chunks = []
-    current_chunk, current_len = [], 0
-    for text in unique_to_translate:
-        if current_len + len(text) > 3000:
-            starting_chunks.append(current_chunk)
-            current_chunk, current_len = [], 0
-        current_chunk.append(text)
-        current_len += len(text) + 10
-    if current_chunk: starting_chunks.append(current_chunk)
+    
+    japanese_strings = list(set(str(t) for t in text_list if t and contains_japanese(t)))
+    new_strings = [t for t in japanese_strings if t not in translation_cache or contains_japanese(translation_cache.get(t, ""))]
+    
+    if not new_strings: return
 
-    translator = GoogleTranslator(source='auto', target='en')
-    for i, chunk in enumerate(starting_chunks):
-        print(f"Processing Batch {i+1}/{len(starting_chunks)}...")
-        recursive_translate(chunk, translator)
+    real_translation_queue = []
+    for t in new_strings:
+        if is_noise(t):
+            translation_cache[t] = t 
+        else:
+            real_translation_queue.append(t)
+
+    if not real_translation_queue:
+        if new_strings: # We updated some noise, still save
+            with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+                json.dump(translation_cache, f, ensure_ascii=False, indent=2)
+        return
+
+    if DEBUG_TRANSLATION:
+        print(f"DEBUG: {len(real_translation_queue)} terms queued for translation:")
+        for t in real_translation_queue: print(f" - '{t}'")
+        sys.exit()
+
+    print(f"Translating {len(real_translation_queue)} new terms using {MAX_WORKERS} threads...")
+    batch_size = 12 
+    chunks = [(i//batch_size + 1, real_translation_queue[i:i + batch_size]) 
+              for i in range(0, len(real_translation_queue), batch_size)]
+    
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        list(executor.map(translate_chunk_task, chunks))
+    
+    with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+        json.dump(translation_cache, f, ensure_ascii=False, indent=2)
 
 HTML_TEMPLATE = """<!doctype html>
 <html lang="en">
@@ -173,7 +200,7 @@ HTML_TEMPLATE = """<!doctype html>
         </div>
         <div class="setting-group"><span class="setting-label" data-i18n="labelSort">Sort Order</span>
             <select id="sortOrder" onchange="sortAssets(true)">
-                <option value="id" data-i18n="optId">Folder ID</option><option value="name" data-i18n="optName">Alphabetical</option><option value="size" data-i18n="optSize">Total Size</option>
+                <option value="id" data-i18n="optId">Folder ID</option><option value="name" data-i18n="optName">Alphabetical</option><option value="rel" data-i18n="optRel">Relevance</option><option value="size" data-i18n="optSize">Total Size</option>
             </select>
         </div>
         <div class="setting-group"><span class="setting-label" data-i18n="labelAdult">Adult Filter</span>
@@ -192,13 +219,13 @@ HTML_TEMPLATE = """<!doctype html>
     <div id="detailModal" class="modal" onclick="closeModal()"><div class="modal-card" onclick="event.stopPropagation()"><div class="modal-carousel" id="modalCarouselContainer"><button id="carouselPrev" class="carousel-btn btn-prev" onclick="carouselNext(-1)">❮</button><img id="modalBlurBg" class="carousel-blur-bg" src=""><img id="modalImg" class="carousel-main-img" src=""><button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button><div id="carouselDots" class="carousel-dots"></div></div><div class="modal-info"><div id="modalName" class="modal-name"></div><div id="modalTransName" class="name-translated" style="font-size:1.1rem; margin-bottom:10px;"></div><div id="modalIdDisp" style="color:#555; font-size:0.8rem; font-weight:800; margin-bottom:15px;"></div><div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;"></div><span class="setting-label" data-i18n="labelBinary">Binary Files</span><ul id="fileList" class="file-list"></ul><div class="modal-footer"><a id="openBoothLink" href="" class="discrete-link" target="_blank"><span data-i18n="footBooth">🛒 Booth</span></a><a id="openFolderLink" href="" class="discrete-link" target="_blank"><span data-i18n="footFolder">📂 Folder</span></a></div></div></div></div>
     <script>
         const translations = {{
-            en: {{ navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optName: "Alphabetical", optSize: "Total Size", labelAdult: "Adult Filter", optAll: "Show All", optHide: "Hide Adult", optOnly: "Only Adult", labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Blur", optHideIds: "Hide Item IDs", optTranslate: "Show English Subtitles", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...", fileSingular: "file", filePlural: "files" }},
-            de: {{ navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "ID", optName: "Alphabetisch", optSize: "Größe", labelAdult: "Filter", optAll: "Alles", optHide: "Ausblenden", optOnly: "Nur 18+", labelWidth: "Breite", labelVisual: "Anzeige", optBlur: "Kein Fokus", optHideIds: "IDs weg", optTranslate: "Englische Titel", labelBinary: "Dateien", footBooth: "🛒 Booth", footFolder: "📂 Ordner", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien" }},
-            ja: {{ navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "言語", labelSort: "並び替え", optId: "ID", optName: "名前順", optSize: "サイズ", labelAdult: "フィルター", optAll: "すべて表示", optHide: "隠す", optOnly: "成人向けのみ", labelWidth: "幅", labelVisual: "表示", optBlur: "ぼかし解除", optHideIds: "ID非表示", optTranslate: "英語翻訳を表示", labelBinary: "ファイル", footBooth: "🛒 Booth", footFolder: "📂 フォルダ", searchPre: "検索：", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル" }},
-            nl: {{ navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer", optId: "ID", optName: "Alfabet", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verbergen", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visueel", optBlur: "Geen vervaging", optHideIds: "ID's weg", optTranslate: "Engelse titels", labelBinary: "Bestanden", footBooth: "🛒 Booth", footFolder: "📂 Map", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden" }},
-            fr: {{ navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier", optId: "ID", optName: "Nom", optSize: "Taille", labelAdult: "Filtre", optAll: "Tout", optHide: "Masquer", optOnly: "Adulte", labelWidth: "Largeur", labelVisual: "Visuel", optBlur: "Désactiver flou", optHideIds: "Masquer IDs", optTranslate: "Titres anglais", labelBinary: "Fichiers", footBooth: "🛒 Booth", footFolder: "📂 Dossier", searchPre: "Rechercher ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers" }},
-            es: {{ navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Orden", optId: "ID", optName: "Nombre", optSize: "Tamaño", labelAdult: "Filtro", optAll: "Todo", optHide: "Ocultar", optOnly: "Adultos", labelWidth: "Ancho", labelVisual: "Visual", optBlur: "Sin desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos inglés", labelBinary: "Archivos", footBooth: "🛒 Booth", footFolder: "📂 Carpeta", searchPre: "Buscar ", searchSuf: " items...", fileSingular: "archivo", filePlural: "archivos" }},
-            pt: {{ navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optName: "Nome", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglés", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "archivo", filePlural: "archivos" }}
+            en: {{ navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optName: "Alphabetical", optRel: "Relevance", optSize: "Total Size", labelAdult: "Adult Filter", optAll: "Show All", optHide: "Hide Adult", optOnly: "Only Adult", labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Blur", optHideIds: "Hide Item IDs", optTranslate: "Use Translated Titles", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...", fileSingular: "file", filePlural: "files" }},
+            de: {{ navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "ID", optName: "Alphabetisch", optRel: "Beliebtheit", optSize: "Größe", labelAdult: "Filter", optAll: "Alles", optHide: "Ausblenden", optOnly: "Nur 18+", labelWidth: "Breite", labelVisual: "Anzeige", optBlur: "Kein Fokus", optHideIds: "IDs weg", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Booth", footFolder: "📂 Ordner", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien" }},
+            ja: {{ navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "言語", labelSort: "並び替え", optId: "ID", optName: "名前順", optRel: "人気順", optSize: "サイズ", labelAdult: "フィルター", optAll: "すべて表示", optHide: "隠す", optOnly: "成人向けのみ", labelWidth: "幅", labelVisual: "表示", optBlur: "ぼかし解除", optHideIds: "ID非表示", optTranslate: "翻訳後の名前を表示", labelBinary: "ファイル", footBooth: "🛒 Booth", footFolder: "📂 フォルダ", searchPre: "検索：", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル" }},
+            nl: {{ navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer", optId: "ID", optName: "Alfabet", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verbergen", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visueel", optBlur: "Geen vervaging", optHideIds: "ID's weg", optTranslate: "Vertaalde titels", labelBinary: "Bestanden", footBooth: "🛒 Booth", footFolder: "📂 Map", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden" }},
+            fr: {{ navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier", optId: "ID", optName: "Nom", optRel: "Pertinence", optSize: "Taille", labelAdult: "Filtre", optAll: "Tout", optHide: "Masquer", optOnly: "Adulte", labelWidth: "Largeur", labelVisual: "Visuel", optBlur: "Désactiver flou", optHideIds: "Masquer IDs", optTranslate: "Titres anglais", labelBinary: "Fichiers", footBooth: "🛒 Booth", footFolder: "📂 Dossier", searchPre: "Rechercher ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers" }},
+            es: {{ navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Orden", optId: "ID", optName: "Nombre", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro", optAll: "Todo", optHide: "Ocultar", optOnly: "Adultos", labelWidth: "Ancho", labelVisual: "Visual", optBlur: "Sin desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos inglés", labelBinary: "Archivos", footBooth: "🛒 Booth", footFolder: "📂 Carpeta", searchPre: "Buscar ", searchSuf: " items...", fileSingular: "archivo", filePlural: "archivos" }},
+            pt: {{ navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optName: "Nombre", optRel: "Relevância", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglés", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "archivo", filePlural: "archivos" }}
         }};
         let currentCarouselIndex = 0, currentImages = [];
         const getLS = (k, def) => localStorage.getItem(k) || def;
@@ -214,7 +241,7 @@ HTML_TEMPLATE = """<!doctype html>
         function updateGrid(v) {{ document.documentElement.style.setProperty('--grid-size', v + 'px'); localStorage.setItem('gridSize', v); }}
         function updateBlur(v) {{ document.body.classList.toggle('no-blur', v); localStorage.setItem('disableBlur', v); }}
         function updateIdVisibility(v) {{ document.body.classList.toggle('hide-ids', v); localStorage.setItem('hideIds', v); }}
-        function updateTranslationVisibility(v) {{ document.body.classList.toggle('hide-translations', !v); state.showTrans = v; localStorage.setItem('showTrans', v); }}
+        function updateTranslationVisibility(v) {{ state.showTrans = v; localStorage.setItem('showTrans', v); const items = document.getElementsByClassName('asset'); for(let item of items) {{ const primaryName = item.querySelector('.name-primary'); const transText = item.dataset.nameTrans; const origText = item.dataset.nameOrig; primaryName.innerText = (v && transText) ? transText : origText; }} }}
         function handleSearchInput() {{ applyFilters(); }}
         function clearSearch() {{ const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(); i.focus(); }}
         function tagSearch(tag) {{ const s = document.getElementById("searchInput"); s.value = tag; closeModal(); handleSearchInput(); window.scrollTo({{ top: 0, behavior: 'smooth' }}); }}
@@ -242,7 +269,12 @@ HTML_TEMPLATE = """<!doctype html>
             const items = Array.from(list.children);
             items.sort((a, b) => {{
                 if (order === 'id') return parseInt(a.dataset.id) - parseInt(b.dataset.id);
-                if (order === 'name') return a.dataset.name.toLowerCase().localeCompare(b.dataset.name.toLowerCase());
+                if (order === 'rel') return parseInt(b.dataset.wish) - parseInt(a.dataset.wish);
+                if (order === 'name') {{
+                    const nA = (state.showTrans && a.dataset.nameTrans) ? a.dataset.nameTrans : a.dataset.nameOrig;
+                    const nB = (state.showTrans && b.dataset.nameTrans) ? b.dataset.nameTrans : b.dataset.nameOrig;
+                    return nA.toLowerCase().localeCompare(nB.toLowerCase());
+                }}
                 return parseInt(b.dataset.bytes) - parseInt(a.dataset.bytes);
             }});
             list.innerHTML = ""; items.forEach(i => list.appendChild(i));
@@ -250,7 +282,8 @@ HTML_TEMPLATE = """<!doctype html>
         }}
         function openDetails(id) {{
             const el = document.querySelector(`.asset[data-id="${{id}}"]`);
-            document.getElementById("modalName").innerText = el.dataset.name;
+            const displayTitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameTrans : el.dataset.nameOrig;
+            document.getElementById("modalName").innerText = displayTitle;
             document.getElementById("modalTransName").innerText = el.dataset.nameTrans || "";
             document.getElementById("modalIdDisp").innerText = "#" + id;
             document.getElementById("openFolderLink").href = el.dataset.folder;
@@ -274,7 +307,11 @@ HTML_TEMPLATE = """<!doctype html>
         }}
         function closeModal() {{ const m = document.getElementById("detailModal"); m.classList.remove('active'); setTimeout(() => {{ if(!m.classList.contains('active')) m.classList.remove('visible'); }}, 300); }}
         window.onclick = e => {{ if(!document.getElementById('flyoutMenu').contains(e.target) && e.target !== document.getElementById('toggleBtn')) toggleMenu(null, true); }};
-        document.addEventListener('keydown', e => {{ if(e.key === "Escape") {{ closeModal(); toggleMenu(null, true); }} if(e.key === "ArrowRight") carouselNext(1); if(e.key === "ArrowLeft") carouselNext(-1); }});
+        document.addEventListener('keydown', e => {{ 
+            if(e.key === "Escape") {{ closeModal(); toggleMenu(null, true); }} 
+            if(e.key === "ArrowRight") carouselNext(1);
+            if(e.key === "ArrowLeft") carouselNext(-1);
+        }});
         init();
     </script>
 </body>
@@ -332,16 +369,20 @@ def get_all_local_images(folder_path, web_urls):
         if path not in ordered_images: ordered_images.append(path)
     return ordered_images
 
-def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path, tags, is_adult):
+def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path, tags, is_adult, wish_count):
     binary_folder = os.path.join(folder_path, 'Binary')
     files_data, total_bytes = get_dir_data(binary_folder)
     all_imgs = get_all_local_images(folder_path, web_images)
     primary_img = all_imgs[0] if all_imgs else ""
-    name_trans = translation_cache.get(asset_name, "")
-    tags_trans = [translation_cache.get(t, t) for t in tags]
+    
+    # Translation Lookup with fallback for English strings
+    name_trans = translation_cache.get(asset_name.strip(), "")
+    tags_trans = [translation_cache.get(t.strip(), t) for t in tags]
+
     img_class = "image-thumbnail adult-content" if is_adult else "image-thumbnail"
     glow_tag = f'<img class="image-backglow" src="{primary_img}">' if primary_img else ''
     img_tag = f'<img class="{img_class}" src="{primary_img}">' if primary_img else '<div class="image-thumbnail" style="background:#222;display:flex;align-items:center;justify-content:center;color:#444;font-weight:800;">EMPTY</div>'
+    
     safe_name = asset_name.replace('"', '&quot;')
     safe_trans = name_trans.replace('"', '&quot;')
     tag_html = "".join([f'<span class="tag-pill">{t}</span>' for t in tags[:8]])
@@ -349,16 +390,18 @@ def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path
     rel_folder = quote(os.path.relpath(binary_folder, start=os.getcwd()))
     return f"""
     <li class="asset" onclick="openDetails('{asset_id}')" 
-        data-id="{asset_id}" data-name="{safe_name}" data-name-trans="{safe_trans}" data-img="{primary_img}" 
+        data-id="{asset_id}" data-name-orig="{safe_name}" data-name-trans="{safe_trans}" data-img="{primary_img}" 
         data-all-images='{json.dumps(all_imgs).replace("'", "&apos;")}'
         data-bytes="{total_bytes}" data-files='{json.dumps(files_data).replace("'", "&apos;")}'
         data-tags='{json.dumps(tags).replace("'", "&apos;")}' data-adult="{str(is_adult).lower()}" 
         data-search='{search_str}' data-folder="{rel_folder}" data-booth-url="{booth_url}"
-        data-filecount="{len(files_data)}">
+        data-filecount="{len(files_data)}" data-wish="{wish_count}">
         <div class="image-container"><div class="asset-id-tag">#{asset_id}</div>{img_tag}</div>
-        {glow_tag}<div class="content"><div class="name">{asset_name}<span class="name-translated">{name_trans}</span></div>
-        <div class="stats"><span>{get_readable_size(total_bytes)}</span><span class="file-label-dynamic"></span></div>
-        <div class="tag-row">{tag_html}</div></div>
+        {glow_tag}<div class="content">
+            <div class="name"><span class="name-primary">{asset_name}</span></div>
+            <div class="stats"><span>{get_readable_size(total_bytes)}</span><span class="file-label-dynamic"></span></div>
+            <div class="tag-row">{tag_html}</div>
+        </div>
     </li>
     """
 
@@ -372,8 +415,9 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
         if jsons[0].endswith('_BoothPage.json'):
             data = json.load(f)
             name, tags = data.get('name', 'N/A'), [t.get('name', '') for t in data.get('tags', [])]
+            wish = data.get('wish_lists_count', 0)
             all_strings_to_translate.extend([name] + tags)
-            asset_data_list.append(('json', folder, data, path))
+            asset_data_list.append(('json', folder, data, path, wish))
         else:
             data = json.load(f)
             item = data[0] if data else ""
@@ -381,26 +425,28 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
                 name_m = re.search(r'break-all\">(.*?)<\/div>', item) or re.search(r'>(.*?)<\/div>', item)
                 name = name_m.group(1) if name_m else "N/A"
                 all_strings_to_translate.append(name)
-                asset_data_list.append(('html', folder, (name, item), path))
+                asset_data_list.append(('html', folder, (name, item), path, 0))
 
 bulk_translate(all_strings_to_translate)
 if not SKIP_TRANSLATION:
     with open(CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(translation_cache, f, ensure_ascii=False, indent=2)
 
 asset_items_final = []
-for type, folder, data, path in asset_data_list:
+for entry in asset_data_list:
+    type, folder, data, path, wish = entry
     if type == 'json':
         web_imgs = [img.get('original', '') for img in data.get('images', [])]
         tags = [t.get('name', '') for t in data.get('tags', [])]
-        asset_items_final.append((folder, generate_asset_html(folder, data.get('name', 'N/A'), web_imgs, data.get('url', ''), path, tags, data.get('is_adult', False) or is_adult_content(data.get('name', '')))))
+        asset_items_final.append((folder, generate_asset_html(folder, data.get('name', 'N/A'), web_imgs, data.get('url', ''), path, tags, data.get('is_adult', False) or is_adult_content(data.get('name', '')), wish)))
     else:
         name, item = data
         i_m = re.search(r'src=\"([^\"]+)\"', item)
         img = i_m.group(1) if i_m else ""
         u_m = re.search(r'href=\"([^\"]+)\"', item)
         url = u_m.group(1) if u_m else ""
-        asset_items_final.append((folder, generate_asset_html(folder, name, [img], url, path, [], is_adult_content(name))))
+        asset_items_final.append((folder, generate_asset_html(folder, name, [img], url, path, [], is_adult_content(name), 0)))
 
 asset_items_final.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 0)
-with open(OUTPUT_FILE, 'w', encoding='utf-8') as f: f.write(HTML_TEMPLATE.format(assets="\\n".join(i[1] for i in asset_items_final)))
+with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+    f.write(HTML_TEMPLATE.format(assets="\\n".join(i[1] for i in asset_items_final)))
 print("The library got updated.")
