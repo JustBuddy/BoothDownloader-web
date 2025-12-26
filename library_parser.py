@@ -5,7 +5,7 @@ import re
 import time
 import sys
 from urllib.parse import quote
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from deep_translator import GoogleTranslator
 
 # Configuration
@@ -73,13 +73,9 @@ def bulk_translate(text_list):
     for t in new_strings:
         if is_noise(t): translation_cache[t] = t
     if not real_queue: return
-    
     if DEBUG_TRANSLATION:
         print(f"DEBUG: {len(real_queue)} terms queued.")
-        for t in real_queue: print(f" - {t}")
         sys.exit()
-
-    print(f"Translating {len(real_queue)} new terms using {MAX_WORKERS} threads...")
     batch_size = 15
     chunks = [(i//batch_size + 1, real_queue[i:i+batch_size]) for i in range(0, len(real_queue), batch_size)]
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
@@ -87,7 +83,7 @@ def bulk_translate(text_list):
     with open(CACHE_FILE, 'w', encoding='utf-8') as f:
         json.dump(translation_cache, f, ensure_ascii=False, indent=2)
 
-HTML_TEMPLATE = """<!doctype html>
+HTML_PART_1 = """<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -103,7 +99,7 @@ HTML_TEMPLATE = """<!doctype html>
         .search-container { flex-grow: 1; display: flex; justify-content: center; position: relative; max-width: 500px; }
         .search-input { padding: 10px 45px 10px 20px; width: 100%; background: #1a1a1f; border: 1px solid #333; border-radius: 8px; color: white; outline: none; transition: border-color 0.3s; }
         .search-input:focus { border-color: var(--primary); }
-        .clear-search { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 1.2rem; cursor: pointer; display: none; }
+        .clear-search { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 1.2rem; cursor: pointer; display: none; padding: 0; line-height: 1; }
         .search-input:not(:placeholder-shown) + .clear-search { display: block; }
         .nav-btn { background: #222; border: 1px solid #333; color: white; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; position: relative; z-index: 2001; transition: all 0.3s; }
         .nav-btn.active { border-color: var(--primary); color: var(--primary); }
@@ -117,11 +113,11 @@ HTML_TEMPLATE = """<!doctype html>
         #assetList { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--grid-size), 1fr)); gap: 35px; list-style: none; padding: 0; }
         .asset { background: #111114; border: 1px solid #252525; border-radius: 12px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; height: 100%; transition: 0.3s; position: relative; }
         .asset:hover { border-color: var(--primary); transform: translateY(-5px); }
+        .asset-id-tag { position: absolute; bottom: 8px; left: 8px; z-index: 20; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); transition: opacity 0.3s ease; opacity: 1; }
+        body.hide-ids .asset-id-tag { opacity: 0; }
         .image-container { position: relative; width: 100%; padding-top: 100%; background: #000; flex-shrink: 0; z-index: 5; overflow: hidden; border-radius: 12px 12px 0 0; }
         .image-thumbnail { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: 0.4s; z-index: 10; }
         .image-backglow { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(45px) saturate(5) contrast(1.5); opacity: 0.7; z-index: 1; pointer-events: none; transform: scale(1.6); }
-        .asset-id-tag { position: absolute; bottom: 8px; left: 8px; z-index: 20; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); transition: opacity 0.3s ease; }
-        body.hide-ids .asset-id-tag { opacity: 0; }
         .adult-content { filter: blur(50px); }
         .asset:hover .adult-content { filter: blur(0px); }
         body.no-blur .adult-content { filter: blur(0px) !important; }
@@ -151,15 +147,17 @@ HTML_TEMPLATE = """<!doctype html>
         .carousel-dots { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10; }
         .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: 0.2s; }
         .dot.active { background: var(--primary); transform: scale(1.3); }
-        .modal-info { flex: 1; padding: 30px; display: flex; flex-direction: column; min-width: 320px; position: relative; overflow-y: auto; }
+        .modal-info { flex: 1; padding: 30px; display: flex; flex-direction: column; min-width: 320px; position: relative; padding-bottom: 60px; overflow-y: auto; }
         .modal-name { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }
         .modal-subtitle { font-size: 0.9rem; color: #777; margin-bottom: 15px; font-weight: 400; font-style: italic; display: block; }
         body.hide-translations .modal-subtitle { display: none; }
         .file-list { list-style: none; padding: 0; margin-top: 10px; flex-grow: 1; }
         .file-item { padding: 10px; background: #222; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .file-link { color: #fff; text-decoration: none; font-size: 0.85rem; word-break: break-all; flex-grow: 1; }
+        .file-link:hover { color: var(--primary); }
         .modal-footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 20px; padding-bottom: 20px; flex-shrink: 0; }
         .discrete-link { color: #555; text-decoration: none; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color 0.2s; }
+        .discrete-link:hover { color: var(--primary); }
         @media (max-width: 800px) { .modal-card { flex-direction: column; overflow-y: auto; } .modal-carousel { flex: 0 0 400px; width: 100%; } .modal-info { flex: none; width: 100%; overflow-y: visible; } }
     </style>
 </head>
@@ -196,11 +194,13 @@ HTML_TEMPLATE = """<!doctype html>
             <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;"><input type="checkbox" id="translateToggle" onchange="updateTranslationVisibility(this.checked)"> <span data-i18n="optTranslate">English Titles</span></label>
         </div>
     </div>
-    <div class="container"><ul id="assetList"><!-- ASSETS_GO_HERE --><li id="filterNotice"></li></ul></div>
+    <div class="container"><ul id="assetList">"""
+
+HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
     <div id="detailModal" class="modal" onclick="closeModal()"><div class="modal-card" onclick="event.stopPropagation()"><div class="modal-carousel" id="modalCarouselContainer"><button id="carouselPrev" class="carousel-btn btn-prev" onclick="carouselNext(-1)">❮</button><img id="modalBlurBg" class="carousel-blur-bg" src=""><img id="modalImg" class="carousel-main-img" src=""><button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button><div id="carouselDots" class="carousel-dots"></div></div><div class="modal-info"><div id="modalName" class="modal-name"></div><div id="modalSubtitle" class="modal-subtitle"></div><div id="modalIdDisp" style="color:#555; font-size:0.8rem; font-weight:800; margin-bottom:15px;"></div><div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;"></div><span class="setting-label" data-i18n="labelBinary">Binary Files</span><ul id="fileList" class="file-list"></ul><div class="modal-footer"><a id="openBoothLink" href="" class="discrete-link" target="_blank"><span data-i18n="footBooth">🛒 Booth</span></a><a id="openFolderLink" href="" class="discrete-link" target="_blank"><span data-i18n="footFolder">📂 Folder</span></a></div></div></div></div>
     <script>
         const translations = {
-            en: { navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optName: "Alphabetical", optRel: "Relevance", optSize: "Total Size", labelAdult: "Adult Filter", optAll: "Show All Content", optHide: "Hide Adult", optOnly: "Only Adult", labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Adult Blur", optHideIds: "Hide Item IDs", optTranslate: "Use Translated Titles", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...", fileSingular: "file", filePlural: "files", moreTags: "+ {n} more", hiddenResults: " (+{n} hidden by filters)" },
+            en: { navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optName: "Alphabetical", optRel: "Relevance", optSize: "Total Size", labelAdult: "Adult Filter", optAll: "Show All", optHide: "Hide Adult", optOnly: "Only Adult", labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Blur", optHideIds: "Hide Item IDs", optTranslate: "Use Translated Titles", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...", fileSingular: "file", filePlural: "files", moreTags: "+ {n} more", hiddenResults: " (+{n} hidden by filters)" },
             de: { navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "ID", optName: "Alphabetisch", optRel: "Beliebtheit", optSize: "Größe", labelAdult: "Filter", optAll: "Alles", optHide: "Ausblenden", optOnly: "Nur 18+", labelWidth: "Breite", labelVisual: "Anzeige", optBlur: "Kein Fokus", optHideIds: "IDs weg", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Booth", footFolder: "📂 Ordner", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {n} weitere", hiddenResults: " (+{n} durch Filter versteckt)" },
             ja: { navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "言語", labelSort: "並び替え", optId: "ID", optName: "名前順", optRel: "人気順", optSize: "サイズ", labelAdult: "フィルター", optAll: "すべて表示", optHide: "隠す", optOnly: "成人向けのみ", labelWidth: "幅", labelVisual: "表示", optBlur: "ぼかし解除", optHideIds: "ID非表示", optTranslate: "翻訳後の名前を表示", labelBinary: "ファイル", footBooth: "🛒 Booth", footFolder: "📂 フォルダ", searchPre: "検索：", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル", moreTags: "他 {n} 件", hiddenResults: " (他 {n} 件がフィルター済み)" },
             nl: { navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer", optId: "ID", optName: "Alfabet", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verbergen", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visueel", optBlur: "Geen vervaging", optHideIds: "ID's weg", optTranslate: "Engelse titels", labelBinary: "Bestanden", footBooth: "🛒 Booth", footFolder: "📂 Map", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " (+{n} verborgen door filters)" },
@@ -364,18 +364,21 @@ def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path
     primary_img = all_imgs[0] if all_imgs else ""
     name_trans = translation_cache.get(asset_name.strip(), "")
     
-    # Pre-generate tag HTML for grid
-    grid_tags_html = "".join([f'<span class="tag-pill">{t}</span>' for t in tags[:12]])
+    # Pre-render tags to avoid brace conflict
+    tag_html_str = "".join([f'<span class="tag-pill">{t}</span>' for t in tags[:12]])
 
     img_class = "image-thumbnail adult-content" if is_adult else "image-thumbnail"
     glow_tag = f'<img class="image-backglow" src="{primary_img}">' if primary_img else ''
     img_tag = f'<img class="{img_class}" src="{primary_img}">' if primary_img else '<div class="image-thumbnail" style="background:#222;display:flex;align-items:center;justify-content:center;color:#444;font-weight:800;">EMPTY</div>'
     
     safe_name, safe_trans = asset_name.replace('"', '&quot;'), name_trans.replace('"', '&quot;')
-    search_str = f"{asset_id} {asset_name} {name_trans} {' '.join(tags)}".lower().replace("'", "")
+    # Filenames for search
+    filenames_str = " ".join([f['name'] for f in files_data])
+    search_str = f"{asset_id} {asset_name} {name_trans} {' '.join(tags)} {filenames_str}".lower().replace("'", "")
     rel_folder = quote(os.path.relpath(binary_folder, start=os.getcwd()))
-    file_label = "file" if len(files_data) == 1 else "files"
-
+    
+    file_label_plural = "files" # Placeholders handled in JS translation step
+    
     return f"""
     <li class="asset" onclick="openDetails('{asset_id}')" 
         data-id="{asset_id}" data-name-orig="{safe_name}" data-name-trans="{safe_trans}" data-img="{primary_img}" 
@@ -388,11 +391,12 @@ def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path
         {glow_tag}<div class="content">
             <div class="name"><span class="name-primary">{asset_name}</span></div>
             <div class="stats"><span>{get_readable_size(total_bytes)}</span><span class="file-label-dynamic"></span></div>
-            <div class="tag-row">{grid_tags_html}</div>
+            <div class="tag-row">{tag_html_str}</div>
         </div>
     </li>
     """
 
+# Collect and process items
 asset_data_list, all_strings_to_translate = [], []
 for folder in sorted(os.listdir(ROOT_FOLDER)):
     path = os.path.join(ROOT_FOLDER, folder)
@@ -416,26 +420,27 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
 
 bulk_translate(all_strings_to_translate)
 if not SKIP_TRANSLATION:
-    with open(CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(translation_cache, f, ensure_ascii=False, indent=2)
+    with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+        json.dump(translation_cache, f, ensure_ascii=False, indent=2)
 
-asset_items_final = []
+final_assets_list = []
 for type, folder, data, path, wish in asset_data_list:
     if type == 'json':
         web_imgs = [img.get('original', '') for img in data.get('images', [])]
         tags = [t.get('name', '') for t in data.get('tags', [])]
-        asset_items_final.append((folder, generate_asset_html(folder, data.get('name', 'N/A'), web_imgs, data.get('url', ''), path, tags, data.get('is_adult', False) or is_adult_content(data.get('name', '')), wish)))
+        final_assets_list.append(generate_asset_html(folder, data.get('name', 'N/A'), web_imgs, data.get('url', ''), path, tags, data.get('is_adult', False) or is_adult_content(data.get('name', '')), wish))
     else:
         name, item = data
         i_m = re.search(r'src=\"([^\"]+)\"', item)
         img = i_m.group(1) if i_m else ""
         u_m = re.search(r'href=\"([^\"]+)\"', item)
         url = u_m.group(1) if u_m else ""
-        asset_items_final.append((folder, generate_asset_html(folder, name, [img], url, path, [], is_adult_content(name), 0)))
+        final_assets_list.append(generate_asset_html(folder, name, [img], url, path, [], is_adult_content(name), 0))
 
-asset_items_final.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 0)
-final_assets_html = "\n".join(i[1] for i in asset_items_final)
+# Assembly
+final_html = HTML_PART_1 + "\\n".join(final_assets_list) + HTML_PART_2
 
 with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-    f.write(HTML_TEMPLATE.replace("<!-- ASSETS_GO_HERE -->", final_assets_html))
+    f.write(final_html)
 
 print("The library got updated.")
