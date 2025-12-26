@@ -51,42 +51,84 @@ html_template = """<!doctype html>
             display: none; position: fixed; top: 75px; right: 30px; width: 320px;
             background: rgba(26, 26, 31, 0.98); backdrop-filter: blur(20px);
             border: 1px solid rgba(253, 218, 13, 0.3); z-index: 2000; padding: 25px; border-radius: 16px; 
-            opacity: 0; transform: translateY(-20px); transition: 0.3s;
+            opacity: 0; transform: translateY(-20px) scale(0.95); transition: 0.3s;
             pointer-events: none; box-shadow: 0 20px 60px rgba(0,0,0,0.8);
         }}
         .flyout-menu.open {{ display: block; opacity: 1; transform: translateY(0); pointer-events: all; }}
 
         .container {{ max-width: 1600px; margin: 40px auto; padding: 0 30px; }}
-        #assetList {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--grid-size), 1fr)); gap: 20px; list-style: none; padding: 0; }}
-        .asset {{ background: var(--card); border: 1px solid #252525; border-radius: 12px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; height: 100%; transition: 0.3s; }}
+        #assetList {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--grid-size), 1fr)); gap: 35px; list-style: none; padding: 0; }}
+        
+        .asset {{ 
+            background: #111114; border: 1px solid #252525; border-radius: 12px; 
+            overflow: hidden; cursor: pointer; display: flex; flex-direction: column; height: 100%; transition: 0.3s;
+            position: relative;
+        }}
         .asset:hover {{ border-color: var(--primary); transform: translateY(-5px); }}
         
-        .image-container {{ position: relative; width: 100%; padding-top: 100%; background: #000; flex-shrink: 0; }}
+        .asset-id-tag {{
+            position: absolute; bottom: 8px; left: 8px; z-index: 10;
+            background: rgba(0,0,0,0.7); color: #fff; font-size: 0.65rem;
+            padding: 2px 6px; border-radius: 4px; font-weight: 800;
+            backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);
+            transition: opacity 0.2s;
+        }}
+        body.hide-ids .asset-id-tag {{ opacity: 0; pointer-events: none; }}
+
+        .image-container {{ position: relative; width: 100%; padding-top: 100%; background: #000; flex-shrink: 0; z-index: 2; }}
         .image-thumbnail {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: 0.4s; }}
+        
+        .image-backglow {{
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; filter: blur(40px) saturate(2); opacity: 0.4; z-index: 1;
+            pointer-events: none; transform: scale(1.5);
+        }}
+        
         .adult-content {{ filter: blur(50px); }}
         .asset:hover .adult-content {{ filter: blur(0px); }}
         body.no-blur .adult-content {{ filter: blur(0px) !important; }}
 
-        .content {{ padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }}
+        .content {{ 
+            padding: 15px; flex-grow: 1; display: flex; flex-direction: column; 
+            z-index: 3; position: relative; 
+            background: rgba(22, 22, 26, 0.75); 
+            backdrop-filter: blur(5px);
+        }}
         .name {{ font-weight: 600; color: #fff; line-height: 1.3; margin-bottom: 8px; font-size: 0.9rem; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }}
-        .stats {{ color: #666; font-size: 0.75rem; display: flex; gap: 10px; margin-top: auto; }}
-        .tag-pill {{ font-size: 0.65rem; background: #222; padding: 2px 6px; border-radius: 4px; color: #aaa; white-space: nowrap; transition: 0.2s; }}
-        .modal .tag-pill {{ cursor: pointer; }}
+        .stats {{ color: #aaa; font-size: 0.75rem; display: flex; gap: 10px; margin-top: auto; font-weight: 600; }}
+        
+        .tag-pill {{ 
+            font-size: 0.65rem; background: rgba(0,0,0,0.3); 
+            height: 18px; line-height: 18px;
+            padding: 0 8px; border-radius: 4px; color: #fff; 
+            white-space: nowrap; transition: 0.2s; border: 1px solid rgba(255,255,255,0.1);
+            display: inline-flex; align-items: center; justify-content: center;
+        }}
+        .modal .tag-pill {{ cursor: pointer; height: 22px; font-size: 0.75rem; }}
         .modal .tag-pill:hover {{ background: var(--primary); color: #000; }}
 
         .modal {{ display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; align-items: center; justify-content: center; transition: 0.3s; padding: 20px; box-sizing: border-box; }}
         .modal.visible {{ display: flex; }}
         .modal.active {{ background: rgba(0,0,0,0.95); }}
-        .modal-card {{ background: #1a1a1f; width: 100%; max-width: 900px; max-height: 90vh; border: 1px solid var(--primary); border-radius: 16px; display: flex; flex-wrap: wrap; overflow-y: auto; opacity: 0; transform: scale(0.9); transition: 0.3s; }}
+        .modal-card {{ background: #1a1a1f; width: 100%; max-width: 1000px; max-height: 90vh; border: 1px solid var(--primary); border-radius: 16px; display: flex; flex-wrap: wrap; overflow-y: auto; opacity: 0; transform: scale(0.9); transition: 0.3s; position: relative; }}
         .modal.active .modal-card {{ opacity: 1; transform: scale(1); }}
-
-        .modal-side-img {{ flex: 1 1 400px; background: #000; display: flex; align-items: center; justify-content: center; min-height: 300px; }}
+        .modal-side-img {{ flex: 1 1 450px; background: #000; display: flex; align-items: center; justify-content: center; min-height: 350px; }}
         .modal-side-img img {{ max-width: 100%; max-height: 100%; object-fit: contain; }}
-        .modal-info {{ flex: 1 1 400px; padding: 30px; display: flex; flex-direction: column; min-width: 300px; }}
-        .modal-name {{ font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 10px; }}
+        .modal-info {{ flex: 1 1 400px; padding: 30px; display: flex; flex-direction: column; min-width: 320px; padding-bottom: 60px; }}
+        .modal-name {{ font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }}
+        .modal-id-display {{ color: #555; font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; }}
+        
         .file-item {{ padding: 10px; background: #222; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }}
         .file-link {{ color: #fff; text-decoration: none; font-size: 0.85rem; word-break: break-all; }}
         .setting-label {{ display: block; margin: 15px 0 8px; font-size: 0.7rem; color: #555; text-transform: uppercase; font-weight: 800; }}
+        
+        .discrete-folder-link {{ 
+            position: absolute; bottom: 20px; right: 30px;
+            color: #555; text-decoration: none; font-size: 0.75rem;
+            font-weight: 600; display: flex; align-items: center; gap: 6px;
+            transition: color 0.2s;
+        }}
+        .discrete-folder-link:hover {{ color: var(--primary); }}
     </style>
 </head>
 <body>
@@ -107,16 +149,21 @@ html_template = """<!doctype html>
             <option value="name">Alphabetical</option>
             <option value="size">Total Size</option>
         </select>
-        <span class="setting-label">Adult Filter</span>
+        <span class="setting-label">Adult Content Filter</span>
         <select id="adultFilter" onchange="applyFilters(true)" style="width:100%; padding:10px; background:#0b0b0d; color:white; border:1px solid #333; border-radius:8px; margin-bottom:15px;">
-            <option value="all">Show All</option>
-            <option value="hide">Hide Adult</option>
-            <option value="only">Only Adult</option>
+            <option value="all">Show All Content</option>
+            <option value="hide">Hide Adult Content</option>
+            <option value="only">Only Adult Content</option>
         </select>
         <span class="setting-label">Card Width</span>
         <input type="range" id="gridRange" min="180" max="500" value="220" oninput="updateGrid(this.value)" style="width:100%; accent-color:var(--primary); margin-bottom:15px;">
-        <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;">
+        
+        <span class="setting-label">Visual Controls</span>
+        <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;">
             <input type="checkbox" id="blurToggle" onchange="updateBlur(this.checked)"> Disable Adult Blur
+        </label>
+        <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;">
+            <input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> Hide Item IDs
         </label>
     </div>
 
@@ -127,9 +174,13 @@ html_template = """<!doctype html>
             <div class="modal-side-img"><img id="modalImg" src=""></div>
             <div class="modal-info">
                 <div id="modalName" class="modal-name"></div>
+                <div id="modalIdDisp" class="modal-id-display"></div>
                 <div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;"></div>
+                
                 <span class="setting-label">Binary Files</span>
                 <ul id="fileList" style="list-style:none; padding:0; margin-top:10px;"></ul>
+                
+                <a id="openFolderLink" href="" class="discrete-folder-link" target="_blank"><span>📂 Open Local Folder</span></a>
             </div>
         </div>
     </div>
@@ -139,33 +190,39 @@ html_template = """<!doctype html>
         const savedBlur = localStorage.getItem('disableBlur') === 'true';
         const savedSort = localStorage.getItem('sortOrder') || 'id';
         const savedAdultFilter = localStorage.getItem('adultFilter') || 'all';
+        const savedHideIds = localStorage.getItem('hideIds') === 'true';
         
-        updateGrid(savedGrid); updateBlur(savedBlur);
+        updateGrid(savedGrid); 
+        updateBlur(savedBlur);
+        updateIdVisibility(savedHideIds);
+
         document.getElementById('gridRange').value = savedGrid;
         document.getElementById('blurToggle').checked = savedBlur;
         document.getElementById('sortOrder').value = savedSort;
         document.getElementById('adultFilter').value = savedAdultFilter;
+        document.getElementById('hideIdToggle').checked = savedHideIds;
 
         function toggleMenu(e, forceClose = false) {{ 
             if(e) e.stopPropagation();
             const menu = document.getElementById('flyoutMenu');
             const btn = document.getElementById('toggleBtn');
             const perimeter = document.getElementById('menuPerimeter');
-            
             if (forceClose || menu.classList.contains('open')) {{
-                menu.classList.remove('open');
-                btn.classList.remove('active');
-                perimeter.style.display = 'none';
+                menu.classList.remove('open'); btn.classList.remove('active'); perimeter.style.display = 'none';
             }} else {{
-                menu.classList.add('open');
-                btn.classList.add('active');
-                perimeter.style.display = 'block';
+                menu.classList.add('open'); btn.classList.add('active'); perimeter.style.display = 'block';
             }}
         }}
 
         function updateGrid(val) {{ document.documentElement.style.setProperty('--grid-size', val + 'px'); localStorage.setItem('gridSize', val); }}
         function updateBlur(d) {{ d ? document.body.classList.add('no-blur') : document.body.classList.remove('no-blur'); localStorage.setItem('disableBlur', d); }}
         
+        function updateIdVisibility(hide) {{
+            if (hide) document.body.classList.add('hide-ids');
+            else document.body.classList.remove('hide-ids');
+            localStorage.setItem('hideIds', hide);
+        }}
+
         function handleSearch() {{ 
             const val = document.getElementById("searchInput").value;
             document.getElementById("clearSearch").style.display = val ? "block" : "none"; 
@@ -206,12 +263,17 @@ html_template = """<!doctype html>
             const item = document.querySelector(`.asset[data-id="${{assetId}}"]`);
             document.getElementById("modalImg").src = item.getAttribute('data-img');
             document.getElementById("modalName").innerText = item.getAttribute('data-name');
+            document.getElementById("modalIdDisp").innerText = "#" + assetId;
+            document.getElementById("openFolderLink").href = item.getAttribute('data-folder');
+            
             const tags = JSON.parse(item.getAttribute('data-tags'));
             document.getElementById("modalTags").innerHTML = tags.map(t => `<span class="tag-pill" onclick="tagSearch('${{t.replace(/'/g, "\\\\'")}}')">${{t}}</span>`).join('');
+            
             const files = JSON.parse(item.getAttribute('data-files'));
             document.getElementById("fileList").innerHTML = files.map(f => `
-                <li class="file-item"><a class="file-link" href="${{f.path}}" target="_blank">${{f.name}}</a><span style="color:#666;font-size:0.75rem;">${{f.size}}</span></li>
+                <li class="file-item"><a class="file-link" href="${{f.path}}" target="_blank">${{f.name}}</a><span style="color:#aaa;font-size:0.75rem;">${{f.size}}</span></li>
             `).join('');
+            
             const m = document.getElementById("detailModal");
             m.classList.add('visible'); setTimeout(() => m.classList.add('active'), 10);
         }}
@@ -252,9 +314,19 @@ def get_dir_contents(binary_folder):
             for f in filenames:
                 fp = os.path.join(root, f)
                 rel = os.path.relpath(fp, start=os.getcwd())
-                size = os.path.getsize(fp)
-                files.append({"name": f, "path": quote(rel), "size": get_readable_size(size)})
+                files.append({"name": f, "path": quote(rel), "size": get_readable_size(os.path.getsize(fp))})
     return files
+
+def is_adult_content(text):
+    """Detection for adult content. Expanded to catch specific Japanese and English keywords."""
+    words = [
+        r"R-?18", r"adult", r"nude", r"semen", r"nsfw", r"sexual", 
+        r"erotic", r"pussy", r"dick", r"vagina", r"penis", r"otimpo", r"otinpo"
+    ]
+    jp = ["精液", "だぷだぷ", "ヌード", "エロ", "クリトリス", "おまんこ", "おちんぽ", "おてぃんぽ"]
+    if re.search("|".join(words), text, re.IGNORECASE):
+        return True
+    return any(w in text for w in jp)
 
 def generate_asset_html(asset_id, asset_name, asset_image, binary_folder, tags, is_adult):
     total_bytes = 0
@@ -265,21 +337,29 @@ def generate_asset_html(asset_id, asset_name, asset_image, binary_folder, tags, 
     
     files_data = get_dir_contents(binary_folder)
     img_class = "image-thumbnail adult-content" if is_adult else "image-thumbnail"
+    
+    glow_tag = f'<img class="image-backglow" src="{asset_image}">' if asset_image else ''
     img_tag = f'<img class="{img_class}" src="{asset_image}">' if asset_image else '<div class="image-thumbnail" style="background:#222;display:flex;align-items:center;justify-content:center;color:#444;font-weight:800;">EMPTY</div>'
     safe_name = asset_name.replace('"', '&quot;')
+    
     tag_html = "".join([f'<span class="tag-pill">{t}</span>' for t in tags[:3]])
     search_str = f"{asset_id} {asset_name} {' '.join(tags)}".lower().replace("'", "")
-    
+    rel_binary_path = os.path.relpath(binary_folder, start=os.getcwd())
+
     return f"""
     <li class="asset" onclick="openDetails('{asset_id}')" data-id="{asset_id}" data-name="{safe_name}" 
         data-img="{asset_image}" data-bytes="{total_bytes}" data-files='{json.dumps(files_data).replace("'", "&apos;")}'
         data-tags='{json.dumps(tags).replace("'", "&apos;")}' data-adult="{str(is_adult).lower()}" 
-        data-search='{search_str}'>
-        <div class="image-container">{img_tag}</div>
+        data-search='{search_str}' data-folder="{quote(rel_binary_path)}">
+        <div class="image-container">
+            <div class="asset-id-tag">#{asset_id}</div>
+            {img_tag}
+        </div>
+        {glow_tag}
         <div class="content">
             <div class="name">{asset_name}</div>
             <div class="stats"><span>{get_readable_size(total_bytes)}</span><span>{len(files_data)} files</span></div>
-            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;height:1.5em;overflow:hidden;">{tag_html}</div>
+            <div style="display:flex;flex-wrap:nowrap;gap:4px;margin-top:10px;height:18px;overflow:hidden;">{tag_html}</div>
         </div>
     </li>
     """
@@ -297,7 +377,7 @@ for folder in sorted(os.listdir(root_folder)):
         if jsons[0].endswith('_BoothPage.json'):
             data = json.load(f)
             tags = [t.get('name', '') for t in data.get('tags', [])]
-            is_ad = data.get('is_adult', False) or any(x in data.get('name', '').lower() for x in ['r-18', 'r18', '精液', 'otinpo', 'otimpo'])
+            is_ad = data.get('is_adult', False) or is_adult_content(data.get('name', ''))
             asset_items.append((folder, generate_asset_html(folder, data.get('name', 'N/A'), data.get('images', [{}])[0].get('original', ''), binary, tags, is_ad)))
         else:
             data = json.load(f)
@@ -305,7 +385,8 @@ for folder in sorted(os.listdir(root_folder)):
             if item:
                 name = (re.search(r'break-all\">(.*?)<\/div>', item) or re.search(r'>(.*?)<\/div>', item)).group(1)
                 img = re.search(r'src=\"([^\"]+)\"', item).group(1) if 'src="' in item else ""
-                asset_items.append((folder, generate_asset_html(folder, name, img, binary, [], "r-18" in name.lower())))
+                is_ad = is_adult_content(name) or is_adult_content(item)
+                asset_items.append((folder, generate_asset_html(folder, name, img, binary, [], is_ad)))
 
 asset_items.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 0)
 output_html = html_template.format(assets="\n".join(i[1] for i in asset_items))
