@@ -5,8 +5,8 @@ Generates: asset_library.html
 
 Pretty much everything is hardcoded so you might want to adjust the script.
 
-Note: Uses data gathered by BoothDownloader.
-Note 2: You must disable AutoZip in the BDConfig.json config.  
+Note: Uses data gathered by BoothDownloader.  
+Note 2: You must disable AutoZip in the BDConfig.json config.   
 Note 3: Translations are made by pesky robots. If something is too cooked, feel free to PR correction.  
 Note 4: Item translations are done on build and cached. Can be disabled with a flag inside the script.  
   
