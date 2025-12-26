@@ -126,12 +126,15 @@ HTML_PART_1 = """<!doctype html>
         .asset:hover .adult-content { filter: blur(0px); }
         body.no-blur .adult-content { filter: blur(0px) !important; }
         .content { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; z-index: 10; position: relative; background: rgba(18, 18, 22, 0.8); backdrop-filter: blur(5px); }
-        .name { font-weight: 600; color: #fff; line-height: 1.3; margin-bottom: 8px; font-size: 0.9rem; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .name { font-weight: 600; color: #fff; line-height: 1.3; margin-bottom: 4px; font-size: 0.9rem; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .author-label { font-size: 0.7rem; color: #777; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .author-label b { color: var(--primary); font-weight: 600; }
         .stats { color: #aaa; font-size: 0.75rem; display: flex; gap: 10px; margin-top: auto; font-weight: 600; }
         .tag-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; height: 18px; overflow: hidden; }
         .tag-pill { font-size: 0.65rem; background: rgba(0,0,0,0.4); height: 18px; line-height: 18px; padding: 0 8px; border-radius: 4px; color: #fff; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; cursor: pointer; }
         .tag-pill:hover { background: var(--primary); color: #000; border-color: var(--primary); }
         .modal-info .tag-pill { height: 22px; font-size: 0.75rem; padding: 0 10px; }
+        .tag-pill.more-btn { background: var(--primary); color: #000; font-weight: 800; border: none; }
         .modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; align-items: center; justify-content: center; transition: 0.3s; padding: 20px; box-sizing: border-box; }
         .modal.visible { display: flex; }
         .modal.active { background: rgba(0,0,0,0.95); }
@@ -213,7 +216,7 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             en: { navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optNew: "Recently Added", optName: "Alphabetical", optRel: "Relevance", optSize: "Total Size", labelAdult: "Adult Filter", optAll: "Show All", optHide: "Hide Adult", optOnly: "Only Adult", labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Blur", optHideIds: "Hide Item IDs", optTranslate: "Use Translated Titles", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...", fileSingular: "file", filePlural: "files", moreTags: "+ {n} more", hiddenResults: " (+{n} hidden by filters)" },
             de: { navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "ID", optNew: "Zuletzt hinzugefügt", optName: "Alphabetisch", optRel: "Beliebtheit", optSize: "Größe", labelAdult: "Filter", optAll: "Alles", optHide: "Ausblenden", optOnly: "Nur 18+", labelWidth: "Breite", labelVisual: "Anzeige", optBlur: "Kein Fokus", optHideIds: "IDs weg", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Booth", footFolder: "📂 Ordner", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {n} weitere", hiddenResults: " (+{n} durch Filter versteckt)" },
             ja: { navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "言語", labelSort: "並び替え", optId: "ID", optNew: "最近追加された", optName: "名前順", optRel: "人気順", optSize: "サイズ", labelAdult: "フィルター", optAll: "すべて表示", optHide: "隠す", optOnly: "成人向けのみ", labelWidth: "幅", labelVisual: "表示", optBlur: "ぼかし解除", optHideIds: "ID非表示", optTranslate: "翻訳後の名前を表示", labelBinary: "ファイル", footBooth: "🛒 Booth", footFolder: "📂 フォルダ", searchPre: "検索：", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル", moreTags: "他 {n} 件", hiddenResults: " (他 {n} 件がフィルター済み)" },
-            ko: { navTitle: "Booth 에셋 ライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "言語", labelSort: "並び替え", optId: "ID", optNew: "最近追加された", optName: "名前順", optRel: "関連性", optSize: "容量", labelAdult: "成人フィルター", optAll: "すべて表示", optHide: "成人向けを隠す", optOnly: "成人向けのみ", labelWidth: "幅", labelVisual: "表示", optBlur: "ぼかし解除", optHideIds: "IDを隠す", optTranslate: "翻訳タイトルを表示", labelBinary: "ファイル", footBooth: "🛒 Boothを見る", footFolder: "📂 フォルダを開く", searchPre: "検索：", searchSuf: "件", fileSingular: "ファイル", filePlural: "ファイル", moreTags: "+ 他{n}件", hiddenResults: " (+{n}件が非表示)" },
+            ko: { navTitle: "Booth 에셋 라이브러리", optionsBtn: "설정 ⚙", labelLanguage: "언어", labelSort: "정렬", optId: "ID", optNew: "최근 추가됨", optName: "이름순", optRel: "관련성", optSize: "용량", labelAdult: "성인 필터", optAll: "모두 표시", optHide: "성인 숨기기", optOnly: "성인 전용", labelWidth: "너비", labelVisual: "표시", optBlur: "블러 해제", optHideIds: "ID 숨기기", optTranslate: "번역 제목 사용", labelBinary: "ファイル", footBooth: "🛒 Booth 보기", footFolder: "📂 폴더 열기", searchPre: "검색: ", searchSuf: "개", fileSingular: "파일", filePlural: "파일", moreTags: "+ {n}개 더보기", hiddenResults: " (+{n}개 숨김)" },
             'zh-Hans': { navTitle: "Booth 资源库", optionsBtn: "选项 ⚙", labelLanguage: "语言", labelSort: "排序", optId: "ID", optNew: "最近添加", optName: "名称排序", optRel: "相关性", optSize: "大小", labelAdult: "成人过滤", optAll: "显示全部", optHide: "隐藏成人", optOnly: "仅成人", labelWidth: "宽度", labelVisual: "视觉控制", optBlur: "禁用模糊", optHideIds: "隐藏 ID", optTranslate: "显示翻译名称", labelBinary: "二进制文件", footBooth: "🛒 在 Booth 打开", footFolder: "📂 打开文件夹", searchPre: "搜索 ", searchSuf: " 个项目", fileSingular: "文件", filePlural: "文件", moreTags: "+ {n} 更多", hiddenResults: " (+{n} 个被过滤)" },
             'zh-Hant': { navTitle: "Booth 資源庫", optionsBtn: "選項 ⚙", labelLanguage: "語言", labelSort: "排序", optId: "ID", optNew: "最近添加", optName: "名稱排序", optRel: "相關性", optSize: "大小", labelAdult: "成人過濾", optAll: "顯示全部", optHide: "隱藏成人", optOnly: "僅限成人", labelWidth: "寬度", labelVisual: "視覺控制", optBlur: "禁用模糊", optHideIds: "隱藏 ID", optTranslate: "顯示翻譯名稱", labelBinary: "二進制檔案", footBooth: "🛒 在 Booth 打開", footFolder: "📂 打開資料夾", searchPre: "搜尋 ", searchSuf: " 個項目", fileSingular: "檔案", filePlural: "檔案", moreTags: "+ {n} 更多", hiddenResults: " (+{n} 個被過濾)" },
             nl: { navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer", optId: "ID", optNew: "Onlangs toegevoegd", optName: "Alfabet", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verbergen", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visueel", optBlur: "Geen vervaging", optHideIds: "ID's weg", optTranslate: "Engelse titels", labelBinary: "Bestanden", footBooth: "🛒 Booth", footFolder: "📂 Map", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " (+{n} verborgen door filters)" },
@@ -266,7 +269,12 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
         function updateGrid(v) { document.documentElement.style.setProperty('--grid-size', v + 'px'); localStorage.setItem('gridSize', v); }
         function updateBlur(v) { document.body.classList.toggle('no-blur', v); localStorage.setItem('disableBlur', v); }
         function updateIdVisibility(v) { document.body.classList.toggle('hide-ids', v); localStorage.setItem('hideIds', v); }
-        function updateTranslationVisibility(v) { state.showTrans = v; localStorage.setItem('showTrans', v); const items = document.getElementsByClassName('asset'); for(let item of items) { const primaryName = item.querySelector('.name-primary'); primaryName.innerText = (v && item.dataset.nameTrans) ? item.dataset.nameTrans : item.dataset.nameOrig; } }
+        function updateTranslationVisibility(v) { state.showTrans = v; localStorage.setItem('showTrans', v); const items = document.getElementsByClassName('asset'); for(let item of items) { 
+            const primaryName = item.querySelector('.name-primary'); 
+            primaryName.innerText = (v && item.dataset.nameTrans) ? item.dataset.nameTrans : item.dataset.nameOrig;
+            const authorPrimary = item.querySelector('.author-primary');
+            authorPrimary.innerText = (v && item.dataset.authorTrans) ? item.dataset.authorTrans : item.dataset.authorOrig;
+        } }
         function handleSearchInput() { applyFilters(); }
         function clearSearch() { const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(); i.focus(); }
         function tagSearch(tag) { const s = document.getElementById("searchInput"); s.value = tag; closeModal(); handleSearchInput(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -313,9 +321,10 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
         function openDetails(id) {
             const el = document.querySelector(`.asset[data-id="${id}"]`), t = translations[state.lang] || translations['en'];
             const displayTitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameTrans : el.dataset.nameOrig;
+            const displayAuthor = (state.showTrans && el.dataset.authorTrans) ? el.dataset.authorTrans : el.dataset.authorOrig;
             const subtitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameOrig : "";
             document.getElementById("modalName").innerText = displayTitle;
-            document.getElementById("modalSubtitle").innerText = subtitle;
+            document.getElementById("modalSubtitle").innerText = (subtitle ? subtitle + " | " : "") + displayAuthor;
             document.getElementById("modalIdDisp").innerText = "#" + id;
             document.getElementById("openFolderLink").href = el.dataset.folder;
             document.getElementById("openBoothLink").href = el.dataset.boothUrl;
@@ -397,12 +406,13 @@ def parse_price(price_str):
     if match: return float(match.group(1)), match.group(2)
     return 0.0, ""
 
-def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path, tags, is_adult, wish_count, price_str):
+def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url, folder_path, tags, is_adult, wish_count, price_str):
     binary_folder = os.path.join(folder_path, 'Binary')
     files_data, total_bytes = get_dir_data(binary_folder)
     all_imgs = get_all_local_images(folder_path, web_images)
     primary_img = all_imgs[0] if all_imgs else ""
     name_trans = translation_cache.get(asset_name.strip(), "")
+    author_trans = translation_cache.get(author_name.strip(), "")
     
     price_val, price_cur = parse_price(price_str)
     
@@ -413,12 +423,14 @@ def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path
     
     folder_time = int(os.path.getctime(folder_path))
     safe_name, safe_trans = asset_name.replace('"', '&quot;'), name_trans.replace('"', '&quot;')
+    safe_author, safe_author_trans = author_name.replace('"', '&quot;'), author_trans.replace('"', '&quot;')
     filenames_str = " ".join([f['name'] for f in files_data])
-    search_str = f"{asset_id} {asset_name} {name_trans} {' '.join(tags)} {filenames_str}".lower().replace("'", "")
+    search_str = f"{asset_id} {asset_name} {name_trans} {author_name} {author_trans} {' '.join(tags)} {filenames_str}".lower().replace("'", "")
     rel_folder = quote(os.path.relpath(binary_folder, start=os.getcwd()))
     return f"""
     <li class="asset" onclick="openDetails('{asset_id}')" 
-        data-id="{asset_id}" data-name-orig="{safe_name}" data-name-trans="{safe_trans}" data-img="{primary_img}" 
+        data-id="{asset_id}" data-name-orig="{safe_name}" data-name-trans="{safe_trans}" 
+        data-author-orig="{safe_author}" data-author-trans="{safe_author_trans}" data-img="{primary_img}" 
         data-all-images='{json.dumps(all_imgs).replace("'", "&apos;")}'
         data-bytes="{total_bytes}" data-files='{json.dumps(files_data).replace("'", "&apos;")}'
         data-tags='{json.dumps(tags).replace("'", "&apos;")}' data-adult="{str(is_adult).lower()}" 
@@ -428,6 +440,7 @@ def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path
         <div class="image-container"><div class="asset-id-tag">#{asset_id}</div>{img_tag}</div>
         {glow_tag}<div class="content">
             <div class="name"><span class="name-primary">{asset_name}</span></div>
+            <div class="author-label">by <b class="author-primary">{author_name}</b></div>
             <div class="stats"><span>{get_readable_size(total_bytes)}</span><span class="file-label-dynamic"></span></div>
             <div class="tag-row">{grid_tags_html}</div>
         </div>
@@ -444,7 +457,8 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
         if jsons[0].endswith('_BoothPage.json'):
             data = json.load(f)
             name, tags, wish = data.get('name', 'N/A'), [t.get('name', '') for t in data.get('tags', [])], data.get('wish_lists_count', 0)
-            all_strings_to_translate.extend([name] + tags)
+            author = data.get('shop', {}).get('name', 'N/A')
+            all_strings_to_translate.extend([name, author] + tags)
             asset_data_list.append(('json', folder, data, path, wish))
         else:
             data = json.load(f)
@@ -464,14 +478,15 @@ for type, folder, data, path, wish in asset_data_list:
     if type == 'json':
         web_imgs = [img.get('original', '') for img in data.get('images', [])]
         tags = [t.get('name', '') for t in data.get('tags', [])]
-        asset_items_final.append(generate_asset_html(folder, data.get('name', 'N/A'), web_imgs, data.get('url', ''), path, tags, data.get('is_adult', False) or is_adult_content(data.get('name', '')), wish, data.get('price', '')))
+        author = data.get('shop', {}).get('name', 'N/A')
+        asset_items_final.append(generate_asset_html(folder, data.get('name', 'N/A'), author, web_imgs, data.get('url', ''), path, tags, data.get('is_adult', False) or is_adult_content(data.get('name', '')), wish, data.get('price', '')))
     else:
         name, item = data
         i_m = re.search(r'src=\"([^\"]+)\"', item)
         img = i_m.group(1) if i_m else ""
         u_m = re.search(r'href=\"([^\"]+)\"', item)
         url = u_m.group(1) if u_m else ""
-        asset_items_final.append(generate_asset_html(folder, name, [img], url, path, [], is_adult_content(name), 0, ""))
+        asset_items_final.append(generate_asset_html(folder, name, "N/A", [img], url, path, [], is_adult_content(name), 0, ""))
 
 with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
     f.write(HTML_PART_1 + "\n".join(asset_items_final) + HTML_PART_2)
