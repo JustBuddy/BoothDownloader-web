@@ -44,70 +44,42 @@ def translate_chunk_task(chunk_data):
     translator = GoogleTranslator(source='auto', target='en')
     separator = " @@@ "
     try:
-        # Clean the chunk items to remove trailing spaces which confuse the API
         clean_chunk = [t.strip() for t in chunk]
         combined = separator.join(clean_chunk)
         translated = translator.translate(combined)
-        
         if translated:
             results = [r.strip() for r in translated.split("@@@")]
             if len(results) == len(clean_chunk):
                 for original, trans in zip(chunk, results):
-                    # Ensure we actually got a translation, not just the original back
                     if contains_japanese(trans):
-                        # Attempt individual if bulk returned Japanese
                         try:
                             res = translator.translate(original.strip())
                             translation_cache[original] = res if res else original
                         except: pass
                     else:
                         translation_cache[original] = trans
-                return f"Batch {chunk_index} Processed"
-    except Exception:
-        pass
-    
-    # Fallback for the whole batch if anything went wrong
-    for original in chunk:
-        try:
-            res = translator.translate(original.strip())
-            translation_cache[original] = res if res else original
-        except: pass
-    return f"Batch {chunk_index} Fallback Used"
+                return True
+    except Exception: pass
+    return False
 
 def bulk_translate(text_list):
     if SKIP_TRANSLATION: return
-    
-    japanese_strings = list(set(str(t) for t in text_list if t and contains_japanese(t)))
-    new_strings = [t for t in japanese_strings if t not in translation_cache or contains_japanese(translation_cache.get(t, ""))]
-    
+    japanese_strings = list(set(str(t).strip() for t in text_list if t and contains_japanese(t)))
+    new_strings = [t for t in japanese_strings if t not in translation_cache or translation_cache[t] == t]
     if not new_strings: return
-
-    real_translation_queue = []
+    real_queue = []
     for t in new_strings:
-        if is_noise(t):
-            translation_cache[t] = t 
-        else:
-            real_translation_queue.append(t)
-
-    if not real_translation_queue:
-        if new_strings: # We updated some noise, still save
-            with open(CACHE_FILE, 'w', encoding='utf-8') as f:
-                json.dump(translation_cache, f, ensure_ascii=False, indent=2)
-        return
-
+        if is_noise(t): translation_cache[t] = t 
+        else: real_queue.append(t)
+    if not real_queue: return
     if DEBUG_TRANSLATION:
-        print(f"DEBUG: {len(real_translation_queue)} terms queued for translation:")
-        for t in real_translation_queue: print(f" - '{t}'")
+        print(f"DEBUG: {len(real_queue)} terms queued.")
+        for t in real_queue: print(f" - {t}")
         sys.exit()
-
-    print(f"Translating {len(real_translation_queue)} new terms using {MAX_WORKERS} threads...")
-    batch_size = 12 
-    chunks = [(i//batch_size + 1, real_translation_queue[i:i + batch_size]) 
-              for i in range(0, len(real_translation_queue), batch_size)]
-    
+    batch_size = 15
+    chunks = [(i//batch_size + 1, real_queue[i:i + batch_size]) for i in range(0, len(real_queue), batch_size)]
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         list(executor.map(translate_chunk_task, chunks))
-    
     with open(CACHE_FILE, 'w', encoding='utf-8') as f:
         json.dump(translation_cache, f, ensure_ascii=False, indent=2)
 
@@ -129,11 +101,11 @@ HTML_TEMPLATE = """<!doctype html>
         .search-input:focus {{ border-color: var(--primary); }}
         .clear-search {{ position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 1.2rem; cursor: pointer; display: none; }}
         .search-input:not(:placeholder-shown) + .clear-search {{ display: block; }}
-        .nav-btn {{ background: #222; border: 1px solid #333; color: white; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; position: relative; z-index: 2001; }}
+        .nav-btn {{ background: #222; border: 1px solid #333; color: white; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; position: relative; z-index: 2001; transition: all 0.3s; }}
         .nav-btn.active {{ border-color: var(--primary); color: var(--primary); }}
         #menuPerimeter {{ display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1999; }}
-        .flyout-menu {{ display: none; position: fixed; top: 75px; right: 30px; width: 320px; background: rgba(26, 26, 31, 0.98); backdrop-filter: blur(20px); border: 1px solid rgba(253, 218, 13, 0.3); z-index: 2000; padding: 25px; border-radius: 16px; opacity: 0; transform: translateY(-20px) scale(0.95); transition: 0.3s; pointer-events: none; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }}
-        .flyout-menu.open {{ display: block; opacity: 1; transform: translateY(0); pointer-events: all; }}
+        .flyout-menu {{ display: block; position: fixed; top: 75px; right: 30px; width: 320px; background: rgba(26, 26, 31, 0.98); backdrop-filter: blur(20px); border: 1px solid rgba(253, 218, 13, 0.3); z-index: 2000; padding: 25px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); opacity: 0; transform: translateY(-20px) scale(0.95); transition: opacity 0.3s, transform 0.3s, visibility 0.3s; pointer-events: none; visibility: hidden; }}
+        .flyout-menu.open {{ opacity: 1; transform: translateY(0) scale(1); pointer-events: all; visibility: visible; }}
         .setting-group {{ margin-bottom: 25px; width: 100%; }}
         .setting-label {{ display: block; margin: 15px 0 8px; font-size: 0.7rem; color: #555; text-transform: uppercase; font-weight: 800; }}
         select, input[type=range] {{ width: 100%; background: #0b0b0d; color: white; border: 1px solid #333; padding: 10px; border-radius: 8px; outline: none; }}
@@ -141,45 +113,56 @@ HTML_TEMPLATE = """<!doctype html>
         #assetList {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--grid-size), 1fr)); gap: 35px; list-style: none; padding: 0; }}
         .asset {{ background: #111114; border: 1px solid #252525; border-radius: 12px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; height: 100%; transition: 0.3s; position: relative; }}
         .asset:hover {{ border-color: var(--primary); transform: translateY(-5px); }}
+        .asset-id-tag {{ position: absolute; bottom: 8px; left: 8px; z-index: 20; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); transition: opacity 0.3s ease; opacity: 1; }}
+        body.hide-ids .asset-id-tag {{ opacity: 0; }}
         .image-container {{ position: relative; width: 100%; padding-top: 100%; background: #000; flex-shrink: 0; z-index: 5; overflow: hidden; border-radius: 12px 12px 0 0; }}
         .image-thumbnail {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: 0.4s; z-index: 10; }}
         .image-backglow {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(45px) saturate(5) contrast(1.5); opacity: 0.7; z-index: 1; pointer-events: none; transform: scale(1.6); }}
-        .asset-id-tag {{ position: absolute; bottom: 8px; left: 8px; z-index: 20; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); }}
-        body.hide-ids .asset-id-tag {{ display: none; }}
         .adult-content {{ filter: blur(50px); }}
         .asset:hover .adult-content {{ filter: blur(0px); }}
         body.no-blur .adult-content {{ filter: blur(0px) !important; }}
         .content {{ padding: 15px; flex-grow: 1; display: flex; flex-direction: column; z-index: 10; position: relative; background: rgba(18, 18, 22, 0.8); backdrop-filter: blur(5px); }}
         .name {{ font-weight: 600; color: #fff; line-height: 1.3; margin-bottom: 8px; font-size: 0.9rem; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }}
-        .name-translated {{ display: block; font-size: 0.75rem; color: var(--primary); margin-top: 4px; font-weight: 400; opacity: 0.8; }}
+        .name-translated {{ display: block; font-size: 0.75rem; color: var(--primary); margin-top: 4px; font-weight: 400; opacity: 0.8; transition: opacity 0.3s; }}
         body.hide-translations .name-translated {{ display: none; }}
         .stats {{ color: #aaa; font-size: 0.75rem; display: flex; gap: 10px; margin-top: auto; font-weight: 600; }}
         .tag-row {{ display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; height: 18px; overflow: hidden; }}
         .tag-pill {{ font-size: 0.65rem; background: rgba(0,0,0,0.4); height: 18px; line-height: 18px; padding: 0 8px; border-radius: 4px; color: #fff; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; }}
         .modal-info .tag-pill {{ cursor: pointer; height: 22px; font-size: 0.75rem; padding: 0 10px; }}
         .modal-info .tag-pill:hover {{ background: var(--primary); color: #000; border-color: var(--primary); }}
+
+        /* Modal Layout */
         .modal {{ display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; align-items: center; justify-content: center; transition: 0.3s; padding: 20px; box-sizing: border-box; }}
         .modal.visible {{ display: flex; }}
         .modal.active {{ background: rgba(0,0,0,0.95); }}
-        .modal-card {{ background: #1a1a1f; width: 100%; max-width: 1100px; max-height: 90vh; border: 1px solid var(--primary); border-radius: 16px; display: flex; flex-wrap: wrap; overflow-y: auto; opacity: 0; transform: scale(0.9); transition: 0.3s; position: relative; }}
+        .modal-card {{ background: #1a1a1f; width: 100%; max-width: 1100px; max-height: 90vh; border: 1px solid var(--primary); border-radius: 16px; display: flex; flex-direction: row; overflow: hidden; opacity: 0; transform: scale(0.9); transition: 0.3s; position: relative; }}
         .modal.active .modal-card {{ opacity: 1; transform: scale(1); }}
-        .modal-carousel {{ flex: 1 1 450px; background: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; min-height: 350px; }}
+        .modal-carousel {{ flex: 0 0 50%; background: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; min-height: 350px; }}
         .carousel-blur-bg {{ position: absolute; top: -10%; left: -10%; width: 120%; height: 120%; object-fit: cover; filter: blur(40px) brightness(0.5); opacity: 0.8; z-index: 1; transition: 0.4s; }}
         .carousel-main-img {{ max-width: 100%; max-height: 100%; object-fit: contain; position: relative; z-index: 2; transition: 0.4s; }}
-        .carousel-btn {{ position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 15px 10px; cursor: pointer; border-radius: 4px; font-size: 1.2rem; transition: 0.2s; display: none; }}
+        .carousel-btn {{ position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 15px 10px; cursor: pointer; border-radius: 4px; font-size: 1.2rem; transition: 0.2s; }}
         .carousel-btn:hover {{ background: var(--primary); color: #000; }}
         .btn-prev {{ left: 15px; }}
         .btn-next {{ right: 15px; }}
         .carousel-dots {{ position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10; }}
         .dot {{ width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: 0.2s; }}
         .dot.active {{ background: var(--primary); transform: scale(1.3); }}
-        .modal-info {{ flex: 1 1 400px; padding: 30px; display: flex; flex-direction: column; min-width: 320px; position: relative; padding-bottom: 60px; }}
+
+        /* Info Column */
+        .modal-info {{ flex: 1; padding: 30px; display: flex; flex-direction: column; min-width: 320px; overflow-y: auto; }}
         .modal-name {{ font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }}
-        .file-list {{ list-style: none; padding: 0; margin-top: 10px; }}
+        .modal-subtitle {{ font-size: 0.9rem; color: #777; margin-bottom: 15px; font-weight: 400; font-style: italic; display: block; }}
+        body.hide-translations .modal-subtitle {{ display: none; }}
+
+        .file-list {{ list-style: none; padding: 0; margin-top: 10px; flex-grow: 1; }}
         .file-item {{ padding: 10px; background: #222; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }}
         .file-link {{ color: #fff; text-decoration: none; font-size: 0.85rem; word-break: break-all; flex-grow: 1; }}
-        .modal-footer {{ position: absolute; bottom: 20px; right: 30px; display: flex; gap: 20px; }}
+        .file-link:hover {{ color: var(--primary); }}
+        .modal-footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 20px; padding-bottom: 20px; flex-shrink: 0; }}
         .discrete-link {{ color: #555; text-decoration: none; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color 0.2s; }}
+        .discrete-link:hover {{ color: var(--primary); }}
+
+        @media (max-width: 800px) {{ .modal-card {{ flex-direction: column; overflow-y: auto; }} .modal-carousel {{ flex: 0 0 400px; width: 100%; }} .modal-info {{ flex: none; width: 100%; overflow-y: visible; }} }}
     </style>
 </head>
 <body>
@@ -195,7 +178,7 @@ HTML_TEMPLATE = """<!doctype html>
     <div id="flyoutMenu" class="flyout-menu">
         <div class="setting-group"><span class="setting-label" data-i18n="labelLanguage">Language</span>
             <select id="langSelect" onchange="updateLanguage(this.value)">
-                <option value="de">Deutsch</option><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="ja">日本語</option><option value="nl">Nederlands</option><option value="pt">Português</option>
+                <option value="de">Deutsch</option><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="nl">Nederlands</option><option value="pt">Português</option><option value="zh-Hans">简体中文</option><option value="zh-Hant">繁體中文</option>
             </select>
         </div>
         <div class="setting-group"><span class="setting-label" data-i18n="labelSort">Sort Order</span>
@@ -216,16 +199,13 @@ HTML_TEMPLATE = """<!doctype html>
         </div>
     </div>
     <div class="container"><ul id="assetList">{assets}</ul></div>
-    <div id="detailModal" class="modal" onclick="closeModal()"><div class="modal-card" onclick="event.stopPropagation()"><div class="modal-carousel" id="modalCarouselContainer"><button id="carouselPrev" class="carousel-btn btn-prev" onclick="carouselNext(-1)">❮</button><img id="modalBlurBg" class="carousel-blur-bg" src=""><img id="modalImg" class="carousel-main-img" src=""><button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button><div id="carouselDots" class="carousel-dots"></div></div><div class="modal-info"><div id="modalName" class="modal-name"></div><div id="modalTransName" class="name-translated" style="font-size:1.1rem; margin-bottom:10px;"></div><div id="modalIdDisp" style="color:#555; font-size:0.8rem; font-weight:800; margin-bottom:15px;"></div><div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;"></div><span class="setting-label" data-i18n="labelBinary">Binary Files</span><ul id="fileList" class="file-list"></ul><div class="modal-footer"><a id="openBoothLink" href="" class="discrete-link" target="_blank"><span data-i18n="footBooth">🛒 Booth</span></a><a id="openFolderLink" href="" class="discrete-link" target="_blank"><span data-i18n="footFolder">📂 Folder</span></a></div></div></div></div>
+    <div id="detailModal" class="modal" onclick="closeModal()"><div class="modal-card" onclick="event.stopPropagation()"><div class="modal-carousel" id="modalCarouselContainer"><button id="carouselPrev" class="carousel-btn btn-prev" onclick="carouselNext(-1)">❮</button><img id="modalBlurBg" class="carousel-blur-bg" src=""><img id="modalImg" class="carousel-main-img" src=""><button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button><div id="carouselDots" class="carousel-dots"></div></div><div class="modal-info"><div id="modalName" class="modal-name"></div><div id="modalSubtitle" class="modal-subtitle"></div><div id="modalIdDisp" style="color:#555; font-size:0.8rem; font-weight:800; margin-bottom:15px;"></div><div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;"></div><span class="setting-label" data-i18n="labelBinary">Binary Files</span><ul id="fileList" class="file-list"></ul><div class="modal-footer"><a id="openBoothLink" href="" class="discrete-link" target="_blank"><span data-i18n="footBooth">🛒 Booth</span></a><a id="openFolderLink" href="" class="discrete-link" target="_blank"><span data-i18n="footFolder">📂 Folder</span></a></div></div></div></div>
     <script>
         const translations = {{
-            en: {{ navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optName: "Alphabetical", optRel: "Relevance", optSize: "Total Size", labelAdult: "Adult Filter", optAll: "Show All", optHide: "Hide Adult", optOnly: "Only Adult", labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Blur", optHideIds: "Hide Item IDs", optTranslate: "Use Translated Titles", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...", fileSingular: "file", filePlural: "files" }},
-            de: {{ navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "ID", optName: "Alphabetisch", optRel: "Beliebtheit", optSize: "Größe", labelAdult: "Filter", optAll: "Alles", optHide: "Ausblenden", optOnly: "Nur 18+", labelWidth: "Breite", labelVisual: "Anzeige", optBlur: "Kein Fokus", optHideIds: "IDs weg", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Booth", footFolder: "📂 Ordner", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien" }},
-            ja: {{ navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "言語", labelSort: "並び替え", optId: "ID", optName: "名前順", optRel: "人気順", optSize: "サイズ", labelAdult: "フィルター", optAll: "すべて表示", optHide: "隠す", optOnly: "成人向けのみ", labelWidth: "幅", labelVisual: "表示", optBlur: "ぼかし解除", optHideIds: "ID非表示", optTranslate: "翻訳後の名前を表示", labelBinary: "ファイル", footBooth: "🛒 Booth", footFolder: "📂 フォルダ", searchPre: "検索：", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル" }},
-            nl: {{ navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer", optId: "ID", optName: "Alfabet", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verbergen", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visueel", optBlur: "Geen vervaging", optHideIds: "ID's weg", optTranslate: "Vertaalde titels", labelBinary: "Bestanden", footBooth: "🛒 Booth", footFolder: "📂 Map", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden" }},
-            fr: {{ navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier", optId: "ID", optName: "Nom", optRel: "Pertinence", optSize: "Taille", labelAdult: "Filtre", optAll: "Tout", optHide: "Masquer", optOnly: "Adulte", labelWidth: "Largeur", labelVisual: "Visuel", optBlur: "Désactiver flou", optHideIds: "Masquer IDs", optTranslate: "Titres anglais", labelBinary: "Fichiers", footBooth: "🛒 Booth", footFolder: "📂 Dossier", searchPre: "Rechercher ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers" }},
-            es: {{ navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Orden", optId: "ID", optName: "Nombre", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro", optAll: "Todo", optHide: "Ocultar", optOnly: "Adultos", labelWidth: "Ancho", labelVisual: "Visual", optBlur: "Sin desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos inglés", labelBinary: "Archivos", footBooth: "🛒 Booth", footFolder: "📂 Carpeta", searchPre: "Buscar ", searchSuf: " items...", fileSingular: "archivo", filePlural: "archivos" }},
-            pt: {{ navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optName: "Nombre", optRel: "Relevância", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglés", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "archivo", filePlural: "archivos" }}
+            en: {{ navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optName: "Alphabetical", optRel: "Relevance", optSize: "Total Size", labelAdult: "Adult Filter", optAll: "Show All", optHide: "Hide Adult", optOnly: "Only Adult", labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Blur", optHideIds: "Hide Item IDs", optTranslate: "Use Translated Titles", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...", fileSingular: "file", filePlural: "files", moreTags: "+ {{n}} more" }},
+            de: {{ navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "ID", optName: "Name", optRel: "Beliebtheit", optSize: "Größe", labelAdult: "Filter", optAll: "Alles", optHide: "Ausblenden", optOnly: "Nur 18+", labelWidth: "Breite", labelVisual: "Anzeige", optBlur: "Kein Fokus", optHideIds: "IDs weg", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Booth", footFolder: "📂 Ordner", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {{n}} weitere" }},
+            ja: {{ navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "言語", labelSort: "並び替え", optId: "ID", optName: "名前順", optRel: "人気順", optSize: "サイズ", labelAdult: "フィルター", optAll: "すべて表示", optHide: "隠す", optOnly: "成人向けのみ", labelWidth: "幅", labelVisual: "表示", optBlur: "ぼかし解除", optHideIds: "ID非表示", optTranslate: "翻訳後の名前を表示", labelBinary: "ファイル", footBooth: "🛒 Booth", footFolder: "📂 フォルダ", searchPre: "検索：", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル", moreTags: "他 {{n}} 件" }},
+            nl: {{ navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer", optId: "ID", optName: "Alfabet", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verbergen", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visueel", optBlur: "Geen vervaging", optHideIds: "ID's weg", optTranslate: "Vertaalde titels", labelBinary: "Bestanden", footBooth: "🛒 Booth", footFolder: "📂 Map", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {{n}} meer" }}
         }};
         let currentCarouselIndex = 0, currentImages = [];
         const getLS = (k, def) => localStorage.getItem(k) || def;
@@ -241,7 +221,18 @@ HTML_TEMPLATE = """<!doctype html>
         function updateGrid(v) {{ document.documentElement.style.setProperty('--grid-size', v + 'px'); localStorage.setItem('gridSize', v); }}
         function updateBlur(v) {{ document.body.classList.toggle('no-blur', v); localStorage.setItem('disableBlur', v); }}
         function updateIdVisibility(v) {{ document.body.classList.toggle('hide-ids', v); localStorage.setItem('hideIds', v); }}
-        function updateTranslationVisibility(v) {{ state.showTrans = v; localStorage.setItem('showTrans', v); const items = document.getElementsByClassName('asset'); for(let item of items) {{ const primaryName = item.querySelector('.name-primary'); const transText = item.dataset.nameTrans; const origText = item.dataset.nameOrig; primaryName.innerText = (v && transText) ? transText : origText; }} }}
+        
+        function updateTranslationVisibility(v) {{ 
+            state.showTrans = v; 
+            localStorage.setItem('showTrans', v); 
+            document.body.classList.toggle('hide-translations', !v);
+            const items = document.getElementsByClassName('asset'); 
+            for(let item of items) {{ 
+                const primaryName = item.querySelector('.name-primary'); 
+                primaryName.innerText = (v && item.dataset.nameTrans) ? item.dataset.nameTrans : item.dataset.nameOrig; 
+            }} 
+        }}
+
         function handleSearchInput() {{ applyFilters(); }}
         function clearSearch() {{ const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(); i.focus(); }}
         function tagSearch(tag) {{ const s = document.getElementById("searchInput"); s.value = tag; closeModal(); handleSearchInput(); window.scrollTo({{ top: 0, behavior: 'smooth' }}); }}
@@ -281,23 +272,35 @@ HTML_TEMPLATE = """<!doctype html>
             applyFilters();
         }}
         function openDetails(id) {{
-            const el = document.querySelector(`.asset[data-id="${{id}}"]`);
+            const el = document.querySelector(`.asset[data-id="${{id}}"]`), t = translations[state.lang] || translations['en'];
             const displayTitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameTrans : el.dataset.nameOrig;
+            const subtitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameOrig : "";
+            
             document.getElementById("modalName").innerText = displayTitle;
-            document.getElementById("modalTransName").innerText = el.dataset.nameTrans || "";
+            document.getElementById("modalSubtitle").innerText = subtitle;
             document.getElementById("modalIdDisp").innerText = "#" + id;
             document.getElementById("openFolderLink").href = el.dataset.folder;
             document.getElementById("openBoothLink").href = el.dataset.boothUrl;
             currentImages = JSON.parse(el.dataset.allImages);
             currentCarouselIndex = 0; updateCarousel();
-            document.getElementById("modalTags").innerHTML = JSON.parse(el.dataset.tags).map(t => `<span class="tag-pill" onclick="tagSearch('${{t.replace(/'/g, "\\\\'")}}')">${{t}}</span>`).join('');
-            document.getElementById("fileList").innerHTML = JSON.parse(el.dataset.files).map(f => `<li class="file-item"><a class="file-link" href="${{f.path}}" target="_blank">${{f.name}}</a><span style="color:#aaa;font-size:0.75rem;">${{f.size}}</span></li>`).join('');
+            const tags = JSON.parse(el.dataset.tags);
+            const tagContainer = document.getElementById("modalTags");
+            const renderTagsInternal = (list) => list.map(tg => `<span class="tag-pill" onclick="tagSearch('${{tg.replace(/'/g, "\\\\'")}}')">${{tg}}</span>`).join('');
+            if (tags.length > 25) {{
+                tagContainer.innerHTML = renderTagsInternal(tags.slice(0, 20)) + `<span class="tag-pill more-btn" onclick="this.parentElement.innerHTML=window.renderTagsFull(JSON.parse(document.querySelector('.asset[data-id=\\\\\'${{id}}\\\\\\']').dataset.tags))">${{t.moreTags.replace('{{n}}', tags.length - 20)}}</span>`;
+            }} else {{ tagContainer.innerHTML = renderTagsInternal(tags); }}
+            window.renderTagsFull = renderTagsInternal;
+            const fileData = JSON.parse(el.dataset.files);
+            fileData.sort((a, b) => b.name.toLowerCase().localeCompare(a.name.toLowerCase(), undefined, {{ numeric: true, sensitivity: 'base' }}));
+            document.getElementById("fileList").innerHTML = fileData.map(f => `<li class="file-item"><a class="file-link" href="${{f.path}}" target="_blank">${{f.name}}</a><span style="color:#aaa;font-size:0.75rem;">${{f.size}}</span></li>`).join('');
             const m = document.getElementById("detailModal"); m.classList.add('visible'); setTimeout(() => m.classList.add('active'), 10);
         }}
         function carouselNext(dir) {{ if (currentImages.length <= 1) return; currentCarouselIndex = (currentCarouselIndex + dir + currentImages.length) % currentImages.length; updateCarousel(); }}
         function updateCarousel() {{
             const img = currentImages[currentCarouselIndex];
-            document.getElementById("modalImg").src = img; document.getElementById("modalBlurBg").src = img;
+            const modalImg = document.getElementById("modalImg");
+            const modalBlurBg = document.getElementById("modalBlurBg");
+            modalImg.src = img; modalBlurBg.src = img;
             const dots = document.getElementById("carouselDots");
             if (currentImages.length > 1) {{
                 dots.style.display = "flex";
@@ -307,11 +310,7 @@ HTML_TEMPLATE = """<!doctype html>
         }}
         function closeModal() {{ const m = document.getElementById("detailModal"); m.classList.remove('active'); setTimeout(() => {{ if(!m.classList.contains('active')) m.classList.remove('visible'); }}, 300); }}
         window.onclick = e => {{ if(!document.getElementById('flyoutMenu').contains(e.target) && e.target !== document.getElementById('toggleBtn')) toggleMenu(null, true); }};
-        document.addEventListener('keydown', e => {{ 
-            if(e.key === "Escape") {{ closeModal(); toggleMenu(null, true); }} 
-            if(e.key === "ArrowRight") carouselNext(1);
-            if(e.key === "ArrowLeft") carouselNext(-1);
-        }});
+        document.addEventListener('keydown', e => {{ if(e.key === "Escape") {{ closeModal(); toggleMenu(null, true); }} if(e.key === "ArrowRight") carouselNext(1); if(e.key === "ArrowLeft") carouselNext(-1); }});
         init();
     </script>
 </body>
@@ -374,19 +373,16 @@ def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path
     files_data, total_bytes = get_dir_data(binary_folder)
     all_imgs = get_all_local_images(folder_path, web_images)
     primary_img = all_imgs[0] if all_imgs else ""
-    
-    # Translation Lookup with fallback for English strings
     name_trans = translation_cache.get(asset_name.strip(), "")
-    tags_trans = [translation_cache.get(t.strip(), t) for t in tags]
-
+    
     img_class = "image-thumbnail adult-content" if is_adult else "image-thumbnail"
     glow_tag = f'<img class="image-backglow" src="{primary_img}">' if primary_img else ''
     img_tag = f'<img class="{img_class}" src="{primary_img}">' if primary_img else '<div class="image-thumbnail" style="background:#222;display:flex;align-items:center;justify-content:center;color:#444;font-weight:800;">EMPTY</div>'
     
     safe_name = asset_name.replace('"', '&quot;')
     safe_trans = name_trans.replace('"', '&quot;')
-    tag_html = "".join([f'<span class="tag-pill">{t}</span>' for t in tags[:8]])
-    search_str = f"{asset_id} {asset_name} {name_trans} {' '.join(tags)} {' '.join(tags_trans)}".lower().replace("'", "")
+    grid_tags_html = "".join([f'<span class="tag-pill">{t}</span>' for t in tags[:12]])
+    search_str = f"{asset_id} {asset_name} {name_trans} {' '.join(tags)}".lower().replace("'", "")
     rel_folder = quote(os.path.relpath(binary_folder, start=os.getcwd()))
     return f"""
     <li class="asset" onclick="openDetails('{asset_id}')" 
@@ -400,7 +396,7 @@ def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path
         {glow_tag}<div class="content">
             <div class="name"><span class="name-primary">{asset_name}</span></div>
             <div class="stats"><span>{get_readable_size(total_bytes)}</span><span class="file-label-dynamic"></span></div>
-            <div class="tag-row">{tag_html}</div>
+            <div class="tag-row">{grid_tags_html}</div>
         </div>
     </li>
     """
@@ -414,8 +410,7 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
     with open(jsons[0], 'r', encoding='utf-8') as f:
         if jsons[0].endswith('_BoothPage.json'):
             data = json.load(f)
-            name, tags = data.get('name', 'N/A'), [t.get('name', '') for t in data.get('tags', [])]
-            wish = data.get('wish_lists_count', 0)
+            name, tags, wish = data.get('name', 'N/A'), [t.get('name', '') for t in data.get('tags', [])], data.get('wish_lists_count', 0)
             all_strings_to_translate.extend([name] + tags)
             asset_data_list.append(('json', folder, data, path, wish))
         else:
@@ -432,8 +427,7 @@ if not SKIP_TRANSLATION:
     with open(CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(translation_cache, f, ensure_ascii=False, indent=2)
 
 asset_items_final = []
-for entry in asset_data_list:
-    type, folder, data, path, wish = entry
+for type, folder, data, path, wish in asset_data_list:
     if type == 'json':
         web_imgs = [img.get('original', '') for img in data.get('images', [])]
         tags = [t.get('name', '') for t in data.get('tags', [])]
@@ -447,6 +441,5 @@ for entry in asset_data_list:
         asset_items_final.append((folder, generate_asset_html(folder, name, [img], url, path, [], is_adult_content(name), 0)))
 
 asset_items_final.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 0)
-with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-    f.write(HTML_TEMPLATE.format(assets="\\n".join(i[1] for i in asset_items_final)))
+with open(OUTPUT_FILE, 'w', encoding='utf-8') as f: f.write(HTML_TEMPLATE.format(assets="\\n".join(i[1] for i in asset_items_final)))
 print("The library got updated.")
