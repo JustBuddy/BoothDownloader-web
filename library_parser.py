@@ -87,7 +87,6 @@ HTML_TEMPLATE = """<!doctype html>
         .tag-row {{ display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; height: 18px; overflow: hidden; }}
         .tag-pill {{ font-size: 0.65rem; background: rgba(0,0,0,0.4); height: 18px; line-height: 18px; padding: 0 8px; border-radius: 4px; color: #fff; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; }}
 
-        /* Modal Tags & Hover Logic */
         .modal-info .tag-pill {{ cursor: pointer; height: 22px; font-size: 0.75rem; padding: 0 10px; }}
         .modal-info .tag-pill:hover {{ background: var(--primary); color: #000; border-color: var(--primary); }}
 
@@ -117,7 +116,6 @@ HTML_TEMPLATE = """<!doctype html>
         .file-link {{ color: #fff; text-decoration: none; font-size: 0.85rem; word-break: break-all; flex-grow: 1; }}
         .file-link:hover {{ color: var(--primary); }}
         
-        /* Modal Footer Links */
         .modal-footer {{ position: absolute; bottom: 20px; right: 30px; display: flex; gap: 20px; }}
         .discrete-link {{ color: #555; text-decoration: none; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color 0.2s; }}
         .discrete-link:hover {{ color: var(--primary); }}
@@ -126,33 +124,55 @@ HTML_TEMPLATE = """<!doctype html>
 <body>
     <div id="menuPerimeter" onclick="toggleMenu(event, true)"></div>
     <nav class="top-nav">
-        <div class="nav-logo">Booth Asset Library</div>
+        <div class="nav-logo" data-i18n="navTitle">Booth Asset Library</div>
         <div class="search-container">
             <input type="text" id="searchInput" class="search-input" placeholder="Search..." onkeyup="handleSearchInput()">
             <button id="clearSearch" class="clear-search" onclick="clearSearch()">×</button>
         </div>
-        <button id="toggleBtn" class="nav-btn" onclick="toggleMenu(event)">Options ⚙</button>
+        <button id="toggleBtn" class="nav-btn" onclick="toggleMenu(event)" data-i18n="optionsBtn">Options ⚙</button>
     </nav>
 
     <div id="flyoutMenu" class="flyout-menu">
-        <div class="setting-group"><span class="setting-label">Sort Order</span>
+        <div class="setting-group">
+            <span class="setting-label" data-i18n="labelLanguage">Language</span>
+            <select id="langSelect" onchange="updateLanguage(this.value)">
+                <option value="de">Deutsch</option>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="ja">日本語</option>
+                <option value="nl">Nederlands</option>
+                <option value="pt">Português</option>
+            </select>
+        </div>
+        <div class="setting-group">
+            <span class="setting-label" data-i18n="labelSort">Sort Order</span>
             <select id="sortOrder" onchange="sortAssets(true)">
-                <option value="id">Folder ID</option>
-                <option value="name">Alphabetical</option>
-                <option value="size">Total Size</option>
+                <option value="id" data-i18n="optId">Folder ID</option>
+                <option value="name" data-i18n="optName">Alphabetical</option>
+                <option value="size" data-i18n="optSize">Total Size</option>
             </select>
         </div>
-        <div class="setting-group"><span class="setting-label">Adult Filter</span>
+        <div class="setting-group">
+            <span class="setting-label" data-i18n="labelAdult">Adult Filter</span>
             <select id="adultFilter" onchange="applyFilters(true)">
-                <option value="all">Show All Content</option>
-                <option value="hide">Hide Adult Content</option>
-                <option value="only">Only Adult Content</option>
+                <option value="all" data-i18n="optAll">Show All Content</option>
+                <option value="hide" data-i18n="optHide">Hide Adult Content</option>
+                <option value="only" data-i18n="optOnly">Only Adult Content</option>
             </select>
         </div>
-        <div class="setting-group"><span class="setting-label">Card Width</span><input type="range" id="gridRange" min="180" max="500" value="220" oninput="updateGrid(this.value)"></div>
-        <div class="setting-group"><span class="setting-label">Visual Controls</span>
-            <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="blurToggle" onchange="updateBlur(this.checked)"> Disable Adult Blur</label>
-            <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;"><input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> Hide Item IDs</label>
+        <div class="setting-group">
+            <span class="setting-label" data-i18n="labelWidth">Card Width</span>
+            <input type="range" id="gridRange" min="180" max="500" value="220" oninput="updateGrid(this.value)">
+        </div>
+        <div class="setting-group">
+            <span class="setting-label" data-i18n="labelVisual">Visual Controls</span>
+            <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;">
+                <input type="checkbox" id="blurToggle" onchange="updateBlur(this.checked)"> <span data-i18n="optBlur">Disable Adult Blur</span>
+            </label>
+            <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;">
+                <input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> <span data-i18n="optHideIds">Hide Item IDs</span>
+            </label>
         </div>
     </div>
 
@@ -171,66 +191,163 @@ HTML_TEMPLATE = """<!doctype html>
                 <div id="modalName" class="modal-name"></div>
                 <div id="modalIdDisp" style="color:#555; font-size:0.8rem; font-weight:800; margin-bottom:15px;"></div>
                 <div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;"></div>
-                <span class="setting-label">Binary Files</span>
+                <span class="setting-label" data-i18n="labelBinary">Binary Files</span>
                 <ul id="fileList" class="file-list"></ul>
                 
                 <div class="modal-footer">
-                    <a id="openBoothLink" href="" class="discrete-link" target="_blank"><span>🛒 Open on Booth</span></a>
-                    <a id="openFolderLink" href="" class="discrete-link" target="_blank"><span>📂 Open Local Folder</span></a>
+                    <a id="openBoothLink" href="" class="discrete-link" target="_blank"><span data-i18n="footBooth">🛒 Open on Booth</span></a>
+                    <a id="openFolderLink" href="" class="discrete-link" target="_blank"><span data-i18n="footFolder">📂 Open Local Folder</span></a>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let currentCarouselIndex = 0;
-        let currentImages = [];
+        const translations = {{
+            en: {{
+                navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", 
+                optId: "Folder ID", optName: "Alphabetical", optSize: "Total Size", labelAdult: "Adult Filter",
+                optAll: "Show All Content", optHide: "Hide Adult Content", optOnly: "Only Adult Content",
+                labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Adult Blur",
+                optHideIds: "Hide Item IDs", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", 
+                footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...",
+                fileSingular: "file", filePlural: "files"
+            }},
+            de: {{
+                navTitle: "Booth Asset Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", 
+                optId: "Ordner-ID", optName: "Alphabetisch", optSize: "Dateigröße", labelAdult: "Erwachsenenfilter",
+                optAll: "Alle Inhalte anzeigen", optHide: "Inhalte ausblenden", optOnly: "Nur ab 18",
+                labelWidth: "Kartenbreite", labelVisual: "Visualisierung", optBlur: "Unschärfe deaktivieren",
+                optHideIds: "IDs ausblenden", labelBinary: "Dateien", footBooth: "🛒 Auf Booth öffnen", 
+                footFolder: "📂 Lokalen Ordner öffnen", searchPre: "Suche ", searchSuf: " Artikel...",
+                fileSingular: "Datei", filePlural: "Dateien"
+            }},
+            ja: {{
+                navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "言語", labelSort: "並び替え", 
+                optId: "フォルダID", optName: "名前順", optSize: "ファイルサイズ", labelAdult: "成人向けフィルター",
+                optAll: "すべてのコンテンツを表示", optHide: "成人向けを隠す", optOnly: "成人向けのみ",
+                labelWidth: "カードの幅", labelVisual: "表示設定", optBlur: "ぼかしを無効化",
+                optHideIds: "IDを非表示", labelBinary: "バイナリファイル", footBooth: "🛒 Boothで開く", 
+                footFolder: "📂 ローカルフォルダを開く", searchPre: "検索：", searchSuf: " 件のアイテム",
+                fileSingular: "ファイル", filePlural: "ファイル"
+            }},
+            fr: {{
+                navTitle: "Bibliothèque d'actifs Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier par", 
+                optId: "ID du dossier", optName: "Alphabétique", optSize: "Taille totale", labelAdult: "Filtre adulte",
+                optAll: "Tout afficher", optHide: "Masquer le contenu adulte", optOnly: "Seulement adulte",
+                labelWidth: "Largeur des cartes", labelVisual: "Contrôles visuels", optBlur: "Désactiver le flou",
+                optHideIds: "Masquer les IDs", labelBinary: "Fichiers binaires", footBooth: "🛒 Ouvrir sur Booth", 
+                footFolder: "📂 Ouvrir le dossier", searchPre: "Rechercher ", searchSuf: " articles...",
+                fileSingular: "fichier", filePlural: "fichiers"
+            }},
+            es: {{
+                navTitle: "Biblioteca de Activos Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", 
+                optId: "ID de carpeta", optName: "Alfabético", optSize: "Tamaño total", labelAdult: "Filtro de adultos",
+                optAll: "Mostrar todo", optHide: "Ocultar contenido adulto", optOnly: "Solo adultos",
+                labelWidth: "Ancho de tarjeta", labelVisual: "Controles visuales", optBlur: "Desactivar desenfoque",
+                optHideIds: "Ocultar IDs", labelBinary: "Archivos binarios", footBooth: "🛒 Abrir en Booth", 
+                footFolder: "📂 Abrir carpeta local", searchPre: "Buscar ", searchSuf: " artículos...",
+                fileSingular: "archivo", filePlural: "archivos"
+            }},
+            pt: {{
+                navTitle: "Biblioteca de Ativos Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", 
+                optId: "ID da pasta", optName: "Alfabético", optSize: "Tamanho total", labelAdult: "Filtro de adultos",
+                optAll: "Mostrar tudo", optHide: "Ocultar conteúdo adulto", optOnly: "Apenas adultos",
+                labelWidth: "Largura do cartão", labelVisual: "Controles visuais", optBlur: "Desativar desfoque",
+                optHideIds: "Ocultar IDs", labelBinary: "Arquivos binários", footBooth: "🛒 Abrir no Booth", 
+                footFolder: "📂 Abrir pasta local", searchPre: "Pesquisar ", searchSuf: " itens...",
+                fileSingular: "arquivo", filePlural: "arquivos"
+            }},
+            nl: {{
+                navTitle: "Booth Asset Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer op", 
+                optId: "Map ID", optName: "Alfabetisch", optSize: "Bestandsgrootte", labelAdult: "Volwassen filter",
+                optAll: "Alle inhoud tonen", optHide: "Volwassen inhoud verbergen", optOnly: "Alleen volwassen",
+                labelWidth: "Kaartbreedte", labelVisual: "Visuele instellingen", optBlur: "Vervaging uitschakelen",
+                optHideIds: "ID's verbergen", labelBinary: "Binaire bestanden", footBooth: "🛒 Openen op Booth", 
+                footFolder: "📂 Lokale map openen", searchPre: "Zoek in ", searchSuf: " items...",
+                fileSingular: "bestand", filePlural: "bestanden"
+            }}
+        }};
+
+        let currentCarouselIndex = 0, currentImages = [];
         const getLS = (k, def) => localStorage.getItem(k) || def;
+        
         const state = {{
             gridSize: getLS('gridSize', '220'),
             disableBlur: getLS('disableBlur', 'false') === 'true',
             sortOrder: getLS('sortOrder', 'id'),
             adultFilter: getLS('adultFilter', 'all'),
-            hideIds: getLS('hideIds', 'false') === 'true'
+            hideIds: getLS('hideIds', 'false') === 'true',
+            lang: getLS('lang', 'en')
         }};
 
         function init() {{
-            updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds);
+            updateLanguage(state.lang);
+            updateGrid(state.gridSize);
+            updateBlur(state.disableBlur);
+            updateIdVisibility(state.hideIds);
+            
             document.getElementById('gridRange').value = state.gridSize;
             document.getElementById('blurToggle').checked = state.disableBlur;
             document.getElementById('sortOrder').value = state.sortOrder;
             document.getElementById('adultFilter').value = state.adultFilter;
             document.getElementById('hideIdToggle').checked = state.hideIds;
+            
             handleSearchInput();
             sortAssets();
+        }}
+
+        function updateLanguage(lang) {{
+            state.lang = lang; localStorage.setItem('lang', lang);
+            document.getElementById('langSelect').value = lang;
+            const t = translations[lang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {{
+                el.innerText = t[el.dataset.i18n];
+            }});
+            applyFilters();
         }}
 
         function toggleMenu(e, forceClose = false) {{
             if(e) e.stopPropagation();
             const menu = document.getElementById('flyoutMenu'), btn = document.getElementById('toggleBtn'), perim = document.getElementById('menuPerimeter');
             const open = !forceClose && !menu.classList.contains('open');
-            menu.classList.toggle('open', open); btn.classList.toggle('active', open); perim.style.display = open ? 'block' : 'none';
+            menu.classList.toggle('open', open);
+            btn.classList.toggle('active', open);
+            perim.style.display = open ? 'block' : 'none';
         }}
 
         function updateGrid(v) {{ document.documentElement.style.setProperty('--grid-size', v + 'px'); localStorage.setItem('gridSize', v); }}
         function updateBlur(v) {{ document.body.classList.toggle('no-blur', v); localStorage.setItem('disableBlur', v); }}
         function updateIdVisibility(v) {{ document.body.classList.toggle('hide-ids', v); localStorage.setItem('hideIds', v); }}
+
         function handleSearchInput() {{ applyFilters(); }}
         function clearSearch() {{ const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(); i.focus(); }}
-        function tagSearch(tag) {{ const s = document.getElementById("searchInput"); s.value = tag; closeModal(); handleSearchInput(); window.scrollTo({{ top: 0, behavior: 'smooth' }}); }}
+        function tagSearch(tag) {{ const s = document.getElementById("searchInput"); s.value = tag; closeModal(); applyFilters(); window.scrollTo({{ top: 0, behavior: 'smooth' }}); }}
 
         function applyFilters(save = false) {{
             const query = document.getElementById("searchInput").value.toLowerCase();
             const mode = document.getElementById("adultFilter").value;
             const items = document.getElementsByClassName("asset");
-            let count = 0; if(save) localStorage.setItem('adultFilter', mode);
+            const t = translations[state.lang];
+            let count = 0;
+
+            if(save) localStorage.setItem('adultFilter', mode);
+
             for (let item of items) {{
                 const isAdult = item.dataset.adult === 'true';
                 let match = (mode === 'all') || (mode === 'hide' && !isAdult) || (mode === 'only' && isAdult);
-                if (match) count++;
-                item.style.display = (match && item.dataset.search.includes(query)) ? "" : "none";
+                if (match) {{
+                    const visible = item.dataset.search.includes(query);
+                    item.style.display = visible ? "" : "none";
+                    if (visible) count++;
+                }} else {{
+                    item.style.display = "none";
+                }}
+                
+                const fc = parseInt(item.dataset.filecount);
+                item.querySelector('.file-label-dynamic').innerText = fc + " " + (fc === 1 ? t.fileSingular : t.filePlural);
             }}
-            document.getElementById("searchInput").placeholder = `Search ${{count}} items...`;
+            document.getElementById("searchInput").placeholder = t.searchPre + count + t.searchSuf;
         }}
 
         function sortAssets(save = false) {{
@@ -253,8 +370,7 @@ HTML_TEMPLATE = """<!doctype html>
             document.getElementById("openFolderLink").href = el.dataset.folder;
             document.getElementById("openBoothLink").href = el.dataset.boothUrl;
             currentImages = JSON.parse(el.dataset.allImages);
-            currentCarouselIndex = 0;
-            updateCarousel();
+            currentCarouselIndex = 0; updateCarousel();
             document.getElementById("modalTags").innerHTML = JSON.parse(el.dataset.tags).map(t => `<span class="tag-pill" onclick="tagSearch('${{t.replace(/'/g, "\\\\'")}}')">${{t}}</span>`).join('');
             document.getElementById("fileList").innerHTML = JSON.parse(el.dataset.files).map(f => `<li class="file-item"><a class="file-link" href="${{f.path}}" target="_blank">${{f.name}}</a><span style="color:#aaa;font-size:0.75rem;">${{f.size}}</span></li>`).join('');
             const m = document.getElementById("detailModal");
@@ -280,6 +396,7 @@ HTML_TEMPLATE = """<!doctype html>
         }}
 
         function closeModal() {{ const m = document.getElementById("detailModal"); m.classList.remove('active'); setTimeout(() => {{ if(!m.classList.contains('active')) m.classList.remove('visible'); }}, 300); }}
+        window.onclick = e => {{ if(!document.getElementById('flyoutMenu').contains(e.target) && e.target !== document.getElementById('toggleBtn')) toggleMenu(null, true); }};
         document.addEventListener('keydown', e => {{ 
             if(e.key === "Escape") {{ closeModal(); toggleMenu(null, true); }} 
             if(e.key === "ArrowRight") carouselNext(1);
@@ -356,10 +473,12 @@ def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path
     glow_tag = f'<img class="image-backglow" src="{primary_img}">' if primary_img else ''
     img_tag = f'<img class="{img_class}" src="{primary_img}">' if primary_img else '<div class="image-thumbnail" style="background:#222;display:flex;align-items:center;justify-content:center;color:#444;font-weight:800;">EMPTY</div>'
     safe_name = asset_name.replace('"', '&quot;')
+    
+    # Python-side tag rendering
     tag_html = "".join([f'<span class="tag-pill">{t}</span>' for t in tags[:8]])
+    
     search_str = f"{asset_id} {asset_name} {' '.join(tags)}".lower().replace("'", "")
     rel_folder = quote(os.path.relpath(binary_folder, start=os.getcwd()))
-    file_label = "file" if len(files_data) == 1 else "files"
 
     return f"""
     <li class="asset" onclick="openDetails('{asset_id}')" 
@@ -367,10 +486,11 @@ def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path
         data-all-images='{json.dumps(all_imgs).replace("'", "&apos;")}'
         data-bytes="{total_bytes}" data-files='{json.dumps(files_data).replace("'", "&apos;")}'
         data-tags='{json.dumps(tags).replace("'", "&apos;")}' data-adult="{str(is_adult).lower()}" 
-        data-search='{search_str}' data-folder="{rel_folder}" data-booth-url="{booth_url}">
+        data-search='{search_str}' data-folder="{rel_folder}" data-booth-url="{booth_url}"
+        data-filecount="{len(files_data)}">
         <div class="image-container"><div class="asset-id-tag">#{asset_id}</div>{img_tag}</div>
         {glow_tag}<div class="content"><div class="name">{asset_name}</div>
-        <div class="stats"><span>{get_readable_size(total_bytes)}</span><span>{len(files_data)} {file_label}</span></div>
+        <div class="stats"><span>{get_readable_size(total_bytes)}</span><span class="file-label-dynamic"></span></div>
         <div class="tag-row">{tag_html}</div></div>
     </li>
     """
@@ -386,11 +506,10 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
     with open(jsons[0], 'r', encoding='utf-8') as f:
         if jsons[0].endswith('_BoothPage.json'):
             data = json.load(f)
-            web_imgs = [img.get('original', '') for img in data.get('images', [])]
+            w_imgs = [img.get('original', '') for img in data.get('images', [])]
             tags = [t.get('name', '') for t in data.get('tags', [])]
-            booth_url = data.get('url', f"https://booth.pm/items/{{folder}}")
-            is_ad = data.get('is_adult', False) or is_adult_content(data.get('name', ''))
-            asset_items.append((folder, generate_asset_html(folder, data.get('name', 'N/A'), web_imgs, booth_url, path, tags, is_ad)))
+            b_url = data.get('url', f"https://booth.pm/items/{{folder}}")
+            asset_items.append((folder, generate_asset_html(folder, data.get('name', 'N/A'), w_imgs, b_url, path, tags, data.get('is_adult', False) or is_adult_content(data.get('name', '')))))
         else:
             data = json.load(f)
             item = data[0] if data else ""

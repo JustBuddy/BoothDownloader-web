@@ -7,6 +7,7 @@ Pretty much everything is hardcoded so you might want to adjust the script.
 
 Note: Uses data gathered by BoothDownloader.
 Note 2: You must disable AutoZip in the BDConfig.json config.  
+Note 3: Translations are made by pesky robots. If something is too cooked, feel free to PR correction.  
 
 Feel free to submit PR's if you fixed something, just keep the colors.
 
