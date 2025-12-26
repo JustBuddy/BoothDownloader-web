@@ -5,10 +5,12 @@ Generates: asset_library.html
 
 Pretty much everything is hardcoded so you might want to adjust the script.
 
-Note: Uses data gathered by BoothDownloader, can not download anything on it's own.  
+Note: Uses data gathered by BoothDownloader.
 Note 2: You must disable AutoZip in the BDConfig.json config.  
 
 Feel free to submit PR's if you fixed something, just keep the colors.
+
+## This script can NOT download any assets, the referenced tool can only download assets you own!
 
 ![Preview](https://splash.buddyworks.wtf/xChlrrrg.png)  
 ![Preview2](https://splash.buddyworks.wtf/mcoLNyJj.png)
