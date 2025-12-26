@@ -127,14 +127,11 @@ HTML_PART_1 = """<!doctype html>
         body.no-blur .adult-content { filter: blur(0px) !important; }
         .content { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; z-index: 10; position: relative; background: rgba(18, 18, 22, 0.8); backdrop-filter: blur(5px); }
         .name { font-weight: 600; color: #fff; line-height: 1.3; margin-bottom: 8px; font-size: 0.9rem; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-        .name-translated { display: block; font-size: 0.75rem; color: var(--primary); margin-top: 4px; font-weight: 400; opacity: 0.8; transition: opacity 0.3s; }
-        body.hide-translations .name-translated { display: none; }
         .stats { color: #aaa; font-size: 0.75rem; display: flex; gap: 10px; margin-top: auto; font-weight: 600; }
         .tag-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; height: 18px; overflow: hidden; }
         .tag-pill { font-size: 0.65rem; background: rgba(0,0,0,0.4); height: 18px; line-height: 18px; padding: 0 8px; border-radius: 4px; color: #fff; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; cursor: pointer; }
         .tag-pill:hover { background: var(--primary); color: #000; border-color: var(--primary); }
         .modal-info .tag-pill { height: 22px; font-size: 0.75rem; padding: 0 10px; }
-        .tag-pill.more-btn { background: var(--primary); color: #000; font-weight: 800; border: none; }
         .modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; align-items: center; justify-content: center; transition: 0.3s; padding: 20px; box-sizing: border-box; }
         .modal.visible { display: flex; }
         .modal.active { background: rgba(0,0,0,0.95); }
@@ -153,12 +150,10 @@ HTML_PART_1 = """<!doctype html>
         .modal-info { flex: 1; padding: 30px; display: flex; flex-direction: column; min-width: 320px; position: relative; overflow-y: auto; }
         .modal-name { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }
         .modal-subtitle { font-size: 0.9rem; color: #777; margin-bottom: 15px; font-weight: 400; font-style: italic; display: block; }
-        body.hide-translations .modal-subtitle { display: none; }
         .file-list { list-style: none; padding: 0; margin-top: 10px; flex-grow: 1; }
         .file-item { padding: 10px; background: #222; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .file-link { color: #fff; text-decoration: none; font-size: 0.85rem; word-break: break-all; flex-grow: 1; }
         .file-link:hover { color: var(--primary); }
-        
         .modal-footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; padding-bottom: 20px; flex-shrink: 0; }
         .modal-id-display { color: #555; font-size: 0.8rem; font-weight: 800; }
         .modal-actions { display: flex; gap: 20px; }
@@ -203,6 +198,7 @@ HTML_PART_1 = """<!doctype html>
         <div class="stats-footer">
             <span>Items: <b id="statCount">0</b></span>
             <span>Total Size: <b id="statSize">0B</b></span>
+            <span>Estimated Spent: <b id="statSpent">0</b></span>
             <span>Last Updated: <b id="statDate">N/A</b></span>
             <span class="setting-label" style="margin-top:10px;">Top Tags</span>
             <div id="commonTags" class="common-tags-grid"></div>
@@ -217,13 +213,13 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             en: { navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optNew: "Recently Added", optName: "Alphabetical", optRel: "Relevance", optSize: "Total Size", labelAdult: "Adult Filter", optAll: "Show All", optHide: "Hide Adult", optOnly: "Only Adult", labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Blur", optHideIds: "Hide Item IDs", optTranslate: "Use Translated Titles", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...", fileSingular: "file", filePlural: "files", moreTags: "+ {n} more", hiddenResults: " (+{n} hidden by filters)" },
             de: { navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "ID", optNew: "Zuletzt hinzugefügt", optName: "Alphabetisch", optRel: "Beliebtheit", optSize: "Größe", labelAdult: "Filter", optAll: "Alles", optHide: "Ausblenden", optOnly: "Nur 18+", labelWidth: "Breite", labelVisual: "Anzeige", optBlur: "Kein Fokus", optHideIds: "IDs weg", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Booth", footFolder: "📂 Ordner", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {n} weitere", hiddenResults: " (+{n} durch Filter versteckt)" },
             ja: { navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "言語", labelSort: "並び替え", optId: "ID", optNew: "最近追加された", optName: "名前順", optRel: "人気順", optSize: "サイズ", labelAdult: "フィルター", optAll: "すべて表示", optHide: "隠す", optOnly: "成人向けのみ", labelWidth: "幅", labelVisual: "表示", optBlur: "ぼかし解除", optHideIds: "ID非表示", optTranslate: "翻訳後の名前を表示", labelBinary: "ファイル", footBooth: "🛒 Booth", footFolder: "📂 フォルダ", searchPre: "検索：", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル", moreTags: "他 {n} 件", hiddenResults: " (他 {n} 件がフィルター済み)" },
-            ko: { navTitle: "Booth 에셋 라이브러리", optionsBtn: "설정 ⚙", labelLanguage: "언어", labelSort: "정렬", optId: "ID", optNew: "최근 추가됨", optName: "이름순", optRel: "관련성", optSize: "용량", labelAdult: "성인 필터", optAll: "모두 표시", optHide: "성인 숨기기", optOnly: "성인 전용", labelWidth: "너비", labelVisual: "표시", optBlur: "블러 해제", optHideIds: "ID 숨기기", optTranslate: "번역 제목 사용", labelBinary: "파일", footBooth: "🛒 Booth 보기", footFolder: "📂 폴더 열기", searchPre: "검색: ", searchSuf: "개", fileSingular: "파일", filePlural: "파일", moreTags: "+ {n}개 더보기", hiddenResults: " (+{n}개 숨김)" },
+            ko: { navTitle: "Booth 에셋 ライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "言語", labelSort: "並び替え", optId: "ID", optNew: "最近追加された", optName: "名前順", optRel: "関連性", optSize: "容量", labelAdult: "成人フィルター", optAll: "すべて表示", optHide: "成人向けを隠す", optOnly: "成人向けのみ", labelWidth: "幅", labelVisual: "表示", optBlur: "ぼかし解除", optHideIds: "IDを隠す", optTranslate: "翻訳タイトルを表示", labelBinary: "ファイル", footBooth: "🛒 Boothを見る", footFolder: "📂 フォルダを開く", searchPre: "検索：", searchSuf: "件", fileSingular: "ファイル", filePlural: "ファイル", moreTags: "+ 他{n}件", hiddenResults: " (+{n}件が非表示)" },
             'zh-Hans': { navTitle: "Booth 资源库", optionsBtn: "选项 ⚙", labelLanguage: "语言", labelSort: "排序", optId: "ID", optNew: "最近添加", optName: "名称排序", optRel: "相关性", optSize: "大小", labelAdult: "成人过滤", optAll: "显示全部", optHide: "隐藏成人", optOnly: "仅成人", labelWidth: "宽度", labelVisual: "视觉控制", optBlur: "禁用模糊", optHideIds: "隐藏 ID", optTranslate: "显示翻译名称", labelBinary: "二进制文件", footBooth: "🛒 在 Booth 打开", footFolder: "📂 打开文件夹", searchPre: "搜索 ", searchSuf: " 个项目", fileSingular: "文件", filePlural: "文件", moreTags: "+ {n} 更多", hiddenResults: " (+{n} 个被过滤)" },
             'zh-Hant': { navTitle: "Booth 資源庫", optionsBtn: "選項 ⚙", labelLanguage: "語言", labelSort: "排序", optId: "ID", optNew: "最近添加", optName: "名稱排序", optRel: "相關性", optSize: "大小", labelAdult: "成人過濾", optAll: "顯示全部", optHide: "隱藏成人", optOnly: "僅限成人", labelWidth: "寬度", labelVisual: "視覺控制", optBlur: "禁用模糊", optHideIds: "隱藏 ID", optTranslate: "顯示翻譯名稱", labelBinary: "二進制檔案", footBooth: "🛒 在 Booth 打開", footFolder: "📂 打開資料夾", searchPre: "搜尋 ", searchSuf: " 個項目", fileSingular: "檔案", filePlural: "檔案", moreTags: "+ {n} 更多", hiddenResults: " (+{n} 個被過濾)" },
             nl: { navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer", optId: "ID", optNew: "Onlangs toegevoegd", optName: "Alfabet", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verbergen", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visueel", optBlur: "Geen vervaging", optHideIds: "ID's weg", optTranslate: "Engelse titels", labelBinary: "Bestanden", footBooth: "🛒 Booth", footFolder: "📂 Map", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " (+{n} verborgen door filters)" },
             fr: { navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier", optId: "ID", optNew: "Ajouté récemment", optName: "Nom", optRel: "Pertinence", optSize: "Taille", labelAdult: "Filtre", optAll: "Tout", optHide: "Masquer", optOnly: "Adulte", labelWidth: "Largeur", labelVisual: "Visuel", optBlur: "Désactiver flou", optHideIds: "Masquer IDs", optTranslate: "Titres anglais", labelBinary: "Fichiers", footBooth: "🛒 Booth", footFolder: "📂 Dossier", searchPre: "Rechercher ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " (+{n} masqués)" },
             es: { navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Orden", optId: "ID", optNew: "Más reciente", optName: "Nombre", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro", optAll: "Todo", optHide: "Ocultar", optOnly: "Adultos", labelWidth: "Ancho", labelVisual: "Visual", optBlur: "Sin desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos inglés", labelBinary: "Archivos", footBooth: "🛒 Booth", footFolder: "📂 Carpeta", searchPre: "Buscar ", searchSuf: " items...", fileSingular: "archivo", filePlural: "archivos", moreTags: "+ {n} más", hiddenResults: " (+{n} ocultos)" },
-            pt: { navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optNew: "Mais recentes", optName: "Nome", optRel: "Relevância", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglés", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} mais", hiddenResults: " (+{n} ocultos)" }
+            pt: { navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optNew: "Mais recentes", optName: "Nome", optRel: "Relevância", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglês", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} mais", hiddenResults: " (+{n} ocultos)" }
         };
         let currentCarouselIndex = 0, currentImages = [];
         const getLS = (k, def) => localStorage.getItem(k) || def;
@@ -243,10 +239,16 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             const items = document.getElementsByClassName('asset');
             let totalBytes = 0;
             const tagCounts = {};
+            const spent = {};
+
             for(let item of items) { 
                 totalBytes += parseInt(item.dataset.bytes || 0); 
                 const tags = JSON.parse(item.dataset.tags || "[]");
                 tags.forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1);
+                
+                const pVal = parseFloat(item.dataset.priceValue || 0);
+                const pCur = item.dataset.priceCurrency || "";
+                if (pVal > 0 && pCur) spent[pCur] = (spent[pCur] || 0) + pVal;
             }
 
             const topTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
@@ -254,6 +256,7 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
 
             document.getElementById('statCount').innerText = items.length;
             document.getElementById('statSize').innerText = formatBytes(totalBytes);
+            document.getElementById('statSpent').innerText = Object.entries(spent).map(([cur, val]) => val.toLocaleString() + " " + cur).join(" / ") || "0";
             document.getElementById('statDate').innerText = new Date().toLocaleDateString();
 
             handleSearchInput(); sortAssets();
@@ -366,15 +369,6 @@ def is_adult_content(text):
     if re.search("|".join(ADULT_KEYWORDS_EN), text, re.IGNORECASE): return True
     return any(w in text for w in ADULT_KEYWORDS_JP)
 
-def find_specific_local_image(folder_path, web_url):
-    tokens = re.findall(r'([a-fA-Z0-9-]{15,})', web_url)
-    if tokens:
-        local_files = os.listdir(folder_path)
-        for token in tokens:
-            for f in local_files:
-                if token in f: return quote(os.path.join(folder_path, f))
-    return None
-
 def get_all_local_images(folder_path, web_urls):
     local_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))]
     ordered_images = []
@@ -396,12 +390,21 @@ def get_all_local_images(folder_path, web_urls):
         if path not in ordered_images: ordered_images.append(path)
     return ordered_images
 
-def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path, tags, is_adult, wish_count):
+def parse_price(price_str):
+    if not price_str or "free" in price_str.lower(): return 0.0, "FREE"
+    clean = price_str.replace(',', '').replace('¥', '')
+    match = re.search(r'([\d.]+)\s*([A-Z]+)', clean)
+    if match: return float(match.group(1)), match.group(2)
+    return 0.0, ""
+
+def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path, tags, is_adult, wish_count, price_str):
     binary_folder = os.path.join(folder_path, 'Binary')
     files_data, total_bytes = get_dir_data(binary_folder)
     all_imgs = get_all_local_images(folder_path, web_images)
     primary_img = all_imgs[0] if all_imgs else ""
     name_trans = translation_cache.get(asset_name.strip(), "")
+    
+    price_val, price_cur = parse_price(price_str)
     
     grid_tags_html = "".join([f'<span class="tag-pill">{t}</span>' for t in tags[:12]])
     img_class = "image-thumbnail adult-content" if is_adult else "image-thumbnail"
@@ -420,7 +423,8 @@ def generate_asset_html(asset_id, asset_name, web_images, booth_url, folder_path
         data-bytes="{total_bytes}" data-files='{json.dumps(files_data).replace("'", "&apos;")}'
         data-tags='{json.dumps(tags).replace("'", "&apos;")}' data-adult="{str(is_adult).lower()}" 
         data-search='{search_str}' data-folder="{rel_folder}" data-booth-url="{booth_url}"
-        data-filecount="{len(files_data)}" data-wish="{wish_count}" data-time="{folder_time}">
+        data-filecount="{len(files_data)}" data-wish="{wish_count}" data-time="{folder_time}"
+        data-price-value="{price_val}" data-price-currency="{price_cur}">
         <div class="image-container"><div class="asset-id-tag">#{asset_id}</div>{img_tag}</div>
         {glow_tag}<div class="content">
             <div class="name"><span class="name-primary">{asset_name}</span></div>
@@ -460,14 +464,14 @@ for type, folder, data, path, wish in asset_data_list:
     if type == 'json':
         web_imgs = [img.get('original', '') for img in data.get('images', [])]
         tags = [t.get('name', '') for t in data.get('tags', [])]
-        asset_items_final.append(generate_asset_html(folder, data.get('name', 'N/A'), web_imgs, data.get('url', ''), path, tags, data.get('is_adult', False) or is_adult_content(data.get('name', '')), wish))
+        asset_items_final.append(generate_asset_html(folder, data.get('name', 'N/A'), web_imgs, data.get('url', ''), path, tags, data.get('is_adult', False) or is_adult_content(data.get('name', '')), wish, data.get('price', '')))
     else:
         name, item = data
         i_m = re.search(r'src=\"([^\"]+)\"', item)
         img = i_m.group(1) if i_m else ""
         u_m = re.search(r'href=\"([^\"]+)\"', item)
         url = u_m.group(1) if u_m else ""
-        asset_items_final.append(generate_asset_html(folder, name, [img], url, path, [], is_adult_content(name), 0))
+        asset_items_final.append(generate_asset_html(folder, name, [img], url, path, [], is_adult_content(name), 0, ""))
 
 with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
     f.write(HTML_PART_1 + "\n".join(asset_items_final) + HTML_PART_2)
