@@ -4,6 +4,7 @@ import glob
 import re
 import time
 import sys
+from collections import Counter
 from urllib.parse import quote
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from deep_translator import GoogleTranslator
@@ -108,6 +109,9 @@ HTML_PART_1 = """<!doctype html>
         .flyout-menu.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; visibility: visible; }
         .setting-group { margin-bottom: 25px; width: 100%; }
         .setting-label { display: block; margin: 15px 0 8px; font-size: 0.7rem; color: #555; text-transform: uppercase; font-weight: 800; }
+        .stats-footer { margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; font-size: 0.75rem; color: #888; display: flex; flex-direction: column; gap: 4px; }
+        .stats-footer b { color: var(--primary); }
+        .common-tags-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
         select, input[type=range] { width: 100%; background: #0b0b0d; color: white; border: 1px solid #333; padding: 10px; border-radius: 8px; outline: none; }
         .container { max-width: 1600px; margin: 40px auto; padding: 0 30px; }
         #assetList { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--grid-size), 1fr)); gap: 35px; list-style: none; padding: 0; }
@@ -127,9 +131,9 @@ HTML_PART_1 = """<!doctype html>
         body.hide-translations .name-translated { display: none; }
         .stats { color: #aaa; font-size: 0.75rem; display: flex; gap: 10px; margin-top: auto; font-weight: 600; }
         .tag-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; height: 18px; overflow: hidden; }
-        .tag-pill { font-size: 0.65rem; background: rgba(0,0,0,0.4); height: 18px; line-height: 18px; padding: 0 8px; border-radius: 4px; color: #fff; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; }
-        .modal-info .tag-pill { cursor: pointer; height: 22px; font-size: 0.75rem; padding: 0 10px; }
-        .modal-info .tag-pill:hover { background: var(--primary); color: #000; border-color: var(--primary); }
+        .tag-pill { font-size: 0.65rem; background: rgba(0,0,0,0.4); height: 18px; line-height: 18px; padding: 0 8px; border-radius: 4px; color: #fff; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; cursor: pointer; }
+        .tag-pill:hover { background: var(--primary); color: #000; border-color: var(--primary); }
+        .modal-info .tag-pill { height: 22px; font-size: 0.75rem; padding: 0 10px; }
         .tag-pill.more-btn { background: var(--primary); color: #000; font-weight: 800; border: none; }
         .modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; align-items: center; justify-content: center; transition: 0.3s; padding: 20px; box-sizing: border-box; }
         .modal.visible { display: flex; }
@@ -196,6 +200,13 @@ HTML_PART_1 = """<!doctype html>
             <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> <span data-i18n="optHideIds">Hide IDs</span></label>
             <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;"><input type="checkbox" id="translateToggle" onchange="updateTranslationVisibility(this.checked)"> <span data-i18n="optTranslate">English Titles</span></label>
         </div>
+        <div class="stats-footer">
+            <span>Items: <b id="statCount">0</b></span>
+            <span>Total Size: <b id="statSize">0B</b></span>
+            <span>Last Updated: <b id="statDate">N/A</b></span>
+            <span class="setting-label" style="margin-top:10px;">Top Tags</span>
+            <div id="commonTags" class="common-tags-grid"></div>
+        </div>
     </div>
     <div class="container"><ul id="assetList">"""
 
@@ -212,15 +223,39 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             nl: { navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer", optId: "ID", optNew: "Onlangs toegevoegd", optName: "Alfabet", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verbergen", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visueel", optBlur: "Geen vervaging", optHideIds: "ID's weg", optTranslate: "Engelse titels", labelBinary: "Bestanden", footBooth: "🛒 Booth", footFolder: "📂 Map", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " (+{n} verborgen door filters)" },
             fr: { navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier", optId: "ID", optNew: "Ajouté récemment", optName: "Nom", optRel: "Pertinence", optSize: "Taille", labelAdult: "Filtre", optAll: "Tout", optHide: "Masquer", optOnly: "Adulte", labelWidth: "Largeur", labelVisual: "Visuel", optBlur: "Désactiver flou", optHideIds: "Masquer IDs", optTranslate: "Titres anglais", labelBinary: "Fichiers", footBooth: "🛒 Booth", footFolder: "📂 Dossier", searchPre: "Rechercher ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " (+{n} masqués)" },
             es: { navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Orden", optId: "ID", optNew: "Más reciente", optName: "Nombre", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro", optAll: "Todo", optHide: "Ocultar", optOnly: "Adultos", labelWidth: "Ancho", labelVisual: "Visual", optBlur: "Sin desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos inglés", labelBinary: "Archivos", footBooth: "🛒 Booth", footFolder: "📂 Carpeta", searchPre: "Buscar ", searchSuf: " items...", fileSingular: "archivo", filePlural: "archivos", moreTags: "+ {n} más", hiddenResults: " (+{n} ocultos)" },
-            pt: { navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optNew: "Mais recentes", optName: "Nome", optRel: "Relevância", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglês", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} mais", hiddenResults: " (+{n} ocultos)" }
+            pt: { navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optNew: "Mais recentes", optName: "Nome", optRel: "Relevância", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglés", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} mais", hiddenResults: " (+{n} ocultos)" }
         };
         let currentCarouselIndex = 0, currentImages = [];
         const getLS = (k, def) => localStorage.getItem(k) || def;
         const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), adultFilter: getLS('adultFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
+        
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB', 'TB'], i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
         function init() {
             updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
             document.getElementById('gridRange').value = state.gridSize; document.getElementById('blurToggle').checked = state.disableBlur; document.getElementById('sortOrder').value = state.sortOrder;
             document.getElementById('adultFilter').value = state.adultFilter; document.getElementById('hideIdToggle').checked = state.hideIds; document.getElementById('translateToggle').checked = state.showTrans;
+            
+            const items = document.getElementsByClassName('asset');
+            let totalBytes = 0;
+            const tagCounts = {};
+            for(let item of items) { 
+                totalBytes += parseInt(item.dataset.bytes || 0); 
+                const tags = JSON.parse(item.dataset.tags || "[]");
+                tags.forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1);
+            }
+
+            const topTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            document.getElementById('commonTags').innerHTML = topTags.map(([tag]) => `<span class="tag-pill" onclick="tagSearch('${tag.replace(/'/g, "\\\\'")}')">${tag}</span>`).join('');
+
+            document.getElementById('statCount').innerText = items.length;
+            document.getElementById('statSize').innerText = formatBytes(totalBytes);
+            document.getElementById('statDate').innerText = new Date().toLocaleDateString();
+
             handleSearchInput(); sortAssets();
         }
         function updateLanguage(lang) { state.lang = lang; localStorage.setItem('lang', lang); document.getElementById('langSelect').value = lang; const t = translations[lang] || translations['en']; document.querySelectorAll('[data-i18n]').forEach(el => { el.innerText = t[el.dataset.i18n]; }); applyFilters(); }
@@ -435,6 +470,6 @@ for type, folder, data, path, wish in asset_data_list:
         asset_items_final.append(generate_asset_html(folder, name, [img], url, path, [], is_adult_content(name), 0))
 
 with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-    f.write(HTML_PART_1 + "\\n".join(asset_items_final) + HTML_PART_2)
+    f.write(HTML_PART_1 + "\n".join(asset_items_final) + HTML_PART_2)
 
 print("The library got updated.")
