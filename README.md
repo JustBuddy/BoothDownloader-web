@@ -18,7 +18,7 @@ Requires: pip install deep-translator
 
 Feel free to submit PR's if you fixed something, just keep the colors.
 
-## This script can NOT download any assets, the referenced tool can only download assets you own!
+## This script can NOT download any assets, the referenced tool can only download assets you legally own!
 
 [**Demo**](https://justbuddy.github.io/BoothDownloader-web/demo/asset_library.html)
 
