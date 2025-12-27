@@ -5,9 +5,10 @@ import re
 import time
 import sys
 from collections import Counter
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from deep_translator import GoogleTranslator
+from PIL import Image  # Requires: pip install Pillow
 
 # Configuration
 ROOT_FOLDER = "BoothDownloaderOut"
@@ -18,7 +19,15 @@ SKIP_TRANSLATION = False
 DEBUG_TRANSLATION = False 
 MAX_WORKERS = 5 
 
+# Thumbnail Optimization
+OPTIMIZE_THUMBNAILS = True
+THUMBNAIL_SIZE = (256, 256)
+IMG_OUT_DIR = "img"
+
 print(f"--- Starting Library Generation ---")
+
+if OPTIMIZE_THUMBNAILS and not os.path.exists(IMG_OUT_DIR):
+    os.makedirs(IMG_OUT_DIR)
 
 # Merged keyword list
 ADULT_KEYWORDS = [
@@ -95,13 +104,35 @@ def bulk_translate(text_list):
     for t in new_strings:
         if is_noise(t): translation_cache[t] = t
     if not real_queue: return
-    print(f"[Translate] Queuing {len(real_queue)} new terms...")
+    print(f"[Translate] Queuing {len(real_queue)} new terms for translation...")
     batch_size = 15
     chunks = [(i//batch_size + 1, real_queue[i:i+batch_size]) for i in range(0, len(real_queue), batch_size)]
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         list(executor.map(translate_chunk_task, chunks))
     with open(CACHE_FILE, 'w', encoding='utf-8') as f:
         json.dump(translation_cache, f, ensure_ascii=False, indent=2)
+
+def get_optimized_thumb(asset_id, original_path):
+    if not original_path or not os.path.exists(original_path):
+        return ""
+    
+    if not original_path.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+        return quote(original_path.replace('\\', '/'))
+
+    thumb_name = f"{asset_id}_thumb.webp"
+    thumb_path = os.path.join(IMG_OUT_DIR, thumb_name)
+
+    if not os.path.exists(thumb_path):
+        try:
+            with Image.open(original_path) as img:
+                if img.width > THUMBNAIL_SIZE[0] or img.height > THUMBNAIL_SIZE[1]:
+                    img.thumbnail(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
+                img.save(thumb_path, "WEBP", optimize=True, quality=80)
+        except Exception as e:
+            print(f"[Error] WebP conversion failed for {asset_id}: {e}")
+            return quote(original_path.replace('\\', '/'))
+
+    return quote(thumb_path.replace('\\', '/'))
 
 HTML_PART_1 = """<!doctype html>
 <html lang="en">
@@ -148,7 +179,7 @@ HTML_PART_1 = """<!doctype html>
                     <option value="all" data-i18n="optAll">Show All</option><option value="hide" data-i18n="optHide">Hide Adult</option><option value="only" data-i18n="optOnly">Only Adult</option>
                 </select>
             </div>
-            <div class="setting-group"><span class="setting-label" data-i18n="labelWidth">Card Width</span><input type="range" id="gridRange" min="180" max="500" value="220" oninput="updateGrid(this.value)"></div>
+            <div class="setting-group"><span class="setting-label" data-i18n="labelWidth">Card Width</span><input type="range" id="gridRange" min="180" max="320" value="220" oninput="updateGrid(this.value)"></div>
             <div class="setting-group"><span class="setting-label" data-i18n="labelVisual">Visual Controls</span>
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="blurToggle" onchange="updateBlur(this.checked)"> <span data-i18n="optBlur">Disable Blur</span></label>
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> <span data-i18n="optHideIds">Hide IDs</span></label>
@@ -175,10 +206,10 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             ko: { warnDelisted: "<b>⚠️ 판매 중지됨</b> 이 에셋은 현재 Booth에서 제공되지 않을 수 있습니다. 정보가 제한적입니다.", navTitle: "Booth 에셋 라이브러리", optionsBtn: "설정 ⚙", labelLanguage: "언어 선택", labelSort: "정렬 기준", optId: "폴더 ID", optNew: "최근 추가됨", optName: "이름순", optRel: "인기순", optSize: "용량순", labelAdult: "성인 콘텐츠 필터", optAll: "모두 보기", optHide: "성인 콘텐츠 숨기기", optOnly: "성인 콘텐츠만", labelWidth: "카드 너비", labelVisual: "인터페이스 설정", optBlur: "블러 효과 끄기", optHideIds: "항목 ID 숨기기", optTranslate: "번역된 제목 사용", labelBinary: "로컬 파일", footBooth: "🛒 Booth에서 보기", footFolder: "📂 폴더 열기", searchPre: "검색 결과: ", searchSuf: "개", fileSingular: "파일", filePlural: "파일", moreTags: "+ {n}개 더보기", hiddenResults: " ({n}개 필터링됨)", statItems: "총 에셋 수", statSize: "전체 용량", statSpent: "예상 총 지출", statUpdated: "마지막 업데이트", labelTopTags: "가장 많이 쓰인 태그" },
             'zh-Hans': { warnDelisted: "<b>⚠️ 已下架内容</b> 此资源可能已在 Booth 停止售卖，详细元数据受限。", navTitle: "Booth 资源库", optionsBtn: "选项 ⚙", labelLanguage: "语言设置", labelSort: "排序方式", optId: "文件夹 ID", optNew: "最近添加", optName: "名称排序", optRel: "人气相关", optSize: "占用空间", labelAdult: "成人内容过滤", optAll: "显示全部内容", optHide: "隐藏成人内容", optOnly: "仅成人内容", labelWidth: "卡片显示宽度", labelVisual: "视觉选项", optBlur: "禁用模糊效果", optHideIds: "隐藏资源 ID", optTranslate: "显示翻译名称", labelBinary: "本地文件", footBooth: "🛒 在 Booth 打开", footFolder: "📂 打开本地目录", searchPre: "正在搜索 ", searchSuf: " 个资源...", fileSingular: "文件", filePlural: "文件", moreTags: "+ {n} 个其他", hiddenResults: " ({n} 个已被过滤)", statItems: "资源总数", statSize: "库总大小", statSpent: "预计总支出", statUpdated: "最后更新时间", labelTopTags: "高频标签" },
             'zh-Hant': { warnDelisted: "<b>⚠️ 已下架內容</b> 此資源可能已在 Booth 停止販售，詳細資訊受限。", navTitle: "Booth 資源庫", optionsBtn: "選項 ⚙", labelLanguage: "語言設置", labelSort: "排序方式", optId: "資料夾 ID", optNew: "最近添加", optName: "名稱排序", optRel: "人氣相關", optSize: "占用空間", labelAdult: "成人內容過濾", optAll: "顯示全部內容", optHide: "隱藏成人內容", optOnly: "僅限成人內容", labelWidth: "卡片顯示寬度", labelVisual: "視覺選項", optBlur: "禁用模糊效果", optHideIds: "隱藏資源 ID", optTranslate: "顯示翻譯名稱", labelBinary: "本地檔案", footBooth: "🛒 在 Booth 打開", footFolder: "📂 打開資料夾", searchPre: "正在搜尋 ", searchSuf: " 個資源...", fileSingular: "檔案", filePlural: "檔案", moreTags: "+ {n} 個其他", hiddenResults: " ({n} 個已被過濾)", statItems: "資源總數", statSize: "庫總大小", statSpent: "預計總支出", statUpdated: "最後更新時間", labelTopTags: "高頻標籤" },
-            de: { warnDelisted: "<b>⚠️ Nicht mehr gelistet</b> Dieses Asset ist möglicherweise nicht mehr verfügbar. Metadaten sind eingeschränkt.", navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "Ordner ID", optNew: "Zuletzt hinzugefügt", optName: "Name (A-Z)", optRel: "Beliebtheit", optSize: "Dateigröße", labelAdult: "Filter", optAll: "Alles zeigen", optHide: "Nicht jugendfrei ausblenden", optOnly: "Nur 18+", labelWidth: "Kartenbreite", labelVisual: "Anzeige", optBlur: "Kein Fokus", optHideIds: "IDs verbergen", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Auf Booth ansehen", footFolder: "📂 Ordner öffnen", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {n} weitere", hiddenResults: " ({n} durch Filter versteckt)", statItems: "Gesamtanzahl", statSize: "Gesamtgröße", statSpent: "Voraussichtliche Kosten", statUpdated: "Aktualisiert", labelTopTags: "Häufige Tags" },
-            nl: { warnDelisted: "<b>⚠️ Verwijderd Item</b> Dit item is mogelijk niet langer beschikbaar op Booth.", navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteren", optId: "ID", optNew: "Nieuwste eerst", optName: "Naam", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verberg 18+", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visuele opties", optBlur: "Geen vervaging", optHideIds: "ID's verbergen", optTranslate: "Vertaalde titels", labelBinary: "Bestanden", footBooth: "🛒 Bekijk op Booth", footFolder: "📂 Map openen", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " ({n} items verborgen)", statItems: "Totaal aantal", statSize: "Totale grootte", statSpent: "Geschatte totale kosten", statUpdated: "Laatste update", labelTopTags: "Populaire tags" },
-            fr: { warnDelisted: "<b>⚠️ Contenu non listé</b> Cet asset n'est probablement plus disponible sur Booth.", navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier par", optId: "ID du dossier", optNew: "Ajoutés récemment", optName: "Nom (A-Z)", optRel: "Popularité", optSize: "Taille totale", labelAdult: "Filtre de contenu", optAll: "Tout afficher", optHide: "Masquer Adulte", optOnly: "Adulte uniquement", labelWidth: "Largeur des cartes", labelVisual: "Paramètres visuels", optBlur: "Désactiver le flou", optHideIds: "Masquer les IDs", optTranslate: "Titres traduits", labelBinary: "Fichiers locaux", footBooth: "🛒 Voir sur Booth", footFolder: "📂 Ouvrir le dossier", searchPre: "Recherche de ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} autres", hiddenResults: " ({n} masqués par filtre)", statItems: "Total des assets", statSize: "Espace occupé", statSpent: "Investissement estimé", statUpdated: "Mis à jour le", labelTopTags: "Tags fréquents" },
-            es: { warnDelisted: "<b>⚠️ Item no disponible</b> Es probable que este conteúdo ya no esteja en Booth.", navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID de carpeta", optNew: "Añadidos recentemente", optName: "Nombre (A-Z)", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro de contenido", optAll: "Mostrar todo", optHide: "Ocultar adultos", optOnly: "Solo adultos", labelWidth: "Ancho de tarjeta", labelVisual: "Ajustes visuales", optBlur: "Quitar desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Archivos locales", footBooth: "🛒 Ver en Booth", footFolder: "📂 Abrir carpeta", searchPre: "Buscando ", searchSuf: " activos...", fileSingular: "archivo", filePlural: "archivos", moreTags: "+ {n} outros", hiddenResults: " ({n} ocultos)", statItems: "Activos totales", statSize: "Tamaño de librería", statSpent: "Inversión estimada", statUpdated: "Última actualización", labelTopTags: "Etiquetas comunes" },
+            de: { warnDelisted: "<b>⚠️ Nicht mehr gelistet</b> Dieses Asset ist möglicherweise nicht mehr verfügbar. Metadaten sind eingeschränkt.", navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "Ordner ID", optNew: "Zuletzt hinzugefügt", optName: "Name (A-Z)", optRel: "Beliebtheit", optSize: "Dateigröße", labelAdult: "Filter", optAll: "Alles zeigen", optHide: "Nicht jugendfrei ausblenden", optOnly: "Nur 18+", labelWidth: "Kartenbreite", labelVisual: "Anzeige", optBlur: "Kein Fokus", optHideIds: "IDs verbergen", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Auf Booth ansehen", footFolder: "📂 Ordner öffnen", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {n} weitere", hiddenResults: " ({n} durch Filter versteckt)", statItems: "Gesamtanzahl", statSize: "Dateigröße", statSpent: "Voraussichtliche Kosten", statUpdated: "Aktualisiert", labelTopTags: "Häufige Tags" },
+            nl: { warnDelisted: "<b>⚠️ Verwijderde Inhoud</b> Dit item is mogelijk niet langer beschikbaar op Booth.", navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteren", optId: "ID", optNew: "Nieuwste eerst", optName: "Naam", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verberg 18+", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visuele opties", optBlur: "Geen vervaging", optHideIds: "ID's verbergen", optTranslate: "Vertaalde titels", labelBinary: "Bestanden", footBooth: "🛒 Bekijk op Booth", footFolder: "📂 Map openen", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " ({n} items verborgen)", statItems: "Totaal aantal", statSize: "Totale grootte", statSpent: "Geschatte totale kosten", statUpdated: "Laatste update", labelTopTags: "Populaire tags" },
+            fr: { warnDelisted: "<b>⚠️ Contenu non listé</b> Cet asset n'est probablement plus disponible sur Booth.", navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier par", optId: "ID du dossier", optNew: "Ajoutés récemment", optName: "Nom (A-Z)", optRel: "Popularité", optSize: "Taille totale", labelAdult: "Filtre de contenu", optAll: "Tout afficher", optHide: "Masquer Adulte", optOnly: "Adulte uniquement", labelWidth: "Largeur des cartes", labelVisual: "Paramètres visuels", optBlur: "Désactiver le flou", optHideIds: "Masquer les IDs", optTranslate: "Titres traduits", labelBinary: "Fichiers locaux", footBooth: "🛒 Voir sur Booth", footFolder: "📂 Ouvrir le dossier", searchPre: "Recherche de ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " ({n} masqués par filtre)", statItems: "Total des assets", statSize: "Espace occupé", statSpent: "Investissement estimé", statUpdated: "Mis à jour le", labelTopTags: "Tags fréquents" },
+            es: { warnDelisted: "<b>⚠️ Item no disponible</b> Es probable que este conteúdo ya no esteja en Booth.", navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID de carpeta", optNew: "Añadidos recentemente", optName: "Nombre (A-Z)", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro de conteúdo", optAll: "Mostrar todo", optHide: "Ocultar adultos", optOnly: "Solo adultos", labelWidth: "Ancho de tarjeta", labelVisual: "Ajustes visuales", optBlur: "Quitar desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Archivos locales", footBooth: "🛒 Ver en Booth", footFolder: "📂 Abrir carpeta", searchPre: "Buscando ", searchSuf: " activos...", fileSingular: "archivo", filePlural: "archivos", moreTags: "+ {n} outros", hiddenResults: " ({n} ocultos)", statItems: "Activos totales", statSize: "Tamaño de librería", statSpent: "Inversión estimada", statUpdated: "Última actualización", labelTopTags: "Etiquetas comunes" },
             pt: { warnDelisted: "<b>⚠️ Conteúdo removido</b> Este asset pode não estar mais disponível no Booth.", navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID da pasta", optNew: "Adicionados recentemente", optName: "Nome (A-Z)", optRel: "Popularidade", optSize: "Tamanho total", labelAdult: "Filtro de conteúdo", optAll: "Mostrar tudo", optHide: "Ocultar 18+", optOnly: "Apenas 18+", labelWidth: "Largura dos cards", labelVisual: "Controles visuais", optBlur: "Sem desfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traduzidos", labelBinary: "Arquivos locais", footBooth: "🛒 Ver no Booth", footFolder: "📂 Abrir pasta", searchPre: "Pesquisando ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} outros", hiddenResults: " ({n} itens ocultos)", statItems: "Total de itens", statSize: "Tamanho da biblioteca", statSpent: "Investimento estimado", statUpdated: "Última atualização", labelTopTags: "Tags frequentes" }
         };
         let currentCarouselIndex = 0, currentImages = [];
@@ -415,6 +446,10 @@ def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url
     files_data, total_bytes = get_dir_data(binary_folder)
     all_imgs = get_all_local_images(folder_path, web_images)
     primary_img = all_imgs[0] if all_imgs else ""
+    
+    raw_img_path = unquote(primary_img).replace('/', os.sep)
+    grid_thumb = get_optimized_thumb(asset_id, raw_img_path) if (OPTIMIZE_THUMBNAILS and primary_img) else primary_img
+
     name_trans = translation_cache.get(asset_name.strip(), "")
     author_trans = translation_cache.get(author_name.strip(), "")
     price_val, price_cur = parse_price(price_str)
@@ -429,7 +464,7 @@ def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url
     return f"""
     <li class="asset" onclick="openDetails('{asset_id}')" 
         data-id="{asset_id}" data-name-orig="{safe_name}" data-name-trans="{safe_trans}" 
-        data-author-orig="{safe_author}" data-author-trans="{safe_author_trans}" data-img="{primary_img}" 
+        data-author-orig="{safe_author}" data-author-trans="{safe_author_trans}" data-img="{grid_thumb}" 
         data-all-images='{json.dumps(all_imgs).replace("'", "&apos;")}'
         data-bytes="{total_bytes}" data-files='{json.dumps(files_data).replace("'", "&apos;")}'
         data-tags='{json.dumps(tags).replace("'", "&apos;")}' data-adult="{str(is_adult).lower()}" 

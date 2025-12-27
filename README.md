@@ -14,7 +14,7 @@ Note 2: You must disable AutoZip in the BDConfig.json config.
 Note 3: Translations are made by pesky robots. If something is too cooked, feel free to PR correction.  
 Note 4: Item translations are done on build and cached. Can be disabled with a flag inside the script.  
   
-Requires: pip install deep-translator  
+Requires: pip install deep-translator Pillow  
 
 Feel free to submit PR's if you fixed something, just keep the colors.
 
