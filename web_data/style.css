@@ -217,18 +217,14 @@ input[type="range"]#gridRange {
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  /* Quicker duration and ease-out for snappiness */
-  transition: width 0.2s ease-out, 
-              transform 0.2s ease-out, 
-              border-color 0.2s ease-out;
+  transition: width 0.2s ease-out, transform 0.2s ease-out, border-color 0.2s
+    ease-out;
   position: relative;
   contain: content;
   transform: translateZ(0);
-  
   width: var(--grid-size);
   flex-shrink: 0;
   flex-grow: 0;
-  /* Hint to browser for faster rendering in Firefox */
   will-change: width;
 }
 
@@ -270,11 +266,17 @@ body.hide-ids .asset-id-tag {
 }
 
 @keyframes shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
 }
 
-.image-thumbnail, .image-backglow, .content {
+.image-thumbnail,
+.image-backglow,
+.content {
   opacity: 0;
 }
 
@@ -598,14 +600,28 @@ body.no-blur .adult-content {
 
 .delisted-warning b {
   color: #fff;
-  display: block; margin-bottom: 4px;
+  display: block;
+  margin-bottom: 4px;
 }
 
+/* Binary File List Updates */
 .file-list {
   list-style: none;
   padding: 0;
   margin-top: 10px;
   flex-grow: 1;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 5px;
+  margin-bottom: 20px;
+}
+
+.file-list::-webkit-scrollbar {
+  width: 4px;
+}
+.file-list::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
 }
 
 .file-item {
@@ -629,6 +645,67 @@ body.no-blur .adult-content {
 
 .file-link:hover {
   color: var(--primary);
+}
+
+/* Description Section Updates */
+.desc-container {
+  margin-top: auto;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #111;
+  overflow: hidden;
+}
+
+.desc-content {
+  max-height: 0;
+  transition: max-height 0.4s ease, padding 0.4s ease;
+  overflow-y: auto;
+  font-size: 0.8rem;
+  color: #aaa;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  padding: 0 15px;
+}
+
+.desc-content.open {
+  max-height: 350px;
+  padding: 15px;
+  border-top: 1px solid #333;
+}
+
+.desc-toggle-btn {
+  width: 100%;
+  background: #1a1a1f;
+  border: none;
+  color: var(--primary);
+  padding: 12px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.desc-toggle-btn:hover {
+  background: #222;
+}
+
+.desc-toggle-btn::after {
+  content: "▼";
+  font-size: 0.6rem;
+  transition: transform 0.3s;
+}
+
+.desc-toggle-btn.open::after {
+  transform: rotate(180deg);
+}
+
+.desc-content a {
+  color: var(--primary);
+  text-decoration: underline;
 }
 
 .modal-footer {
