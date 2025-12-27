@@ -125,8 +125,21 @@ def get_optimized_thumb(asset_id, original_path):
     if not os.path.exists(thumb_path):
         try:
             with Image.open(original_path) as img:
+                width, height = img.size
+                
+                # Center Crop Logic for 1:1 Aspect Ratio
+                if width != height:
+                    min_dim = min(width, height)
+                    left = (width - min_dim) / 2
+                    top = (height - min_dim) / 2
+                    right = (width + min_dim) / 2
+                    bottom = (height + min_dim) / 2
+                    img = img.crop((left, top, right, bottom))
+                
+                # Resize to target thumbnail size
                 if img.width > THUMBNAIL_SIZE[0] or img.height > THUMBNAIL_SIZE[1]:
                     img.thumbnail(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
+                
                 img.save(thumb_path, "WEBP", optimize=True, quality=80)
         except Exception as e:
             print(f"[Error] WebP conversion failed for {asset_id}: {e}")
