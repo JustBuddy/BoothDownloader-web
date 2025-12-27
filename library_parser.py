@@ -475,14 +475,19 @@ def parse_price(price_str):
     return (float(match.group(1)), match.group(2)) if match else (0.0, "")
 
 def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url, folder_path, tags, is_adult, wish_count, price_str, limited=False, description=""):
-    if limited and "Unlisted" not in tags:
-        tags.append("Unlisted")
+    # Add Gear-prefixed Unlisted tag
+    if limited and "⚙Unlisted" not in tags:
+        tags.append("⚙Unlisted")
 
     vrc_av_match = re.search(r'(https://vrchat\.com/home/avatar/avtr_[a-f0-9-]+)', description)
     vrc_av_link = vrc_av_match.group(1) if vrc_av_match else ""
     
     vrc_wr_match = re.search(r'(https://vrchat\.com/home/world/wrld_[a-f0-9-]+)', description)
     vrc_wr_link = vrc_wr_match.group(1) if vrc_wr_match else ""
+
+    # Add Gear-prefixed Preview tag
+    if (vrc_av_link or vrc_wr_link) and "⚙Preview" not in tags:
+        tags.append("⚙Preview")
 
     binary_folder = os.path.join(folder_path, 'Binary')
     files_data, total_bytes = get_dir_data(binary_folder)
