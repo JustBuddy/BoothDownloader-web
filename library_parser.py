@@ -131,8 +131,9 @@ HTML_PART_1 = """<!doctype html>
         .author-label b { color: var(--primary); font-weight: 600; }
         .stats { color: #aaa; font-size: 0.75rem; display: flex; gap: 10px; margin-top: auto; font-weight: 600; }
         .tag-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; height: 18px; overflow: hidden; }
-        .tag-pill { font-size: 0.65rem; background: rgba(0,0,0,0.4); height: 18px; line-height: 18px; padding: 0 8px; border-radius: 4px; color: #fff; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; cursor: pointer; }
-        .tag-pill:hover { background: var(--primary); color: #000; border-color: var(--primary); }
+        .tag-pill { font-size: 0.65rem; background: rgba(0,0,0,0.4); height: 18px; line-height: 18px; padding: 0 8px; border-radius: 4px; color: #fff; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; }
+        .tag-pill.clickable { cursor: pointer; }
+        .tag-pill.clickable:hover { background: var(--primary); color: #000; border-color: var(--primary); }
         .modal-info .tag-pill { height: 22px; font-size: 0.75rem; padding: 0 10px; }
         .tag-pill.more-btn { background: var(--primary); color: #000; font-weight: 800; border: none; }
         .modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; align-items: center; justify-content: center; transition: 0.3s; padding: 20px; box-sizing: border-box; }
@@ -219,7 +220,7 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             en: { warnDelisted: "<b>⚠️ Delisted Content</b>This asset was identified as potentially unavailable on Booth. Metadata support and detailed information are limited.", navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optNew: "Recently Added", optName: "Alphabetical", optRel: "Relevance", optSize: "Total Size", labelAdult: "Adult Filter", optAll: "Show All", optHide: "Hide Adult", optOnly: "Only Adult", labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Blur", optHideIds: "Hide Item IDs", optTranslate: "Use Translated Titles", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...", fileSingular: "file", filePlural: "files", moreTags: "+ {n} more", hiddenResults: " (+{n} hidden by filters)" },
             de: { warnDelisted: "<b>⚠️ Nicht mehr gelistet</b>Dieses Asset ist wahrscheinlich nicht mehr auf Booth verfügbar. Die Metadaten-Unterstützung ist eingeschränkt.", navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "ID", optNew: "Zuletzt hinzugefügt", optName: "Alphabetisch", optRel: "Beliebtheit", optSize: "Größe", labelAdult: "Filter", optAll: "Alles", optHide: "Ausblenden", optOnly: "Nur 18+", labelWidth: "Breite", labelVisual: "Anzeige", optBlur: "Kein Fokus", optHideIds: "IDs weg", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Booth", footFolder: "📂 Ordner", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {n} weitere", hiddenResults: " (+{n} durch Filter versteckt)" },
             ja: { warnDelisted: "<b>⚠️ 公開停止アイテム</b>このアセットは現在Boothで公開されていない可能性があります。メタデータのサポートが制限されています。", navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "言語", labelSort: "並び替え", optId: "ID", optNew: "最近追加された", optName: "名前順", optRel: "人気順", optSize: "サイズ", labelAdult: "フィルター", optAll: "すべて表示", optHide: "隠す", optOnly: "成人向けのみ", labelWidth: "幅", labelVisual: "表示", optBlur: "ぼかし解除", optHideIds: "ID非表示", optTranslate: "翻訳後の名前を表示", labelBinary: "ファイル", footBooth: "🛒 Booth", footFolder: "📂 フォルダ", searchPre: "検索：", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル", moreTags: "他 {n} 件", hiddenResults: " (他 {n} 件がフィルター済み)" },
-            ko: { warnDelisted: "<b>⚠️ 판매 중지된 콘텐츠</b>이 에셋은 Booth에서 더 이상 제공되지 않을 가능성이 높습니다. 메타데이터 지원이 제한적입니다.", navTitle: "Booth 에셋 라이브러리", optionsBtn: "설정 ⚙", labelLanguage: "언어", labelSort: "정렬", optId: "ID", optNew: "최근 추가됨", optName: "이름순", optRel: "관련성", optSize: "용량", labelAdult: "성인 필터", optAll: "모두 표시", optHide: "성인 숨기기", optOnly: "성인 전용", labelWidth: "너비", labelVisual: "表示", optBlur: "블러 해제", optHideIds: "ID 숨기기", optTranslate: "번역 제목 사용", labelBinary: "파일", footBooth: "🛒 Booth 보기", footFolder: "📂 폴더 열기", searchPre: "검색: ", searchSuf: "개", fileSingular: "파일", filePlural: "파일", moreTags: "+ {n}개 더보기", hiddenResults: " (+{n}개 숨김)" },
+            ko: { warnDelisted: "<b>⚠️ 판매 중지된 콘텐츠</b>이 에셋은 Booth에서 더 이상 제공되지 않을 가능성이 높습니다. 메타데이터 지원이 제한적입니다.", navTitle: "Booth 에셋 라이브러리", optionsBtn: "설정 ⚙", labelLanguage: "언어", labelSort: "정렬", optId: "ID", optNew: "최근 추가됨", optName: "이름순", optRel: "관련성", optSize: "용량", labelAdult: "성인 필터", optAll: "모두 표시", optHide: "성인 숨기기", optOnly: "성인 전용", labelWidth: "너비", labelVisual: "表示", optBlur: "블러 해제", optHideIds: "ID 숨기기", optTranslate: "번역 제목 사용", labelBinary: "ファイル", footBooth: "🛒 Booth 보기", footFolder: "📂 폴더 열기", searchPre: "검색: ", searchSuf: "개", fileSingular: "파일", filePlural: "파일", moreTags: "+ {n}개 더보기", hiddenResults: " (+{n}개 숨김)" },
             'zh-Hans': { warnDelisted: "<b>⚠️ 已下架内容</b>此资源可能已无法在 Booth 上访问。元数据支持和详细信息有限。", navTitle: "Booth 资源库", optionsBtn: "选项 ⚙", labelLanguage: "语言", labelSort: "排序", optId: "ID", optNew: "最近添加", optName: "名称排序", optRel: "相关性", optSize: "大小", labelAdult: "成人过滤", optAll: "显示全部", optHide: "隐藏成人", optOnly: "仅成人", labelWidth: "宽度", labelVisual: "视觉控制", optBlur: "禁用模糊", optHideIds: "隐藏 ID", optTranslate: "显示翻译名称", labelBinary: "二进制文件", footBooth: "🛒 在 Booth 打开", footFolder: "📂 打开文件夹", searchPre: "搜索 ", searchSuf: " 个项目", fileSingular: "文件", filePlural: "文件", moreTags: "+ {n} 更多", hiddenResults: " (+{n} 个被过滤)" },
             'zh-Hant': { warnDelisted: "<b>⚠️ 已下架內容</b>此資源可能已無法在 Booth 上訪問。元數據支持和詳細信息有限。", navTitle: "Booth 資源庫", optionsBtn: "選項 ⚙", labelLanguage: "語言", labelSort: "排序", optId: "ID", optNew: "最近添加", optName: "名稱排序", optRel: "相關性", optSize: "大小", labelAdult: "成人過濾", optAll: "顯示全部", optHide: "隱藏成人", optOnly: "僅限成人", labelWidth: "寬度", labelVisual: "視覺控制", optBlur: "禁用模糊", optHideIds: "隱藏 ID", optTranslate: "顯示翻譯名稱", labelBinary: "二進制檔案", footBooth: "🛒 在 Booth 打開", footFolder: "📂 打開資料夾", searchPre: "搜尋 ", searchSuf: " 個項目", fileSingular: "檔案", filePlural: "檔案", moreTags: "+ {n} 更多", hiddenResults: " (+{n} 個被過濾)" },
             nl: { warnDelisted: "<b>⚠️ Verwijderde Inhoud</b>Dit item is mogelijk niet langer beschikbaar op Booth. Metadata ondersteuning is beperkt.", navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer", optId: "ID", optNew: "Onlangs toegevoegd", optName: "Alfabet", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verbergen", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visueel", optBlur: "Geen vervaging", optHideIds: "ID's weg", optTranslate: "Engelse titels", labelBinary: "Bestanden", footBooth: "🛒 Booth", footFolder: "📂 Map", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " (+{n} verborgen door filters)" },
@@ -228,6 +229,7 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             pt: { warnDelisted: "<b>⚠️ Conteúdo não listado</b>Este asset provavelmente não está mais disponible no Booth. O suporte de metadatos é limitado.", navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optNew: "Mais recentes", optName: "Nome", optRel: "Relevância", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglês", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} mais", hiddenResults: " (+{n} ocultos)" }
         };
         let currentCarouselIndex = 0, currentImages = [];
+        const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
         const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), adultFilter: getLS('adultFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
         
@@ -258,7 +260,7 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             }
 
             const topTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
-            document.getElementById('commonTags').innerHTML = topTags.map(([tag]) => `<span class="tag-pill" onclick="tagSearch('${tag.replace(/'/g, "\\\\'")}')">${tag}</span>`).join('');
+            document.getElementById('commonTags').innerHTML = topTags.map(([tag]) => `<span class="tag-pill clickable" onclick="tagSearch('${tag.replace(/'/g, "\\\\'")}')">${tag}</span>`).join('');
 
             document.getElementById('statCount').innerText = items.length;
             document.getElementById('statSize').innerText = formatBytes(totalBytes);
@@ -269,8 +271,19 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
 
             const urlParams = new URLSearchParams(window.location.search);
             const targetId = urlParams.get('id');
-            if (targetId) openDetails(targetId);
+            if (targetId) openDetails(targetId, true);
         }
+
+        window.onpopstate = (e) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetId = urlParams.get('id');
+            if (targetId) {
+                openDetails(targetId, true);
+            } else {
+                closeModal(true);
+            }
+        };
+
         function updateLanguage(lang) { 
             state.lang = lang; 
             localStorage.setItem('lang', lang); 
@@ -333,7 +346,7 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             list.innerHTML = ""; items.forEach(i => list.appendChild(i));
             list.appendChild(notice); applyFilters();
         }
-        function openDetails(id) {
+        function openDetails(id, skipHistory = false) {
             const el = document.querySelector(`.asset[data-id="${id}"]`), t = translations[state.lang] || translations['en'];
             if(!el) return;
             const displayTitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameTrans : el.dataset.nameOrig;
@@ -350,17 +363,23 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             currentImages = JSON.parse(el.dataset.allImages); currentCarouselIndex = 0; updateCarousel();
             const tags = JSON.parse(el.dataset.tags);
             const tagContainer = document.getElementById("modalTags");
-            const renderTagsInternal = (list) => list.map(tg => `<span class="tag-pill" onclick="tagSearch('${tg.replace(/'/g, "\\\\'")}')">${tg}</span>`).join('');
-            if (tags.length > 25) { tagContainer.innerHTML = renderTagsInternal(tags.slice(0, 20)) + `<span class="tag-pill more-btn" onclick="this.parentElement.innerHTML=window.renderTagsFull(JSON.parse(document.querySelector('.asset[data-id=\\\\'${id}\\\\\\']').dataset.tags))">${t.moreTags.replace('{n}', tags.length - 20)}</span>`; } else tagContainer.innerHTML = renderTagsInternal(tags);
+            const renderTagsInternal = (list) => list.map(tg => `<span class="tag-pill clickable" onclick="tagSearch('${tg.replace(/'/g, "\\\\'")}')">${tg}</span>`).join('');
+            if (tags.length > 25) { tagContainer.innerHTML = renderTagsInternal(tags.slice(0, 20)) + `<span class="tag-pill more-btn clickable" onclick="this.parentElement.innerHTML=window.renderTagsFull(JSON.parse(document.querySelector('.asset[data-id=\\\\'${id}\\\\\\']').dataset.tags))">${t.moreTags.replace('{n}', tags.length - 20)}</span>`; } else tagContainer.innerHTML = renderTagsInternal(tags);
             window.renderTagsFull = renderTagsInternal;
             const fileData = JSON.parse(el.dataset.files);
             fileData.sort((a, b) => b.name.toLowerCase().localeCompare(a.name.toLowerCase(), undefined, { numeric: true, sensitivity: 'base' }));
             document.getElementById("fileList").innerHTML = fileData.map(f => `<li class="file-item"><a class="file-link" href="${f.path}" target="_blank">${f.name}</a><span style="color:#aaa;font-size:0.75rem;">${f.size}</span></li>`).join('');
-            const m = document.getElementById("detailModal"); m.classList.add('visible'); setTimeout(() => m.classList.add('active'), 10);
+            const m = document.getElementById("detailModal"); 
+            m.classList.add('visible'); 
+            setTimeout(() => m.classList.add('active'), 10);
             
-            const newUrl = new URL(window.location);
-            newUrl.searchParams.set('id', id);
-            window.history.pushState({}, '', newUrl);
+            document.title = baseTitle + " - #" + id;
+
+            if (!skipHistory) {
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('id', id);
+                window.history.pushState({id: id}, '', newUrl);
+            }
         }
         function carouselNext(dir) { if (currentImages.length <= 1) return; currentCarouselIndex = (currentCarouselIndex + dir + currentImages.length) % currentImages.length; updateCarousel(); }
         function updateCarousel() {
@@ -371,13 +390,18 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             const dots = document.getElementById("carouselDots");
             if (currentImages.length > 1) { dots.style.display = "flex"; dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join(''); document.getElementById("carouselPrev").style.display = "block"; document.getElementById("carouselNext").style.display = "block"; } else { dots.style.display = "none"; document.getElementById("carouselPrev").style.display = "none"; document.getElementById("carouselNext").style.display = "none"; }
         }
-        function closeModal() { 
+        function closeModal(skipHistory = false) { 
             const m = document.getElementById("detailModal"); 
             m.classList.remove('active'); 
             setTimeout(() => { if(!m.classList.contains('active')) m.classList.remove('visible'); }, 300);
-            const newUrl = new URL(window.location);
-            newUrl.searchParams.delete('id');
-            window.history.pushState({}, '', newUrl);
+            
+            document.title = baseTitle;
+
+            if (!skipHistory) {
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.delete('id');
+                window.history.pushState({}, '', newUrl);
+            }
         }
         window.onclick = e => { const menu = document.getElementById('flyoutMenu'); const btn = document.getElementById('toggleBtn'); if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn) toggleMenu(null, true); };
         document.addEventListener('keydown', e => { if(e.key === "Escape") { closeModal(); toggleMenu(null, true); } if(e.key === "ArrowRight") carouselNext(1); if(e.key === "ArrowLeft") carouselNext(-1); });
