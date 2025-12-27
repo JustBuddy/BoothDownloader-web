@@ -6,8 +6,21 @@
     <title>Booth Asset Library</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="web_data/style.css" />
+    <style>
+        #appLoader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0b0d; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        .spinner { width: 50px; height: 50px; border: 3px solid rgba(253, 218, 13, 0.1); border-radius: 50%; border-top-color: #FDDA0D; animation: spin 1s ease-in-out infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-text { color: #FDDA0D; font-family: 'Inter', sans-serif; font-weight: 800; letter-spacing: 2px; font-size: 0.8rem; text-transform: uppercase; }
+        #assetList { opacity: 0; }
+        body.loaded #assetList { opacity: 1; }
+        body.loaded #appLoader { display: none; }
+    </style>
 </head>
 <body>
+    <div id="appLoader">
+        <div class="spinner"></div>
+        <div class="loader-text">Loading Assets...</div>
+    </div>
     <div id="menuPerimeter" onclick="toggleMenu(event, true)"></div>
     <nav class="top-nav">
         <div class="nav-logo" data-i18n="navTitle">Booth Asset Library</div>
@@ -58,8 +71,12 @@
         data-search='5541093 [free] シンプルクロップトップ [萌moe] [free] simple crop top [moe moe] buddyworks  衣装 萌 vrchat vrchat可 vrc想定モデル vrchat向け tank top tanktop moe用 moe対応 moe用 moe (萌) moeちゃん moe専用 image (1).jpg image (2).jpg image (3).jpg image (4).jpg' data-folder="BoothDownloaderOut/5541093/Binary" data-booth-url="https://buddyworks.booth.pm/items/5541093"
         data-filecount="4" data-wish="143" data-time="1766760002"
         data-price-value="100.0" data-price-currency="JPY" data-limited="false">
-        <div class="image-container"><div class="asset-id-tag">#5541093</div><img class="image-thumbnail" src="BoothDownloaderOut/5541093/0f422e2e-a68c-4c7e-bd53-61286d230b3d_base_resized.jpg"></div>
-        <img class="image-backglow" src="BoothDownloaderOut/5541093/0f422e2e-a68c-4c7e-bd53-61286d230b3d_base_resized.jpg"><div class="content">
+        <div class="image-container">
+            <div class="asset-id-tag">#5541093</div>
+            <img class="image-thumbnail" loading="lazy" src="">
+        </div>
+        <img class="image-backglow" src="">
+        <div class="content">
             <div class="name"><span class="name-primary">[Free] シンプルクロップトップ [萌Moe]</span></div>
             <div class="author-label">by <b class="author-primary">BUDDYWORKS</b></div>
             <div class="stats"><span>681.8KB</span><span class="file-label-dynamic"></span></div>
@@ -77,8 +94,12 @@
         data-search='5542201 「stranded」のビーチウェア「3アバター対応」 "stranded" beachwear "compatible with 3 avatars" buddyworks  swim wear ビキニ 衣装 萌 ヴェール vrchat vrchat可 vrc想定モデル vrchat向け チオ veil wet seethrough thio see-through moe用 moeちゃん velle3d velle3d velle3d fanatail velle3d image (1).jpg image (10).jpg image (2).jpg image (3).jpg image (4).jpg image (5).jpg image (6).jpg image (7).jpg image (8).jpg image (9).jpg' data-folder="BoothDownloaderOut/5542201/Binary" data-booth-url="https://buddyworks.booth.pm/items/5542201"
         data-filecount="10" data-wish="101" data-time="1766760657"
         data-price-value="400.0" data-price-currency="JPY" data-limited="false">
-        <div class="image-container"><div class="asset-id-tag">#5542201</div><img class="image-thumbnail" src="BoothDownloaderOut/5542201/1678393c-537d-44d4-babb-7671878488d0_base_resized.jpg"></div>
-        <img class="image-backglow" src="BoothDownloaderOut/5542201/1678393c-537d-44d4-babb-7671878488d0_base_resized.jpg"><div class="content">
+        <div class="image-container">
+            <div class="asset-id-tag">#5542201</div>
+            <img class="image-thumbnail" loading="lazy" src="">
+        </div>
+        <img class="image-backglow" src="">
+        <div class="content">
             <div class="name"><span class="name-primary">「Stranded」のビーチウェア「3アバター対応」</span></div>
             <div class="author-label">by <b class="author-primary">BUDDYWORKS</b></div>
             <div class="stats"><span>1.9MB</span><span class="file-label-dynamic"></span></div>
@@ -96,8 +117,12 @@
         data-search='6066920 [free] buddyworks ポーズシステム [free] buddyworks pose system buddyworks  アニメーション 萌 vrchat可 vrc想定モデル vrchat向け poses moe用 moeちゃん buddyworks ' data-folder="BoothDownloaderOut/6066920/Binary" data-booth-url="https://buddyworks.booth.pm/items/6066920"
         data-filecount="0" data-wish="41" data-time="1766762334"
         data-price-value="200.0" data-price-currency="JPY" data-limited="false">
-        <div class="image-container"><div class="asset-id-tag">#6066920</div><img class="image-thumbnail" src="BoothDownloaderOut/6066920/a3ff984a-95d5-4686-a994-48aef8db3cab_base_resized.jpg"></div>
-        <img class="image-backglow" src="BoothDownloaderOut/6066920/a3ff984a-95d5-4686-a994-48aef8db3cab_base_resized.jpg"><div class="content">
+        <div class="image-container">
+            <div class="asset-id-tag">#6066920</div>
+            <img class="image-thumbnail" loading="lazy" src="">
+        </div>
+        <img class="image-backglow" src="">
+        <div class="content">
             <div class="name"><span class="name-primary">[Free] BUDDYWORKS ポーズシステム</span></div>
             <div class="author-label">by <b class="author-primary">BUDDYWORKS</b></div>
             <div class="stats"><span>0.0B</span><span class="file-label-dynamic"></span></div>
@@ -115,8 +140,12 @@
         data-search='6089367 「folklore」swimsuit 「5体のアバターに対応」 "folklore" swimsuit "compatible with 5 avatars" buddyworks  swim wear ビキニ 衣装 しなの 萌 ヴェール vrchat vrchat可 vrc想定モデル veil poiyomi liltoon thio bikini set moe用 moe対応 moeちゃん vrcfury velle3d マヌカ manuka用 manuka対応 modularavatar velle3d fanatail buddyworks image (1).jpg image (10).jpg image (12).jpg image (15).jpg image (16).jpg image (19).jpg image (3).jpg image (5).jpg image (7).jpg' data-folder="BoothDownloaderOut/6089367/Binary" data-booth-url="https://buddyworks.booth.pm/items/6089367"
         data-filecount="9" data-wish="75" data-time="1766760682"
         data-price-value="650.0" data-price-currency="JPY" data-limited="false">
-        <div class="image-container"><div class="asset-id-tag">#6089367</div><img class="image-thumbnail" src="BoothDownloaderOut/6089367/fbc21f22-0d39-4f6d-b026-b3355a87835a_base_resized.jpg"></div>
-        <img class="image-backglow" src="BoothDownloaderOut/6089367/fbc21f22-0d39-4f6d-b026-b3355a87835a_base_resized.jpg"><div class="content">
+        <div class="image-container">
+            <div class="asset-id-tag">#6089367</div>
+            <img class="image-thumbnail" loading="lazy" src="">
+        </div>
+        <img class="image-backglow" src="">
+        <div class="content">
             <div class="name"><span class="name-primary">「Folklore」Swimsuit 「5体のアバターに対応」</span></div>
             <div class="author-label">by <b class="author-primary">BUDDYWORKS</b></div>
             <div class="stats"><span>1.9MB</span><span class="file-label-dynamic"></span></div>
@@ -124,7 +153,7 @@
         </div>
     </li>
     <li id="filterNotice"></li></ul></div>
-    <div id="detailModal" class="modal" onclick="closeModal()"><div class="modal-card" onclick="event.stopPropagation()"><div class="modal-carousel" id="modalCarouselContainer"><button id="carouselPrev" class="carousel-btn btn-prev" onclick="carouselNext(-1)">❮</button><img id="modalBlurBg" class="carousel-blur-bg" src=""><img id="modalImg" class="carousel-main-img" src=""><button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button><div id="carouselDots" class="carousel-dots"></div></div><div class="modal-info"><div id="modalName" class="modal-name"></div><div id="modalSubtitle" class="modal-subtitle"></div><div id="delistedWarn" class="delisted-warning" data-i18n-html="warnDelisted"><b>⚠️ Delisted Content</b>This asset was identified as potentially unavailable on Booth. Metadata support and detailed information are limited.</div><div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;"></div><span class="setting-label" data-i18n="labelBinary">Binary Files</span><ul id="fileList" class="file-list"></ul><div class="modal-footer"><div id="modalIdDisp" class="modal-id-display"></div><div class="modal-actions"><a id="openBoothLink" href="" class="discrete-link" target="_blank"><span data-i18n="footBooth">🛒 Booth</span></a><a id="openFolderLink" href="" class="discrete-link" target="_blank"><span data-i18n="footFolder">📂 Folder</span></a></div></div></div></div></div>
+    <div id="detailModal" class="modal" onclick="closeModal()"><div class="modal-card" onclick="event.stopPropagation()"><div class="modal-carousel" id="modalCarouselContainer"><button id="carouselPrev" class="carousel-btn btn-prev" onclick="carouselNext(-1)">❮</button><img id="modalBlurBg" class="carousel-blur-bg" src=""><img id="modalImg" class="carousel-main-img" src=""><button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button><div id="carouselDots" class="carousel-dots"></div></div><div class="modal-info"><div id="modalName" class="modal-name"></div><div id="modalSubtitle" class="modal-subtitle"></div><div id="delistedWarn" class="delisted-warning" data-i18n-html="warnDelisted"></div><div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;"></div><span class="setting-label" data-i18n="labelBinary">Binary Files</span><ul id="fileList" class="file-list"></ul><div class="modal-footer"><div id="modalIdDisp" class="modal-id-display"></div><div class="modal-actions"><a id="openBoothLink" href="" class="discrete-link" target="_blank"><span data-i18n="footBooth">🛒 Booth</span></a><a id="openFolderLink" href="" class="discrete-link" target="_blank"><span data-i18n="footFolder">📂 Folder</span></a></div></div></div></div></div>
     <script>
         const translations = {
             en: { warnDelisted: "<b>⚠️ Delisted Content</b>This asset was identified as potentially unavailable on Booth. Metadata support and detailed information are limited.", navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optNew: "Recently Added", optName: "Alphabetical", optRel: "Relevance", optSize: "Total Size", labelAdult: "Adult Filter", optAll: "Show All", optHide: "Hide Adult", optOnly: "Only Adult", labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Blur", optHideIds: "Hide Item IDs", optTranslate: "Use Translated Titles", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...", fileSingular: "file", filePlural: "files", moreTags: "+ {n} more", hiddenResults: " (+{n} hidden by filters)" },
@@ -134,9 +163,9 @@
             'zh-Hans': { warnDelisted: "<b>⚠️ 已下架内容</b>此资源可能已无法在 Booth 上访问。元数据支持和詳細信息有限。", navTitle: "Booth 资源库", optionsBtn: "选项 ⚙", labelLanguage: "语言", labelSort: "排序", optId: "ID", optNew: "最近添加", optName: "名称排序", optRel: "相关性", optSize: "大小", labelAdult: "成人过滤", optAll: "显示全部", optHide: "隐藏成人", optOnly: "仅成人", labelWidth: "宽度", labelVisual: "视觉控制", optBlur: "禁用模糊", optHideIds: "隐藏 ID", optTranslate: "显示翻译名称", labelBinary: "二进制文件", footBooth: "🛒 在 Booth 打开", footFolder: "📂 打开文件夹", searchPre: "搜索 ", searchSuf: " 个项目", fileSingular: "文件", filePlural: "文件", moreTags: "+ {n} 更多", hiddenResults: " (+{n} 个被过滤)" },
             'zh-Hant': { warnDelisted: "<b>⚠️ 已下架內容</b>此資源可能已無法在 Booth 上訪問。元數據支持和詳細信息有限。", navTitle: "Booth 資源庫", optionsBtn: "選項 ⚙", labelLanguage: "語言", labelSort: "排序", optId: "ID", optNew: "最近添加", optName: "名稱排序", optRel: "相關性", optSize: "大小", labelAdult: "成人過濾", optAll: "顯示全部", optHide: "隱藏成人", optOnly: "僅限成人", labelWidth: "寬度", labelVisual: "視覺控制", optBlur: "禁用模糊", optHideIds: "隱藏 ID", optTranslate: "顯示翻譯名稱", labelBinary: "二進制檔案", footBooth: "🛒 在 Booth 打開", footFolder: "📂 打開資料夾", searchPre: "搜尋 ", searchSuf: " 個項目", fileSingular: "檔案", filePlural: "檔案", moreTags: "+ {n} 更多", hiddenResults: " (+{n} 個被過濾)" },
             nl: { warnDelisted: "<b>⚠️ Verwijderde Inhoud</b>Dit item is mogelijk niet langer beschikbaar op Booth. Metadata ondersteuning is beperkt.", navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer", optId: "ID", optNew: "Onlangs toegevoegd", optName: "Alfabet", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verbergen", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visueel", optBlur: "Geen vervaging", optHideIds: "ID's weg", optTranslate: "Engelse titels", labelBinary: "Bestanden", footBooth: "🛒 Booth", footFolder: "📂 Map", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " (+{n} verborgen door filters)" },
-            fr: { warnDelisted: "<b>⚠️ Contenu non listé</b>Cet asset n'est probablement plus disponible sur Booth. Le support des métadonnées est limité.", navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier", optId: "ID", optNew: "Ajouté récemment", optName: "Nom", optRel: "Pertinence", optSize: "Taille", labelAdult: "Filtre", optAll: "Tout", optHide: "Masquer", optOnly: "Adulte", labelWidth: "Largeur", labelVisual: "Visuel", optBlur: "Désactiver flou", optHideIds: "Masquer IDs", optTranslate: "Titres anglais", labelBinary: "Fichiers", footBooth: "🛒 Booth", footFolder: "📂 Dossier", searchPre: "Rechercher ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " (+{n} masqués)" },
+            fr: { warnDelisted: "<b>⚠️ Contenu non listé</b>Cet asset n'est probablement plus disponible sur Booth. Le support des métadonnées is limité.", navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier", optId: "ID", optNew: "Ajouté récemment", optName: "Nom", optRel: "Pertinence", optSize: "Taille", labelAdult: "Filtre", optAll: "Tout", optHide: "Masquer", optOnly: "Adulte", labelWidth: "Largeur", labelVisual: "Visuel", optBlur: "Désactiver flou", optHideIds: "Masquer IDs", optTranslate: "Titres anglais", labelBinary: "Fichiers", footBooth: "🛒 Booth", footFolder: "📂 Dossier", searchPre: "Rechercher ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " (+{n} masqués)" },
             es: { warnDelisted: "<b>⚠️ Contenido no listado</b>Es probable que este activo ya no esté disponible en Booth. El soporte de metadatos es limitado.", navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Orden", optId: "ID", optNew: "Más reciente", optName: "Nombre", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro", optAll: "Todo", optHide: "Ocultar", optOnly: "Adultos", labelWidth: "Ancho", labelVisual: "Visual", optBlur: "Sin desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos inglés", labelBinary: "Archivos", footBooth: "🛒 Booth", footFolder: "📂 Carpeta", searchPre: "Buscar ", searchSuf: " items...", fileSingular: "archivo", filePlural: "archivos", moreTags: "+ {n} más", hiddenResults: " (+{n} ocultos)" },
-            pt: { warnDelisted: "<b>⚠️ Conteúdo não listado</b>Este asset provavelmente não está mais disponible no Booth. O suporte de metadatos é limitado.", navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optNew: "Mais recentes", optName: "Nome", optRel: "Relevância", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglés", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} mais", hiddenResults: " (+{n} ocultos)" }
+            pt: { warnDelisted: "<b>⚠️ Conteúdo não listado</b>Este asset provavelmente não está mais disponible no Booth. O suporte de metadatos é limitado.", navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optNew: "Mais recentes", optName: "Nome", optRel: "Relevância", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglês", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} mais", hiddenResults: " (+{n} ocultos)" }
         };
         let currentCarouselIndex = 0, currentImages = [];
         const baseTitle = "Booth Asset Library";
@@ -150,53 +179,67 @@
         }
 
         function init() {
-            updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
-            document.getElementById('gridRange').value = state.gridSize; document.getElementById('blurToggle').checked = state.disableBlur; document.getElementById('sortOrder').value = state.sortOrder;
-            document.getElementById('adultFilter').value = state.adultFilter; document.getElementById('hideIdToggle').checked = state.hideIds; document.getElementById('translateToggle').checked = state.showTrans;
-            
-            const items = document.getElementsByClassName('asset');
-            let totalBytes = 0;
-            const tagCounts = {};
-            const spent = {};
-
-            for(let item of items) { 
-                totalBytes += parseInt(item.dataset.bytes || 0); 
-                const tags = JSON.parse(item.dataset.tags || "[]");
-                tags.forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1);
+            setTimeout(() => {
+                updateLanguage(state.lang); 
+                updateGrid(state.gridSize); 
+                updateBlur(state.disableBlur); 
+                updateIdVisibility(state.hideIds); 
+                updateTranslationVisibility(state.showTrans);
                 
-                const pVal = parseFloat(item.dataset.priceValue || 0);
-                const pCur = item.dataset.priceCurrency || "";
-                if (pVal > 0 && pCur) spent[pCur] = (spent[pCur] || 0) + pVal;
-            }
+                document.getElementById('gridRange').value = state.gridSize; 
+                document.getElementById('blurToggle').checked = state.disableBlur; 
+                document.getElementById('sortOrder').value = state.sortOrder;
+                document.getElementById('adultFilter').value = state.adultFilter; 
+                document.getElementById('hideIdToggle').checked = state.hideIds; 
+                document.getElementById('translateToggle').checked = state.showTrans;
+                
+                const items = document.getElementsByClassName('asset');
+                let totalBytes = 0;
+                const tagCounts = {};
+                const spent = {};
 
-            const topTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
-            document.getElementById('commonTags').innerHTML = topTags.map(([tag]) => `<span class="tag-pill clickable" onclick="tagSearch('${tag.replace(/'/g, "\\'")}')">${tag}</span>`).join('');
+                for(let item of items) { 
+                    totalBytes += parseInt(item.dataset.bytes || 0); 
+                    const tags = JSON.parse(item.dataset.tags || "[]");
+                    tags.forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1);
+                    
+                    const pVal = parseFloat(item.dataset.priceValue || 0);
+                    const pCur = item.dataset.priceCurrency || "";
+                    if (pVal > 0 && pCur) spent[pCur] = (spent[pCur] || 0) + pVal;
+                    
+                    // DEFERRED IMAGE LOADING
+                    const img = item.querySelector('.image-thumbnail');
+                    const glow = item.querySelector('.image-backglow');
+                    if(img && item.dataset.img) img.src = item.dataset.img;
+                    if(glow && item.dataset.img) glow.src = item.dataset.img;
+                }
 
-            document.getElementById('statCount').innerText = items.length;
-            document.getElementById('statSize').innerText = formatBytes(totalBytes);
-            document.getElementById('statSpent').innerText = Object.entries(spent).map(([cur, val]) => val.toLocaleString() + " " + cur).join(" / ") || "0";
-            document.getElementById('statDate').innerText = new Date().toLocaleDateString();
+                const topTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+                document.getElementById('commonTags').innerHTML = topTags.map(([tag]) => `<span class="tag-pill clickable" onclick="tagSearch('${tag.replace(/'/g, "\\'")}')">${tag}</span>`).join('');
 
-            handleSearchInput(); sortAssets();
+                document.getElementById('statCount').innerText = items.length;
+                document.getElementById('statSize').innerText = formatBytes(totalBytes);
+                document.getElementById('statSpent').innerText = Object.entries(spent).map(([cur, val]) => val.toLocaleString() + " " + cur).join(" / ") || "0";
+                document.getElementById('statDate').innerText = new Date().toLocaleDateString();
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetId = urlParams.get('id');
-            if (targetId) openDetails(targetId, true);
+                handleSearchInput(); sortAssets();
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const targetId = urlParams.get('id');
+                if (targetId) openDetails(targetId, true);
+
+                document.body.classList.add('loaded');
+            }, 50);
         }
 
         window.onpopstate = (e) => {
             const urlParams = new URLSearchParams(window.location.search);
             const targetId = urlParams.get('id');
-            if (targetId) {
-                openDetails(targetId, true);
-            } else {
-                closeModal(true);
-            }
+            if (targetId) { openDetails(targetId, true); } else { closeModal(true); }
         };
 
         function updateLanguage(lang) { 
-            state.lang = lang; 
-            localStorage.setItem('lang', lang); 
+            state.lang = lang; localStorage.setItem('lang', lang); 
             document.getElementById('langSelect').value = lang; 
             const t = translations[lang] || translations['en']; 
             document.querySelectorAll('[data-i18n]').forEach(el => { el.innerText = t[el.dataset.i18n]; }); 
@@ -259,17 +302,12 @@
         function openDetails(id, skipHistory = false) {
             const el = document.querySelector(`.asset[data-id="${id}"]`), t = translations[state.lang] || translations['en'];
             if(!el) return;
-            const displayTitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameTrans : el.dataset.nameOrig;
-            const displayAuthor = (state.showTrans && el.dataset.authorTrans) ? el.dataset.authorTrans : el.dataset.authorOrig;
-            const subtitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameOrig : "";
-            document.getElementById("modalName").innerText = displayTitle;
-            document.getElementById("modalSubtitle").innerText = (subtitle ? subtitle + " | " : "") + displayAuthor;
+            document.getElementById("modalName").innerText = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameTrans : el.dataset.nameOrig;
+            document.getElementById("modalSubtitle").innerText = ((state.showTrans && el.dataset.nameTrans) ? el.dataset.nameOrig + " | " : "") + ((state.showTrans && el.dataset.authorTrans) ? el.dataset.authorTrans : el.dataset.authorOrig);
             document.getElementById("modalIdDisp").innerText = "#" + id;
             document.getElementById("openFolderLink").href = el.dataset.folder;
             document.getElementById("openBoothLink").href = el.dataset.boothUrl;
-            
             document.getElementById("delistedWarn").style.display = (el.dataset.limited === 'true') ? 'block' : 'none';
-
             currentImages = JSON.parse(el.dataset.allImages); currentCarouselIndex = 0; updateCarousel();
             const tags = JSON.parse(el.dataset.tags);
             const tagContainer = document.getElementById("modalTags");
@@ -280,34 +318,25 @@
             fileData.sort((a, b) => b.name.toLowerCase().localeCompare(a.name.toLowerCase(), undefined, { numeric: true, sensitivity: 'base' }));
             document.getElementById("fileList").innerHTML = fileData.map(f => `<li class="file-item"><a class="file-link" href="${f.path}" target="_blank">${f.name}</a><span style="color:#aaa;font-size:0.75rem;">${f.size}</span></li>`).join('');
             const m = document.getElementById("detailModal"); m.classList.add('visible'); setTimeout(() => m.classList.add('active'), 10);
-            
             document.title = baseTitle + " - #" + id;
-
             if (!skipHistory) {
-                const newUrl = new URL(window.location);
-                newUrl.searchParams.set('id', id);
+                const newUrl = new URL(window.location); newUrl.searchParams.set('id', id);
                 window.history.pushState({id: id}, '', newUrl);
             }
         }
         function carouselNext(dir) { if (currentImages.length <= 1) return; currentCarouselIndex = (currentCarouselIndex + dir + currentImages.length) % currentImages.length; updateCarousel(); }
         function updateCarousel() {
             const img = currentImages[currentCarouselIndex];
-            const modalImg = document.getElementById("modalImg");
-            const modalBlurBg = document.getElementById("modalBlurBg");
-            modalImg.src = img; modalBlurBg.src = img;
+            document.getElementById("modalImg").src = img; document.getElementById("modalBlurBg").src = img;
             const dots = document.getElementById("carouselDots");
-            if (currentImages.length > 1) { dots.style.display = "flex"; dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join(''); document.getElementById("carouselPrev").style.display = "block"; document.getElementById("carouselNext").style.display = "block"; } else { dots.style.display = "none"; document.getElementById("carouselPrev").style.display = "none"; document.getElementById("carouselNext").style.display = "none"; }
+            if (currentImages.length > 1) { dots.style.display = "flex"; dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join(''); } else { dots.style.display = "none"; }
         }
         function closeModal(skipHistory = false) { 
-            const m = document.getElementById("detailModal"); 
-            m.classList.remove('active'); 
+            const m = document.getElementById("detailModal"); m.classList.remove('active'); 
             setTimeout(() => { if(!m.classList.contains('active')) m.classList.remove('visible'); }, 300);
-            
             document.title = baseTitle;
-
             if (!skipHistory) {
-                const newUrl = new URL(window.location);
-                newUrl.searchParams.delete('id');
+                const newUrl = new URL(window.location); newUrl.searchParams.delete('id');
                 window.history.pushState({}, '', newUrl);
             }
         }

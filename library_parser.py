@@ -13,19 +13,18 @@ from deep_translator import GoogleTranslator
 ROOT_FOLDER = "BoothDownloaderOut"
 OUTPUT_FILE = "asset_library.html"
 CACHE_FILE = "translation_cache.json"
-FILTER_FILE = "web_data/filters.json" # Optional external resource
+FILTER_FILE = "web_data/filters.json" 
 SKIP_TRANSLATION = False  
 DEBUG_TRANSLATION = False 
 MAX_WORKERS = 5 
 
-# Merged keyword list (Regex patterns + Literal strings)
+# Merged keyword list
 ADULT_KEYWORDS = [
     r"R-?18", r"adult", r"nude", r"semen", r"nsfw", r"sexual", r"erotic", 
     r"pussy", r"dick", r"vagina", r"penis", r"otimpo", r"otinpo",
     "精液", "だぷだぷ", "ヌード", "エロ", "クリトリス", "おまんこ", "おちんぽ", "おてぃんぽ"
 ]
 
-# Load external filters if available (expects a simple list of strings)
 if os.path.exists(FILTER_FILE):
     try:
         with open(FILTER_FILE, 'r', encoding='utf-8') as f:
@@ -34,7 +33,6 @@ if os.path.exists(FILTER_FILE):
                 ADULT_KEYWORDS.extend(ext_data)
     except: pass
 
-# Remove potential duplicates
 ADULT_KEYWORDS = list(set(ADULT_KEYWORDS))
 
 # --- Translation Logic ---
@@ -91,9 +89,6 @@ def bulk_translate(text_list):
     for t in new_strings:
         if is_noise(t): translation_cache[t] = t
     if not real_queue: return
-    if DEBUG_TRANSLATION:
-        print(f"DEBUG: {len(real_queue)} terms queued.")
-        sys.exit()
     batch_size = 15
     chunks = [(i//batch_size + 1, real_queue[i:i+batch_size]) for i in range(0, len(real_queue), batch_size)]
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
@@ -109,8 +104,21 @@ HTML_PART_1 = """<!doctype html>
     <title>Booth Asset Library</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="web_data/style.css" />
+    <style>
+        #appLoader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0b0d; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        .spinner { width: 50px; height: 50px; border: 3px solid rgba(253, 218, 13, 0.1); border-radius: 50%; border-top-color: #FDDA0D; animation: spin 1s ease-in-out infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-text { color: #FDDA0D; font-family: 'Inter', sans-serif; font-weight: 800; letter-spacing: 2px; font-size: 0.8rem; text-transform: uppercase; }
+        #assetList { opacity: 0; }
+        body.loaded #assetList { opacity: 1; }
+        body.loaded #appLoader { display: none; }
+    </style>
 </head>
 <body>
+    <div id="appLoader">
+        <div class="spinner"></div>
+        <div class="loader-text">Loading Assets...</div>
+    </div>
     <div id="menuPerimeter" onclick="toggleMenu(event, true)"></div>
     <nav class="top-nav">
         <div class="nav-logo" data-i18n="navTitle">Booth Asset Library</div>
@@ -154,7 +162,7 @@ HTML_PART_1 = """<!doctype html>
     <div class="container"><ul id="assetList">"""
 
 HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
-    <div id="detailModal" class="modal" onclick="closeModal()"><div class="modal-card" onclick="event.stopPropagation()"><div class="modal-carousel" id="modalCarouselContainer"><button id="carouselPrev" class="carousel-btn btn-prev" onclick="carouselNext(-1)">❮</button><img id="modalBlurBg" class="carousel-blur-bg" src=""><img id="modalImg" class="carousel-main-img" src=""><button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button><div id="carouselDots" class="carousel-dots"></div></div><div class="modal-info"><div id="modalName" class="modal-name"></div><div id="modalSubtitle" class="modal-subtitle"></div><div id="delistedWarn" class="delisted-warning" data-i18n-html="warnDelisted"><b>⚠️ Delisted Content</b>This asset was identified as potentially unavailable on Booth. Metadata support and detailed information are limited.</div><div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;"></div><span class="setting-label" data-i18n="labelBinary">Binary Files</span><ul id="fileList" class="file-list"></ul><div class="modal-footer"><div id="modalIdDisp" class="modal-id-display"></div><div class="modal-actions"><a id="openBoothLink" href="" class="discrete-link" target="_blank"><span data-i18n="footBooth">🛒 Booth</span></a><a id="openFolderLink" href="" class="discrete-link" target="_blank"><span data-i18n="footFolder">📂 Folder</span></a></div></div></div></div></div>
+    <div id="detailModal" class="modal" onclick="closeModal()"><div class="modal-card" onclick="event.stopPropagation()"><div class="modal-carousel" id="modalCarouselContainer"><button id="carouselPrev" class="carousel-btn btn-prev" onclick="carouselNext(-1)">❮</button><img id="modalBlurBg" class="carousel-blur-bg" src=""><img id="modalImg" class="carousel-main-img" src=""><button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button><div id="carouselDots" class="carousel-dots"></div></div><div class="modal-info"><div id="modalName" class="modal-name"></div><div id="modalSubtitle" class="modal-subtitle"></div><div id="delistedWarn" class="delisted-warning" data-i18n-html="warnDelisted"></div><div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;"></div><span class="setting-label" data-i18n="labelBinary">Binary Files</span><ul id="fileList" class="file-list"></ul><div class="modal-footer"><div id="modalIdDisp" class="modal-id-display"></div><div class="modal-actions"><a id="openBoothLink" href="" class="discrete-link" target="_blank"><span data-i18n="footBooth">🛒 Booth</span></a><a id="openFolderLink" href="" class="discrete-link" target="_blank"><span data-i18n="footFolder">📂 Folder</span></a></div></div></div></div></div>
     <script>
         const translations = {
             en: { warnDelisted: "<b>⚠️ Delisted Content</b>This asset was identified as potentially unavailable on Booth. Metadata support and detailed information are limited.", navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optNew: "Recently Added", optName: "Alphabetical", optRel: "Relevance", optSize: "Total Size", labelAdult: "Adult Filter", optAll: "Show All", optHide: "Hide Adult", optOnly: "Only Adult", labelWidth: "Card Width", labelVisual: "Visual Controls", optBlur: "Disable Blur", optHideIds: "Hide Item IDs", optTranslate: "Use Translated Titles", labelBinary: "Binary Files", footBooth: "🛒 Open on Booth", footFolder: "📂 Open Local Folder", searchPre: "Search ", searchSuf: " items...", fileSingular: "file", filePlural: "files", moreTags: "+ {n} more", hiddenResults: " (+{n} hidden by filters)" },
@@ -164,9 +172,9 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             'zh-Hans': { warnDelisted: "<b>⚠️ 已下架内容</b>此资源可能已无法在 Booth 上访问。元数据支持和詳細信息有限。", navTitle: "Booth 资源库", optionsBtn: "选项 ⚙", labelLanguage: "语言", labelSort: "排序", optId: "ID", optNew: "最近添加", optName: "名称排序", optRel: "相关性", optSize: "大小", labelAdult: "成人过滤", optAll: "显示全部", optHide: "隐藏成人", optOnly: "仅成人", labelWidth: "宽度", labelVisual: "视觉控制", optBlur: "禁用模糊", optHideIds: "隐藏 ID", optTranslate: "显示翻译名称", labelBinary: "二进制文件", footBooth: "🛒 在 Booth 打开", footFolder: "📂 打开文件夹", searchPre: "搜索 ", searchSuf: " 个项目", fileSingular: "文件", filePlural: "文件", moreTags: "+ {n} 更多", hiddenResults: " (+{n} 个被过滤)" },
             'zh-Hant': { warnDelisted: "<b>⚠️ 已下架內容</b>此資源可能已無法在 Booth 上訪問。元數據支持和詳細信息有限。", navTitle: "Booth 資源庫", optionsBtn: "選項 ⚙", labelLanguage: "語言", labelSort: "排序", optId: "ID", optNew: "最近添加", optName: "名稱排序", optRel: "相關性", optSize: "大小", labelAdult: "成人過濾", optAll: "顯示全部", optHide: "隱藏成人", optOnly: "僅限成人", labelWidth: "寬度", labelVisual: "視覺控制", optBlur: "禁用模糊", optHideIds: "隱藏 ID", optTranslate: "顯示翻譯名稱", labelBinary: "二進制檔案", footBooth: "🛒 在 Booth 打開", footFolder: "📂 打開資料夾", searchPre: "搜尋 ", searchSuf: " 個項目", fileSingular: "檔案", filePlural: "檔案", moreTags: "+ {n} 更多", hiddenResults: " (+{n} 個被過濾)" },
             nl: { warnDelisted: "<b>⚠️ Verwijderde Inhoud</b>Dit item is mogelijk niet langer beschikbaar op Booth. Metadata ondersteuning is beperkt.", navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteer", optId: "ID", optNew: "Onlangs toegevoegd", optName: "Alfabet", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verbergen", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visueel", optBlur: "Geen vervaging", optHideIds: "ID's weg", optTranslate: "Engelse titels", labelBinary: "Bestanden", footBooth: "🛒 Booth", footFolder: "📂 Map", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " (+{n} verborgen door filters)" },
-            fr: { warnDelisted: "<b>⚠️ Contenu non listé</b>Cet asset n'est probablement plus disponible sur Booth. Le support des métadonnées est limité.", navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier", optId: "ID", optNew: "Ajouté récemment", optName: "Nom", optRel: "Pertinence", optSize: "Taille", labelAdult: "Filtre", optAll: "Tout", optHide: "Masquer", optOnly: "Adulte", labelWidth: "Largeur", labelVisual: "Visuel", optBlur: "Désactiver flou", optHideIds: "Masquer IDs", optTranslate: "Titres anglais", labelBinary: "Fichiers", footBooth: "🛒 Booth", footFolder: "📂 Dossier", searchPre: "Rechercher ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " (+{n} masqués)" },
+            fr: { warnDelisted: "<b>⚠️ Contenu non listé</b>Cet asset n'est probablement plus disponible sur Booth. Le support des métadonnées is limité.", navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier", optId: "ID", optNew: "Ajouté récemment", optName: "Nom", optRel: "Pertinence", optSize: "Taille", labelAdult: "Filtre", optAll: "Tout", optHide: "Masquer", optOnly: "Adulte", labelWidth: "Largeur", labelVisual: "Visuel", optBlur: "Désactiver flou", optHideIds: "Masquer IDs", optTranslate: "Titres anglais", labelBinary: "Fichiers", footBooth: "🛒 Booth", footFolder: "📂 Dossier", searchPre: "Rechercher ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " (+{n} masqués)" },
             es: { warnDelisted: "<b>⚠️ Contenido no listado</b>Es probable que este activo ya no esté disponible en Booth. El soporte de metadatos es limitado.", navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Orden", optId: "ID", optNew: "Más reciente", optName: "Nombre", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro", optAll: "Todo", optHide: "Ocultar", optOnly: "Adultos", labelWidth: "Ancho", labelVisual: "Visual", optBlur: "Sin desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos inglés", labelBinary: "Archivos", footBooth: "🛒 Booth", footFolder: "📂 Carpeta", searchPre: "Buscar ", searchSuf: " items...", fileSingular: "archivo", filePlural: "archivos", moreTags: "+ {n} más", hiddenResults: " (+{n} ocultos)" },
-            pt: { warnDelisted: "<b>⚠️ Conteúdo não listado</b>Este asset provavelmente não está mais disponible no Booth. O suporte de metadatos é limitado.", navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optNew: "Mais recentes", optName: "Nome", optRel: "Relevância", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglés", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} mais", hiddenResults: " (+{n} ocultos)" }
+            pt: { warnDelisted: "<b>⚠️ Conteúdo não listado</b>Este asset provavelmente não está mais disponible no Booth. O suporte de metadatos é limitado.", navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar", optId: "ID", optNew: "Mais recentes", optName: "Nome", optRel: "Relevância", optSize: "Tamanho", labelAdult: "Filtro adulto", optAll: "Tudo", optHide: "Ocultar adultos", optOnly: "Apenas 18+", labelWidth: "Largura", labelVisual: "Visual", optBlur: "Sem flou", optHideIds: "Sem IDs", optTranslate: "Títulos inglês", labelBinary: "Arquivos", footBooth: "🛒 Booth", footFolder: "📂 Pasta", searchPre: "Pesquisar ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} mais", hiddenResults: " (+{n} ocultos)" }
         };
         let currentCarouselIndex = 0, currentImages = [];
         const baseTitle = "Booth Asset Library";
@@ -180,53 +188,67 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
         }
 
         function init() {
-            updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
-            document.getElementById('gridRange').value = state.gridSize; document.getElementById('blurToggle').checked = state.disableBlur; document.getElementById('sortOrder').value = state.sortOrder;
-            document.getElementById('adultFilter').value = state.adultFilter; document.getElementById('hideIdToggle').checked = state.hideIds; document.getElementById('translateToggle').checked = state.showTrans;
-            
-            const items = document.getElementsByClassName('asset');
-            let totalBytes = 0;
-            const tagCounts = {};
-            const spent = {};
-
-            for(let item of items) { 
-                totalBytes += parseInt(item.dataset.bytes || 0); 
-                const tags = JSON.parse(item.dataset.tags || "[]");
-                tags.forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1);
+            setTimeout(() => {
+                updateLanguage(state.lang); 
+                updateGrid(state.gridSize); 
+                updateBlur(state.disableBlur); 
+                updateIdVisibility(state.hideIds); 
+                updateTranslationVisibility(state.showTrans);
                 
-                const pVal = parseFloat(item.dataset.priceValue || 0);
-                const pCur = item.dataset.priceCurrency || "";
-                if (pVal > 0 && pCur) spent[pCur] = (spent[pCur] || 0) + pVal;
-            }
+                document.getElementById('gridRange').value = state.gridSize; 
+                document.getElementById('blurToggle').checked = state.disableBlur; 
+                document.getElementById('sortOrder').value = state.sortOrder;
+                document.getElementById('adultFilter').value = state.adultFilter; 
+                document.getElementById('hideIdToggle').checked = state.hideIds; 
+                document.getElementById('translateToggle').checked = state.showTrans;
+                
+                const items = document.getElementsByClassName('asset');
+                let totalBytes = 0;
+                const tagCounts = {};
+                const spent = {};
 
-            const topTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
-            document.getElementById('commonTags').innerHTML = topTags.map(([tag]) => `<span class="tag-pill clickable" onclick="tagSearch('${tag.replace(/'/g, "\\\\'")}')">${tag}</span>`).join('');
+                for(let item of items) { 
+                    totalBytes += parseInt(item.dataset.bytes || 0); 
+                    const tags = JSON.parse(item.dataset.tags || "[]");
+                    tags.forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1);
+                    
+                    const pVal = parseFloat(item.dataset.priceValue || 0);
+                    const pCur = item.dataset.priceCurrency || "";
+                    if (pVal > 0 && pCur) spent[pCur] = (spent[pCur] || 0) + pVal;
+                    
+                    // DEFERRED IMAGE LOADING
+                    const img = item.querySelector('.image-thumbnail');
+                    const glow = item.querySelector('.image-backglow');
+                    if(img && item.dataset.img) img.src = item.dataset.img;
+                    if(glow && item.dataset.img) glow.src = item.dataset.img;
+                }
 
-            document.getElementById('statCount').innerText = items.length;
-            document.getElementById('statSize').innerText = formatBytes(totalBytes);
-            document.getElementById('statSpent').innerText = Object.entries(spent).map(([cur, val]) => val.toLocaleString() + " " + cur).join(" / ") || "0";
-            document.getElementById('statDate').innerText = new Date().toLocaleDateString();
+                const topTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+                document.getElementById('commonTags').innerHTML = topTags.map(([tag]) => `<span class="tag-pill clickable" onclick="tagSearch('${tag.replace(/'/g, "\\\\'")}')">${tag}</span>`).join('');
 
-            handleSearchInput(); sortAssets();
+                document.getElementById('statCount').innerText = items.length;
+                document.getElementById('statSize').innerText = formatBytes(totalBytes);
+                document.getElementById('statSpent').innerText = Object.entries(spent).map(([cur, val]) => val.toLocaleString() + " " + cur).join(" / ") || "0";
+                document.getElementById('statDate').innerText = new Date().toLocaleDateString();
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetId = urlParams.get('id');
-            if (targetId) openDetails(targetId, true);
+                handleSearchInput(); sortAssets();
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const targetId = urlParams.get('id');
+                if (targetId) openDetails(targetId, true);
+
+                document.body.classList.add('loaded');
+            }, 50);
         }
 
         window.onpopstate = (e) => {
             const urlParams = new URLSearchParams(window.location.search);
             const targetId = urlParams.get('id');
-            if (targetId) {
-                openDetails(targetId, true);
-            } else {
-                closeModal(true);
-            }
+            if (targetId) { openDetails(targetId, true); } else { closeModal(true); }
         };
 
         function updateLanguage(lang) { 
-            state.lang = lang; 
-            localStorage.setItem('lang', lang); 
+            state.lang = lang; localStorage.setItem('lang', lang); 
             document.getElementById('langSelect').value = lang; 
             const t = translations[lang] || translations['en']; 
             document.querySelectorAll('[data-i18n]').forEach(el => { el.innerText = t[el.dataset.i18n]; }); 
@@ -289,17 +311,12 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
         function openDetails(id, skipHistory = false) {
             const el = document.querySelector(`.asset[data-id="${id}"]`), t = translations[state.lang] || translations['en'];
             if(!el) return;
-            const displayTitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameTrans : el.dataset.nameOrig;
-            const displayAuthor = (state.showTrans && el.dataset.authorTrans) ? el.dataset.authorTrans : el.dataset.authorOrig;
-            const subtitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameOrig : "";
-            document.getElementById("modalName").innerText = displayTitle;
-            document.getElementById("modalSubtitle").innerText = (subtitle ? subtitle + " | " : "") + displayAuthor;
+            document.getElementById("modalName").innerText = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameTrans : el.dataset.nameOrig;
+            document.getElementById("modalSubtitle").innerText = ((state.showTrans && el.dataset.nameTrans) ? el.dataset.nameOrig + " | " : "") + ((state.showTrans && el.dataset.authorTrans) ? el.dataset.authorTrans : el.dataset.authorOrig);
             document.getElementById("modalIdDisp").innerText = "#" + id;
             document.getElementById("openFolderLink").href = el.dataset.folder;
             document.getElementById("openBoothLink").href = el.dataset.boothUrl;
-            
             document.getElementById("delistedWarn").style.display = (el.dataset.limited === 'true') ? 'block' : 'none';
-
             currentImages = JSON.parse(el.dataset.allImages); currentCarouselIndex = 0; updateCarousel();
             const tags = JSON.parse(el.dataset.tags);
             const tagContainer = document.getElementById("modalTags");
@@ -310,34 +327,25 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             fileData.sort((a, b) => b.name.toLowerCase().localeCompare(a.name.toLowerCase(), undefined, { numeric: true, sensitivity: 'base' }));
             document.getElementById("fileList").innerHTML = fileData.map(f => `<li class="file-item"><a class="file-link" href="${f.path}" target="_blank">${f.name}</a><span style="color:#aaa;font-size:0.75rem;">${f.size}</span></li>`).join('');
             const m = document.getElementById("detailModal"); m.classList.add('visible'); setTimeout(() => m.classList.add('active'), 10);
-            
             document.title = baseTitle + " - #" + id;
-
             if (!skipHistory) {
-                const newUrl = new URL(window.location);
-                newUrl.searchParams.set('id', id);
+                const newUrl = new URL(window.location); newUrl.searchParams.set('id', id);
                 window.history.pushState({id: id}, '', newUrl);
             }
         }
         function carouselNext(dir) { if (currentImages.length <= 1) return; currentCarouselIndex = (currentCarouselIndex + dir + currentImages.length) % currentImages.length; updateCarousel(); }
         function updateCarousel() {
             const img = currentImages[currentCarouselIndex];
-            const modalImg = document.getElementById("modalImg");
-            const modalBlurBg = document.getElementById("modalBlurBg");
-            modalImg.src = img; modalBlurBg.src = img;
+            document.getElementById("modalImg").src = img; document.getElementById("modalBlurBg").src = img;
             const dots = document.getElementById("carouselDots");
-            if (currentImages.length > 1) { dots.style.display = "flex"; dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join(''); document.getElementById("carouselPrev").style.display = "block"; document.getElementById("carouselNext").style.display = "block"; } else { dots.style.display = "none"; document.getElementById("carouselPrev").style.display = "none"; document.getElementById("carouselNext").style.display = "none"; }
+            if (currentImages.length > 1) { dots.style.display = "flex"; dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join(''); } else { dots.style.display = "none"; }
         }
         function closeModal(skipHistory = false) { 
-            const m = document.getElementById("detailModal"); 
-            m.classList.remove('active'); 
+            const m = document.getElementById("detailModal"); m.classList.remove('active'); 
             setTimeout(() => { if(!m.classList.contains('active')) m.classList.remove('visible'); }, 300);
-            
             document.title = baseTitle;
-
             if (!skipHistory) {
-                const newUrl = new URL(window.location);
-                newUrl.searchParams.delete('id');
+                const newUrl = new URL(window.location); newUrl.searchParams.delete('id');
                 window.history.pushState({}, '', newUrl);
             }
         }
@@ -367,7 +375,6 @@ def get_dir_data(binary_folder):
     return files, total_size
 
 def is_adult_content(text):
-    # Single case-insensitive regex search for all keywords
     return bool(re.search("|".join(ADULT_KEYWORDS), str(text), re.IGNORECASE))
 
 def get_all_local_images(folder_path, web_urls):
@@ -405,20 +412,18 @@ def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url
     primary_img = all_imgs[0] if all_imgs else ""
     name_trans = translation_cache.get(asset_name.strip(), "")
     author_trans = translation_cache.get(author_name.strip(), "")
-    
     price_val, price_cur = parse_price(price_str)
-    
     grid_tags_html = "".join([f'<span class="tag-pill">{t}</span>' for t in tags[:12]])
     img_class = "image-thumbnail adult-content" if is_adult else "image-thumbnail"
-    glow_tag = f'<img class="image-backglow" src="{primary_img}">' if primary_img else ''
-    img_tag = f'<img class="{img_class}" src="{primary_img}">' if primary_img else '<div class="image-thumbnail" style="background:#222;display:flex;align-items:center;justify-content:center;color:#444;font-weight:800;">EMPTY</div>'
-    
     folder_time = int(os.path.getctime(folder_path))
     safe_name, safe_trans = asset_name.replace('"', '&quot;'), name_trans.replace('"', '&quot;')
     safe_author, safe_author_trans = author_name.replace('"', '&quot;'), author_trans.replace('"', '&quot;')
     filenames_str = " ".join([f['name'] for f in files_data])
     search_str = f"{asset_id} {asset_name} {name_trans} {author_name} {author_trans} {' '.join(tags)} {filenames_str}".lower().replace("'", "")
     rel_folder = quote(os.path.relpath(binary_folder, start=os.getcwd()).replace('\\', '/'))
+    
+    # We removed 'src' from the images here to prevent stall. 
+    # JavaScript will populate 'src' during init()
     return f"""
     <li class="asset" onclick="openDetails('{asset_id}')" 
         data-id="{asset_id}" data-name-orig="{safe_name}" data-name-trans="{safe_trans}" 
@@ -429,8 +434,12 @@ def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url
         data-search='{search_str}' data-folder="{rel_folder}" data-booth-url="{booth_url}"
         data-filecount="{len(files_data)}" data-wish="{wish_count}" data-time="{folder_time}"
         data-price-value="{price_val}" data-price-currency="{price_cur}" data-limited="{str(limited).lower()}">
-        <div class="image-container"><div class="asset-id-tag">#{asset_id}</div>{img_tag}</div>
-        {glow_tag}<div class="content">
+        <div class="image-container">
+            <div class="asset-id-tag">#{asset_id}</div>
+            <img class="{img_class}" loading="lazy" src="">
+        </div>
+        <img class="image-backglow" src="">
+        <div class="content">
             <div class="name"><span class="name-primary">{asset_name}</span></div>
             <div class="author-label">by <b class="author-primary">{author_name}</b></div>
             <div class="stats"><span>{get_readable_size(total_bytes)}</span><span class="file-label-dynamic"></span></div>
