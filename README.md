@@ -45,6 +45,3 @@ The following variables can be adjusted at the top of the script:
 
 ## Contributing
 Feel free to submit Pull Requests for translations, UI improvements or bug fixes. Please maintain the existing color palette (Inter font, dark aesthetic, yellow accents).
-
-![Preview](https://splash.buddyworks.wtf/xChlrrrg.png)  
-![Preview2](https://splash.buddyworks.wtf/mcoLNyJj.png)
