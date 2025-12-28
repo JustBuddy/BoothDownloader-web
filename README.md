@@ -4,8 +4,8 @@ A high-performance local web gallery generator for your [BoothDownloader](https:
 
 [**View Live Demo**](https://justbuddy.github.io/BoothDownloader-web/demo/asset_library.html)
 
-![Preview](https://splash.buddyworks.wtf/xChlrrrg.png)
-![Preview2](https://splash.buddyworks.wtf/mcoLNyJj.png)
+![Preview](https://splash.buddyworks.wtf/LwpinegQ.png)
+![Preview2](https://splash.buddyworks.wtf/InNbMlYH.png)
 
 ## Features
 - **Auto-Translation:** Automatically translates Japanese titles, authors, and tags to English via Google Translate (cached locally).
