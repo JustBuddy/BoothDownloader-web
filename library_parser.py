@@ -28,7 +28,7 @@ FORBIDDEN_NAMES = {
     "vrchat", "vrc", "unity", "fbx", "avatar", "3d", "model", "quest", "pc", 
     "original", "character", "boy", "girl", "boy's", "girl's", "android", "human",
     "unlisted", "adult", "preview", "cloth", "clothing", "accessory", "hair",
-    "eye", "texture", "physbone", "blendshape", "maya", "blender"
+    "eye", "texture", "physbone", "blendshape", "maya", "blender", "hotogiya"
 }
 
 print(f"--- Starting Library Generation ---")
@@ -583,6 +583,10 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             const m = document.getElementById("detailModal"); 
             m.classList.add('visible'); 
             setTimeout(() => m.classList.add('active'), 10);
+            
+            const contentContainer = document.querySelector('.tab-content-container');
+            if (contentContainer) contentContainer.scrollTop = 0;
+
             document.title = baseTitle + " - #" + id;
             if (!skipHistory) { const newUrl = new URL(window.location); newUrl.searchParams.set('id', id); window.history.pushState({id: id}, '', newUrl); }
         }
