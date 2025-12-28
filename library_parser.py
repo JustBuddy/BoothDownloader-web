@@ -28,7 +28,8 @@ FORBIDDEN_NAMES = {
     "vrchat", "vrc", "unity", "fbx", "avatar", "3d", "model", "quest", "pc", 
     "original", "character", "boy", "girl", "boy's", "girl's", "android", "human",
     "unlisted", "adult", "preview", "cloth", "clothing", "accessory", "hair",
-    "eye", "texture", "physbone", "blendshape", "maya", "blender", "hotogiya"
+    "eye", "texture", "physbone", "blendshape", "maya", "blender", "hotogiya",
+    "mobile", "compatible", "version", "support", "sdk3", "prefab"
 }
 
 print(f"--- Starting Library Generation ---")
@@ -282,7 +283,7 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             'zh-Hans': { btnDetails: "详细信息", labelComp: "兼容资源", labelDesigned: "设计用于", labelViewRel: "查看全部", warnDelisted: "<b>⚠️ 已下架内容</b> 此资源可能已在 Booth 停止售卖。", navTitle: "Booth 资源库", optionsBtn: "选项 ⚙", labelLanguage: "语言设置", labelSort: "排序方式", optId: "文件夹 ID", optNew: "最近添加", optName: "名称排序", optRel: "人气相关", optSize: "占用空间", labelAdult: "成人内容过滤", optAll: "显示全部内容", optHide: "隐藏成人内容", optOnly: "仅成人内容", labelWidth: "卡片显示宽度", optBlur: "禁用模糊效果", optHideIds: "隐藏资源 ID", optTranslate: "显示翻译名称", labelBinary: "本地文件", footBooth: "🛒 在 Booth 打开", footFolder: "📂 打开本地目录", footVrcAvatar: "👤 公开化身", footVrcWorld: "🌐 公开世界", searchPre: "正在搜索 ", searchSuf: " 个资源...", fileSingular: "文件", filePlural: "文件", moreTags: "+ {n} 个其他", hiddenResults: " ({n} 个已被过滤)", statItems: "资源总数", statSize: "库总大小", statImgSize: "图片大小", statSpent: "预计总支出", statUpdated: "最後更新時間", labelTopTags: "高频标签", btnDesc: "资源描述" },
             'zh-Hant': { btnDetails: "詳細資訊", labelComp: "相容資源", labelDesigned: "設計用於", labelViewRel: "查看全部", warnDelisted: "<b>⚠️ 已下架內容</b> 此資源可能已在 Booth 販售。", navTitle: "Booth 資源庫", optionsBtn: "選項 ⚙", labelLanguage: "語言設置", labelSort: "排序方式", optId: "資料夾 ID", optNew: "最近添加", optName: "名稱排序", optRel: "人氣相關", optSize: "占用空間", labelAdult: "成人內容過濾", optAll: "顯示全部內容", optHide: "隱藏成人內容", optOnly: "僅限成人內容", labelWidth: "卡片顯示寬度", optBlur: "禁用模糊效果", optHideIds: "隱藏資源 ID", optTranslate: "顯示翻譯名稱", labelBinary: "本地檔案", footBooth: "🛒 在 Booth 打開", footFolder: "📂 打開資料夾", footVrcAvatar: "👤 公開化身", footVrcWorld: "🌐 公開世界", searchPre: "正在搜尋 ", searchSuf: " 個資源...", fileSingular: "檔案", filePlural: "檔案", moreTags: "+ {n} 個其他", hiddenResults: " ({n} 個已被過濾)", statItems: "資源總數", statSize: "庫總大小", statImgSize: "圖片大小", statSpent: "預計總支出", statUpdated: "最後更新時間", labelTopTags: "高頻標籤", btnDesc: "詳細描述" },
             de: { btnDetails: "Details", labelComp: "Passendes Zubehör", labelDesigned: "Entwickelt für", labelViewRel: "Alle zeigen", warnDelisted: "<b>⚠️ Nicht mehr gelistet</b> Dieses Asset ist möglicherweise nicht mehr verfügbar.", navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "Ordner ID", optNew: "Zuletzt hinzugefügt", optName: "Name (A-Z)", optRel: "Beliebtheit", optSize: "Dateigröße", labelAdult: "Filter", optAll: "Alles zeigen", optHide: "Nicht jugendfrei ausblenden", optOnly: "Nur 18+", labelWidth: "Kartenbreite", optBlur: "Kein Fokus", optHideIds: "IDs verbergen", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Auf Booth ansehen", footFolder: "📂 Ordner öffnen", footVrcAvatar: "👤 Avatar-Link", footVrcWorld: "🌐 Welt-Link", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {n} weitere", hiddenResults: " ({n} durch Filter versteckt)", statItems: "Gesamtanzahl", statSize: "Binärgröße", statImgSize: "Grafikgröße", statSpent: "Voraussichtliche Kosten", statUpdated: "Aktualisiert", labelTopTags: "Häufige Tags", btnDesc: "Beschreibung" },
-            nl: { btnDetails: "Details", labelComp: "Compatibele Assets", labelDesigned: "Ontworpen voor", labelViewRel: "Toon alles", warnDelisted: "<b>⚠️ Verwijderde Inhoud</b> Dit item is mogelijk nicht langer beschikbaar.", navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteren", optId: "ID", optNew: "Nieuwste eerst", optName: "Naam", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verberg 18+", optOnly: "Alleen 18+", labelWidth: "Breedte", optBlur: "Geen vervaging", optHideIds: "ID's verbergen", optTranslate: "Vertaalde titels", labelBinary: "Bestanden", footBooth: "🛒 Bekijk op Booth", footFolder: "📂 Map openen", footVrcAvatar: "👤 Openbare Avatar", footVrcWorld: "🌐 Openbare Wereld", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " ({n} items verborgen)", statItems: "Totaal Brass", statSize: "Totale grootte", statImgSize: "Beeldgrootte", statSpent: "Geschatte totale kosten", statUpdated: "Laatste update", labelTopTags: "Populaire tags", btnDesc: "Beschreibung" },
+            nl: { btnDetails: "Details", labelComp: "Compatibele Assets", labelDesigned: "Ontworpen voor", labelViewRel: "Toon alles", warnDelisted: "<b>⚠️ Verwijderde Inhoud</b> Dit item is mogelijk nicht langer beschikbaar.", navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteren", optId: "ID", optNew: "Nieuwste eerst", optName: "Naam", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verberg 18+", optOnly: "Alleen 18+", labelWidth: "Breedte", optBlur: "Geen vervaging", optHideIds: "ID's verbergen", optTranslate: "Vertaalde titels", labelBinary: "Bestanden", footBooth: "🛒 Bekijk op Booth", footFolder: "📂 Map openen", footVrcAvatar: "👤 Openbare Avatar", footVrcWorld: "🌐 Openbare Wereld", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " ({n} items verborgen)", statItems: "Totaal Brass", statSize: "Totale grootte", statImgSize: "Beeldgrootte", statSpent: "Geschatte totale kosten", statUpdated: "Laatste update", labelTopTags: "Populaire tags", btnDesc: "Beschrijving" },
             fr: { btnDetails: "Détails", labelComp: "Assets Compatibles", labelDesigned: "Conçu pour", labelViewRel: "Tout voir", warnDelisted: "<b>⚠️ Contenu non listé</b> Cet asset n'est probablement plus disponible.", navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier par", optId: "ID du dossier", optNew: "Ajoutés récemment", optName: "Nom (A-Z)", optRel: "Popularité", optSize: "Taille totale", labelAdult: "Filtre de contenu", optAll: "Tout afficher", optHide: "Masquer Adulte", optOnly: "Adulte uniquement", labelWidth: "Largeur des cartes", optBlur: "Désactiver le flou", optHideIds: "Masquer les IDs", optTranslate: "Titres traduits", labelBinary: "Fichiers locaux", footBooth: "🛒 Voir sur Booth", footFolder: "📂 Ouvrir le dossier", footVrcAvatar: "👤 Avatar Public", footVrcWorld: "🌐 Monde Public", searchPre: "Recherche de ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " ({n} masqués par filtre)", statItems: "Total des assets", statSize: "Taille binaire", statImgSize: "Taille images", statSpent: "Investissement estimé", statUpdated: "Mis à jour le", labelTopTags: "Tags fréquents", btnDesc: "Description" },
             es: { btnDetails: "Details", labelComp: "Activos Compatibles", labelDesigned: "Diseñado para", labelViewRel: "Ver todo", warnDelisted: "<b>⚠️ Item no disponible</b> Es probable que este conteúdo ya no esté.", navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID de carpeta", optNew: "Añadidos recentemente", optName: "Nombre (A-Z)", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro de conteúdo", optAll: "Mostrar todo", optHide: "Ocultar adultos", optOnly: "Solo adultos", labelWidth: "Ancho de tarjeta", optBlur: "Quitar desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Archivos locales", footBooth: "🛒 Ver en Booth", footFolder: "📂 Abrir carpeta", footVrcAvatar: "👤 Avatar Público", footVrcWorld: "🌐 Mundo Público", searchPre: "Buscando ", searchSuf: " activos...", fileSingular: "archivo", filePlural: "archivos", moreTags: "+ {n} outros", hiddenResults: " ({n} ocultos)", statItems: "Activos totales", statSize: "Tamaño binario", statImgSize: "Tamaño images", statSpent: "Inversión estimada", statUpdated: "Última actualización", labelTopTags: "Etiquetas comunes", btnDesc: "Description" },
             pt: { btnDetails: "Detalhes", labelComp: "Assets Compatíveis", labelDesigned: "Projetado para", labelViewRel: "Ver todos", warnDelisted: "<b>⚠️ Conteúdo removido</b> Este asset pode não estar mais disponible.", navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID da pasta", optNew: "Adicionados recentemente", optName: "Nombre (A-Z)", optRel: "Popularidade", optSize: "Tamanho total", labelAdult: "Filtre de conteúdo", optAll: "Mostrar tudo", optHide: "Ocultar 18+", optOnly: "Apenas 18+", labelWidth: "Largura dos cards", optBlur: "Sem desfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Arquivos locais", footBooth: "🛒 Ver no Booth", footFolder: "📂 Abrir pasta", footVrcAvatar: "👤 Avatar Público", footVrcWorld: "🌐 Mundo Público", searchPre: "Pesquisando ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} outros", hiddenResults: " ({n} itens ocultos)", statItems: "Total de itens", statSize: "Tamanho binário", statImgSize: "Tamanho images", statSpent: "Investimento estimado", statUpdated: "Última actualización", labelTopTags: "Tags frequentes", btnDesc: "Descrição" }
@@ -409,7 +410,7 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             }
         }
         function handleSearchInput() { 
-            const query = document.getElementById("searchInput").value;
+            const query = document.getElementById("searchInput").value.toLowerCase();
             const newUrl = new URL(window.location);
             if (query) newUrl.searchParams.set('q', query); else newUrl.searchParams.delete('q');
             window.history.replaceState({}, '', newUrl);
@@ -717,37 +718,32 @@ def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url
 def is_valid_avatar_name(name):
     if not name: return False
     n = name.lower().strip()
-    if n == "萌" or n == "moe": return True
+    # Explicitly check against the forbidden technical list
     if n in FORBIDDEN_NAMES or len(n) < 2: return False
+    # Check if the remaining name is just technical jargon
+    if re.fullmatch(r'[vV]er\.?\s*\d+.*|v\d+.*|vrc.*|sdk\d.*', n): return False
     return True
 
 def get_base_name(name):
     if not name: return None
-    # 1. Look for brackets
-    matches = re.findall(r'【(.*?)】|\[(.*?)\]|\((.*?)\)|「(.*?)」', name)
+    # 1. First extract text from inside delimiters like 『 』, 【 】, 「 」
+    matches = re.findall(r'【(.*?)】|\[(.*?)\]|\((.*?)\)|「(.*?)」|『(.*?)』', name)
     for t in matches:
         for cand in t:
             if cand:
-                cleaned = re.sub(r'オリジナル3Dモデル|3Dモデル|アバター|Ver\..*', '', cand).strip()
+                # Clean nested fluff
+                cleaned = re.sub(r'オリジナル3Dモデル|3Dモデル|アバター|[Vv]er\..*|Mobile|PC|対応|Quest', '', cand).strip()
                 if is_valid_avatar_name(cleaned): return cleaned
 
-    # 2. Look for hashtags (Common for mio3works like #Shinra3D)
-    hash_match = re.search(r'#([a-zA-Z\d]+)', name)
-    if hash_match:
-        cand = re.sub(r'3D|Model', '', hash_match.group(1), flags=re.I).strip()
+    # 2. Look for dash patterns: "Name -Name-"
+    dash_match = re.search(r'-(.*?)-', name)
+    if dash_match:
+        cand = dash_match.group(1).strip()
         if is_valid_avatar_name(cand): return cand
 
-    # 3. Handle patterns like "森羅 オリジナル3Dモデル #Shinra3D" or "-Moe-"
-    en_match = re.search(r'-(.*?)-', name)
-    if en_match:
-        cand = en_match.group(1).strip()
-        if is_valid_avatar_name(cand): return cand
-
-    # 4. Fallback: Clean string of brackets and take first non-japanese word if available
-    core = re.sub(r'[\[(（【「].*?[\])）】」]', '', name)
-    core = re.sub(r'オリジナル3Dモデル|3Dモデル|アバター|Ver\..*', '', core).strip()
-    
-    # Try to find an English name at the start or end of string if mixed with Japanese
+    # 3. Last resort: Clean full string of standard prefixes
+    core = re.sub(r'オリジナル3Dモデル|3Dモデル|アバター|【.*?】|\[.*?\]|\(.*?\)|「.*?」|『.*?』', '', name).strip()
+    # Find English words block if Japanese is stripped
     eng_parts = re.findall(r'[a-zA-Z]{3,}', core)
     for part in eng_parts:
         if is_valid_avatar_name(part): return part
@@ -757,19 +753,20 @@ def get_base_name(name):
 def contains_avatar_name(text, av_info):
     if not text: return False
     text = text.lower()
+    
+    # Check Trans (usually English) with word boundaries
     if av_info['trans']:
         pattern = r'\b' + re.escape(av_info['trans'].lower()) + r'\b'
         if re.search(pattern, text): return True
+
+    # Check Original (usually Japanese/Kanji)
     orig = av_info['orig'].lower()
     if orig:
         if orig in text:
-            if len(orig) == 1:
-                return True 
-            else:
-                idx = text.find(orig)
-                after = text[idx + len(orig):idx + len(orig) + 1]
-                if after and after in "ろうくんちゃん": return False
-                return True
+            # Prevent matching parts of common words like "こまど" (the shop) matching "こま"
+            idx = text.find(orig)
+            # Basic validation that it's not buried inside a long technical string
+            if len(orig) > 1: return True
     return False
 
 print("[Scan] Reading folders...")
@@ -808,8 +805,10 @@ bulk_translate_short_terms(short_strings_to_translate)
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if is_avatar:
         name = data[0]
+        # Use translated name if available for base name extraction
+        trans_name = translation_cache.get(name.strip(), "")
         orig_base = get_base_name(name)
-        trans_base = get_base_name(translation_cache.get(name.strip(), ""))
+        trans_base = get_base_name(trans_name)
         if orig_base or trans_base:
             avatars[folder] = {"orig": orig_base, "trans": trans_base}
 
@@ -820,14 +819,20 @@ for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if atype == 'json':
         tags = [t.get('name', '').lower() for t in content.get('tags', [])]
         variations = [v.get('name', '').lower() for v in content.get('variations', []) if v.get('name')]
+    
+    # Translation for matching
+    t_name = translation_cache.get(name.strip(), "").lower()
+
     for av_id, av_info in avatars.items():
         matched = False
-        for t in tags + variations:
-            if t in FORBIDDEN_NAMES: continue
+        # Check title and tags
+        for t in tags + variations + [name.lower(), t_name]:
             if contains_avatar_name(t, av_info): matched = True; break
-        if not matched and contains_avatar_name(name, av_info): matched = True
-        if not matched and av_info['orig'] and (len(av_info['orig']) > 2 or av_info['orig'] == '萌'):
+        
+        # Check description as last fallback
+        if not matched:
             if contains_avatar_name(desc, av_info): matched = True
+        
         if matched:
             if folder not in assets_to_avatar: assets_to_avatar[folder] = []
             assets_to_avatar[folder].append(av_id)
