@@ -36,7 +36,7 @@ The following variables can be adjusted at the top of the script:
 - `ROOT_FOLDER`: Location of your assets (default: `BoothDownloaderOut`).
 - `MAX_WORKERS`: Number of parallel threads for translation (default: `5`).
 - `OPTIMIZE_THUMBNAILS`: Set to `False` to skip WebP generation.
-- `SKIP_TRANSLATION`: Toggle AI translation services.
+- `SKIP_TRANSLATION`: Set to `False` to skip generating translations for names and descriptions.
 
 ## Disclaimer
 - **USE LOCALLY ONLY:** This tool is designed for private library management.
