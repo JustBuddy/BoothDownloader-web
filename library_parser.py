@@ -23,6 +23,14 @@ OPTIMIZE_THUMBNAILS = True
 THUMBNAIL_SIZE = (256, 256)
 IMG_OUT_DIR = "img"
 
+# Keywords that should NEVER be considered an avatar name
+FORBIDDEN_NAMES = {
+    "vrchat", "vrc", "unity", "fbx", "avatar", "3d", "model", "quest", "pc", 
+    "original", "character", "boy", "girl", "boy's", "girl's", "android", "human",
+    "unlisted", "adult", "preview", "cloth", "clothing", "accessory", "hair",
+    "eye", "texture", "physbone", "blendshape", "maya", "blender", "hotogiya"
+}
+
 print(f"--- Starting Library Generation ---")
 
 if not os.path.exists("web_data"):
@@ -176,7 +184,7 @@ HTML_PART_1 = """<!doctype html>
                 </select>
             </div>
             <div class="setting-group"><span class="setting-label" data-i18n="labelWidth">Card Width</span><input type="range" id="gridRange" min="160" max="400" step="10" value="220" oninput="updateGrid(this.value)"></div>
-            <div class="setting-group"><span class="setting-label" data-i18n="labelVisual">Visual Controls</span>
+            <div class="setting-group">
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="blurToggle" onchange="updateBlur(this.checked)"> <span data-i18n="optBlur">Disable Blur</span></label>
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> <span data-i18n="optHideIds">Hide IDs</span></label>
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;"><input type="checkbox" id="translateToggle" onchange="updateTranslationVisibility(this.checked)"> <span data-i18n="optTranslate">English Titles</span></label>
@@ -195,19 +203,72 @@ HTML_PART_1 = """<!doctype html>
 
 HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
     </div>
-    <div id="detailModal" class="modal" onclick="closeModal()"><div class="modal-card" onclick="event.stopPropagation()"><div class="modal-carousel" id="modalCarouselContainer"><button id="carouselPrev" class="carousel-btn btn-prev" onclick="carouselNext(-1)">❮</button><img id="modalBlurBg" class="carousel-blur-bg" src=""><img id="modalImg" class="carousel-main-img" src=""><button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button><div id="carouselDots" class="carousel-dots"></div></div><div class="modal-info"><div id="modalName" class="modal-name"></div><div id="modalSubtitle" class="modal-subtitle"></div><div id="delistedWarn" class="delisted-warning" data-i18n-html="warnDelisted"></div><div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px;"></div><span class="setting-label" data-i18n="labelBinary">Binary Files</span><ul id="fileList" class="file-list"></ul><div id="descWrapper" class="desc-container"><button id="descToggle" class="desc-toggle-btn" onclick="toggleDescription()" data-i18n="btnDesc">Description</button><div id="modalDesc" class="desc-content"></div></div><div class="modal-footer"><div id="modalIdDisp" class="modal-id-display"></div><div class="modal-actions"><a id="openVrcAvatarLink" href="" class="discrete-link" target="_blank" style="display:none;"><span data-i18n="footVrcAvatar">👤 Public Avatar</span></a><a id="openVrcWorldLink" href="" class="discrete-link" target="_blank" style="display:none;"><span data-i18n="footVrcWorld">🌐 Public World</span></a><a id="openBoothLink" href="" class="discrete-link" target="_blank"><span data-i18n="footBooth">🛒 Booth</span></a><a id="openFolderLink" href="" class="discrete-link" target="_blank"><span data-i18n="footFolder">📂 Folder</span></a></div></div></div></div></div>
+    <div id="detailModal" class="modal" onclick="closeModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-carousel" id="modalCarouselContainer">
+                <button id="carouselPrev" class="carousel-btn btn-prev" onclick="carouselNext(-1)">❮</button>
+                <img id="modalBlurBg" class="carousel-blur-bg" src="">
+                <img id="modalImg" class="carousel-main-img" src="">
+                <button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button>
+                <div id="carouselDots" class="carousel-dots"></div>
+            </div>
+            <div class="modal-info">
+                <div class="modal-header-fixed">
+                    <div id="modalName" class="modal-name"></div>
+                    <div id="modalSubtitle" class="modal-subtitle"></div>
+                    <div id="delistedWarn" class="delisted-warning" data-i18n-html="warnDelisted"></div>
+                </div>
+
+                <div class="modal-tabs">
+                    <button id="tab-details" class="tab-btn active" onclick="switchTab('details')" data-i18n="btnDetails">Details</button>
+                    <button id="tab-files" class="tab-btn" onclick="switchTab('files')" data-i18n="labelBinary">Files</button>
+                    <button id="tab-description" class="tab-btn" onclick="switchTab('description')" data-i18n="btnDesc">Description</button>
+                </div>
+                
+                <div class="tab-content-container">
+                    <div id="pane-details" class="tab-pane active">
+                        <span class="modal-section-title">Pricing & Meta</span>
+                        <div class="modal-meta-row" id="modalMeta"></div>
+                        <span class="modal-section-title" style="margin-top:20px;">Tags</span>
+                        <div id="modalTags" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                        <div id="relSection" style="display:none; margin-top:20px;">
+                            <span class="modal-section-title" id="relTitle">Relationships</span>
+                            <div id="relationshipContainer" class="asset-link-grid"></div>
+                        </div>
+                    </div>
+                    <div id="pane-files" class="tab-pane">
+                        <span class="modal-section-title">Package Contents</span>
+                        <ul id="fileList" class="file-list"></ul>
+                    </div>
+                    <div id="pane-description" class="tab-pane">
+                        <div id="modalDesc" class="desc-content"></div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <div id="modalIdDisp" class="modal-id-display"></div>
+                    <div class="modal-actions">
+                        <a id="openVrcAvatarLink" href="" class="discrete-link" target="_blank" style="display:none;"><span data-i18n="footVrcAvatar">👤 Public Avatar</span></a>
+                        <a id="openVrcWorldLink" href="" class="discrete-link" target="_blank" style="display:none;"><span data-i18n="footVrcWorld">🌐 Public World</span></a>
+                        <a id="openBoothLink" href="" class="discrete-link" target="_blank"><span data-i18n="footBooth">🛒 Booth</span></a>
+                        <a id="openFolderLink" href="" class="discrete-link" target="_blank"><span data-i18n="footFolder">📂 Folder</span></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <script>
         const translations = {
-            en: { warnDelisted: "<b>⚠️ Delisted Item</b> This asset may no longer be available on Booth.", navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optNew: "Recently Added", optName: "A-Z Name", optRel: "Popularity", optSize: "Storage Size", labelAdult: "Content Filter", optAll: "Show Everything", optHide: "Hide Adult", optOnly: "Adult Only", labelWidth: "Card Display Width", labelVisual: "Interface Settings", optBlur: "Disable Blur", optHideIds: "Hide Asset IDs", optTranslate: "Show English Titles", labelBinary: "Local Files", footBooth: "🛒 View on Booth", footFolder: "📂 Open Folder", footVrcAvatar: "👤 Public Avatar", footVrcWorld: "🌐 Public World", searchPre: "Searching ", searchSuf: " assets...", fileSingular: "file", filePlural: "files", moreTags: "+ {n} others", hiddenResults: " ({n} items hidden by filter)", statItems: "Total Assets", statSize: "Library Size", statImgSize: "Graphics Size", statSpent: "Estimated Investment", statUpdated: "Last Refreshed", labelTopTags: "Frequent Tags", btnDesc: "Item Description" },
-            ja: { warnDelisted: "<b>⚠️ 公開停止</b> このアイテムは現在Boothで公開されていない可能性があります。", navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "表示言語", labelSort: "並び替え", optId: "ID順", optNew: "追加日順", optName: "名前順", optRel: "人気順", optSize: "サイズ順", labelAdult: "成人向けフィルター", optAll: "すべて表示", optHide: "成人向けを隠す", optOnly: "成人向けのみ", labelWidth: "カードの幅", labelVisual: "表示設定", optBlur: "ぼかしを無効化", optHideIds: "IDを非表示", optTranslate: "翻訳された名前を表示", labelBinary: "構成ファイル", footBooth: "🛒 Boothで見る", footFolder: "📂 フォルダを開く", footVrcAvatar: "👤 パブリックアバター", footVrcWorld: "🌐 パブリックワールド", searchPre: "検索中: ", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル", moreTags: "他 {n} 件", hiddenResults: " ({n} 件が非表示)", statItems: "総アイテム数", statSize: "ライブラリ容量", statImgSize: "グラフィックス容量", statSpent: "推定支出合計", statUpdated: "最終更新", labelTopTags: "人気のタグ", btnDesc: "アイテム説明" },
-            ko: { warnDelisted: "<b>⚠️ 판매 중지됨</b> 이 에셋은 현재 Booth에서 제공되지 않을 수 있습니다.", navTitle: "Booth 에셋 ライブラ리", optionsBtn: "설정 ⚙", labelLanguage: "언어 선택", labelSort: "정렬 기준", optId: "폴더 ID", optNew: "최근 추가됨", optName: "이름순", optRel: "인기순", optSize: "용량순", labelAdult: "성인 콘텐츠 필터", optAll: "모두 보기", optHide: "성인 콘텐츠 숨기기", optOnly: "성인 콘텐츠만", labelWidth: "카드 너비", labelVisual: "인터페이스 설정", optBlur: "블러 효과 끄기", optHideIds: "항목 ID 숨기기", optTranslate: "번역된 제목 사용", labelBinary: "로컬 파일", footBooth: "🛒 Booth에서 보기", footFolder: "📂 폴더 열기", footVrcAvatar: "👤 퍼블릭 아바타", footVrcWorld: "🌐 퍼블릭 월드", searchPre: "検索結果: ", searchSuf: "개", fileSingular: "파일", filePlural: "파일", moreTags: "+ {n}개 더보기", hiddenResults: " ({n}개 필터링됨)", statItems: "총 에셋 수", statSize: "전체 용량", statImgSize: "그래픽 용량", statSpent: "예상 총 지출", statUpdated: "마지막 업데이트", labelTopTags: "가장 많이 쓰인 태그", btnDesc: "상세 설명" },
-            'zh-Hans': { warnDelisted: "<b>⚠️ 已下架内容</b> 此资源可能已在 Booth 停止售卖。", navTitle: "Booth 资源库", optionsBtn: "选项 ⚙", labelLanguage: "语言设置", labelSort: "排序方式", optId: "文件夹 ID", optNew: "最近添加", optName: "名称排序", optRel: "人气相关", optSize: "占用空间", labelAdult: "成人内容过滤", optAll: "显示全部内容", optHide: "隐藏成人内容", optOnly: "仅成人内容", labelWidth: "卡片显示宽度", labelVisual: "视觉选项", optBlur: "禁用模糊效果", optHideIds: "隐藏资源 ID", optTranslate: "显示翻译名称", labelBinary: "本地文件", footBooth: "🛒 在 Booth 打开", footFolder: "📂 打开本地目录", footVrcAvatar: "👤 公开化身", footVrcWorld: "🌐 公开世界", searchPre: "正在搜索 ", searchSuf: " 个资源...", fileSingular: "文件", filePlural: "文件", moreTags: "+ {n} 个其他", hiddenResults: " ({n} 个已被过滤)", statItems: "资源总数", statSize: "库总大小", statImgSize: "图片大小", statSpent: "预计总支出", statUpdated: "最後更新時間", labelTopTags: "高频标签", btnDesc: "资源描述" },
-            'zh-Hant': { warnDelisted: "<b>⚠️ 已下架內容</b> 此資源可能已在 Booth 販售。", navTitle: "Booth 資源庫", optionsBtn: "選項 ⚙", labelLanguage: "語言設置", labelSort: "排序方式", optId: "資料夾 ID", optNew: "最近添加", optName: "名稱排序", optRel: "人氣相關", optSize: "占用空間", labelAdult: "成人內容過濾", optAll: "顯示全部內容", optHide: "隱藏成人內容", optOnly: "僅限成人內容", labelWidth: "卡片顯示寬度", labelVisual: "視覺選項", optBlur: "禁用模糊效果", optHideIds: "隱藏資源 ID", optTranslate: "顯示翻譯名稱", labelBinary: "本地檔案", footBooth: "🛒 在 Booth 打開", footFolder: "📂 打開資料夾", footVrcAvatar: "👤 公開化身", footVrcWorld: "🌐 公開世界", searchPre: "正在搜尋 ", searchSuf: " 個資源...", fileSingular: "檔案", filePlural: "檔案", moreTags: "+ {n} 個其他", hiddenResults: " ({n} 個已被過濾)", statItems: "資源總數", statSize: "庫總大小", statImgSize: "圖片大小", statSpent: "預計總支出", statUpdated: "最後更新時間", labelTopTags: "高頻標籤", btnDesc: "詳細描述" },
-            de: { warnDelisted: "<b>⚠️ Nicht mehr gelistet</b> Dieses Asset ist möglicherweise nicht mehr verfügbar.", navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "Ordner ID", optNew: "Zuletzt hinzugefügt", optName: "Name (A-Z)", optRel: "Beliebtheit", optSize: "Dateigröße", labelAdult: "Filter", optAll: "Alles zeigen", optHide: "Nicht jugendfrei ausblenden", optOnly: "Nur 18+", labelWidth: "Kartenbreite", labelVisual: "Anzeige", optBlur: "Kein Fokus", optHideIds: "IDs verbergen", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Auf Booth ansehen", footFolder: "📂 Ordner öffnen", footVrcAvatar: "👤 Avatar-Link", footVrcWorld: "🌐 Welt-Link", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {n} weitere", hiddenResults: " ({n} durch Filter versteckt)", statItems: "Gesamtanzahl", statSize: "Binärgröße", statImgSize: "Grafikgröße", statSpent: "Voraussichtliche Kosten", statUpdated: "Aktualisiert", labelTopTags: "Häufige Tags", btnDesc: "Beschreibung" },
-            nl: { warnDelisted: "<b>⚠️ Verwijderde Inhoud</b> Dit item is mogelijk nicht langer beschikbaar.", navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteren", optId: "ID", optNew: "Nieuwste eerst", optName: "Naam", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verberg 18+", optOnly: "Alleen 18+", labelWidth: "Breedte", labelVisual: "Visuele opties", optBlur: "Geen vervaging", optHideIds: "ID's verbergen", optTranslate: "Vertaalde titels", labelBinary: "Bestanden", footBooth: "🛒 Bekijk op Booth", footFolder: "📂 Map openen", footVrcAvatar: "👤 Openbare Avatar", footVrcWorld: "🌐 Openbare Wereld", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " ({n} items verborgen)", statItems: "Totaal Brass", statSize: "Totale grootte", statImgSize: "Beeldgrootte", statSpent: "Geschatte totale kosten", statUpdated: "Laatste update", labelTopTags: "Populaire tags", btnDesc: "Beschreibung" },
-            fr: { warnDelisted: "<b>⚠️ Contenu non listé</b> Cet asset n'est probablement plus disponible.", navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier par", optId: "ID du dossier", optNew: "Ajoutés récemment", optName: "Nom (A-Z)", optRel: "Popularité", optSize: "Taille totale", labelAdult: "Filtre de contenu", optAll: "Tout afficher", optHide: "Masquer Adulte", optOnly: "Adulte uniquement", labelWidth: "Largeur des cartes", labelVisual: "Paramètres visuels", optBlur: "Désactiver le flou", optHideIds: "Masquer les IDs", optTranslate: "Titres traduits", labelBinary: "Fichiers locaux", footBooth: "🛒 Voir sur Booth", footFolder: "📂 Ouvrir le dossier", footVrcAvatar: "👤 Avatar Public", footVrcWorld: "🌐 Monde Public", searchPre: "Recherche de ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " ({n} masqués par filtre)", statItems: "Total des assets", statSize: "Taille binaire", statImgSize: "Taille images", statSpent: "Investissement estimé", statUpdated: "Mis à jour le", labelTopTags: "Tags fréquents", btnDesc: "Description" },
-            es: { warnDelisted: "<b>⚠️ Item no disponible</b> Es probable que este conteúdo ya no esté.", navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID de carpeta", optNew: "Añadidos recentemente", optName: "Nombre (A-Z)", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro de conteúdo", optAll: "Mostrar todo", optHide: "Ocultar adultos", optOnly: "Solo adultos", labelWidth: "Ancho de tarjeta", labelVisual: "Ajustes visuales", optBlur: "Quitar desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Archivos locales", footBooth: "🛒 Ver en Booth", footFolder: "📂 Abrir carpeta", footVrcAvatar: "👤 Avatar Público", footVrcWorld: "🌐 Mundo Público", searchPre: "Buscando ", searchSuf: " activos...", fileSingular: "archivo", filePlural: "archivos", moreTags: "+ {n} outros", hiddenResults: " ({n} ocultos)", statItems: "Activos totales", statSize: "Tamaño binario", statImgSize: "Tamaño images", statSpent: "Inversión estimada", statUpdated: "Última actualización", labelTopTags: "Etiquetas comunes", btnDesc: "Description" },
-            pt: { warnDelisted: "<b>⚠️ Conteúdo removido</b> Este asset pode não estar mais disponible.", navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID da pasta", optNew: "Adicionados recentemente", optName: "Nombre (A-Z)", optRel: "Popularidade", optSize: "Tamanho total", labelAdult: "Filtro de conteúdo", optAll: "Mostrar tudo", optHide: "Ocultar 18+", optOnly: "Apenas 18+", labelWidth: "Largura dos cards", labelVisual: "Controles visuais", optBlur: "Sem desfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Arquivos locais", footBooth: "🛒 Ver no Booth", footFolder: "📂 Abrir pasta", footVrcAvatar: "👤 Avatar Público", footVrcWorld: "🌐 Mundo Público", searchPre: "Pesquisando ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} outros", hiddenResults: " ({n} itens ocultos)", statItems: "Total de itens", statSize: "Tamanho binário", statImgSize: "Tamanho images", statSpent: "Investimento estimado", statUpdated: "Última atualização", labelTopTags: "Tags frequentes", btnDesc: "Description" }
+            en: { btnDetails: "Details", labelComp: "Compatible Assets", labelDesigned: "Designed For", warnDelisted: "<b>⚠️ Delisted Item</b> This asset may no longer be available on Booth.", navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optNew: "Recently Added", optName: "A-Z Name", optRel: "Popularity", optSize: "Storage Size", labelAdult: "Content Filter", optAll: "Show Everything", optHide: "Hide Adult", optOnly: "Adult Only", labelWidth: "Card Display Width", optBlur: "Disable Blur", optHideIds: "Hide Asset IDs", optTranslate: "Show English Titles", labelBinary: "Local Files", footBooth: "🛒 View on Booth", footFolder: "📂 Open Folder", footVrcAvatar: "👤 Public Avatar", footVrcWorld: "🌐 Public World", searchPre: "Searching ", searchSuf: " assets...", fileSingular: "file", filePlural: "files", moreTags: "+ {n} others", hiddenResults: " ({n} items hidden by filter)", statItems: "Total Assets", statSize: "Library Size", statImgSize: "Graphics Size", statSpent: "Estimated Investment", statUpdated: "Last Refreshed", labelTopTags: "Frequent Tags", btnDesc: "Description" },
+            ja: { btnDetails: "詳細", labelComp: "対応アセット", labelDesigned: "対応モデル", warnDelisted: "<b>⚠️ 公開停止</b> このアイテムは現在Boothで公開されていない可能性があります。", navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "表示言語", labelSort: "並び替え", optId: "ID順", optNew: "追加日順", optName: "名前順", optRel: "人気順", optSize: "サイズ順", labelAdult: "成人向けフィルター", optAll: "すべて表示", optHide: "成人向けを隠す", optOnly: "成人向けのみ", labelWidth: "カードの幅", optBlur: "ぼかしを無効化", optHideIds: "IDを非表示", optTranslate: "翻訳された名前を表示", labelBinary: "構成ファイル", footBooth: "🛒 Boothで見る", footFolder: "📂 フォルダを開く", footVrcAvatar: "👤 パブリックアバター", footVrcWorld: "🌐 パブリックワールド", searchPre: "検索中: ", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル", moreTags: "他 {n} 件", hiddenResults: " ({n} 件が非表示)", statItems: "総アイテム数", statSize: "ライブラリ容量", statImgSize: "グラフィックス容量", statSpent: "推定支出合計", statUpdated: "最終更新", labelTopTags: "人気のタグ", btnDesc: "商品説明" },
+            ko: { btnDetails: "상세 정보", labelComp: "호환 에셋", labelDesigned: "호환 모델", warnDelisted: "<b>⚠️ 판매 중지됨</b> 이 에셋은 현재 Booth에서 제공되지 않을 수 있습니다.", navTitle: "Booth 에셋 라이브러리", optionsBtn: "설정 ⚙", labelLanguage: "언어 선택", labelSort: "정렬 기준", optId: "폴더 ID", optNew: "최근 추가됨", optName: "이름순", optRel: "인기순", optSize: "용량순", labelAdult: "성인 콘텐츠 필터", optAll: "모두 보기", optHide: "성인 콘텐츠 숨기기", optOnly: "성인 콘텐츠만", labelWidth: "카드 너비", optBlur: "블러 효과 끄기", optHideIds: "항목 ID 숨기기", optTranslate: "번역된 제목 사용", labelBinary: "로컬 파일", footBooth: "🛒 Booth에서 보기", footFolder: "📂 폴더 열기", footVrcAvatar: "👤 퍼블릭 아바타", footVrcWorld: "🌐 퍼블릭 월드", searchPre: "検索結果: ", searchSuf: "개", fileSingular: "파일", filePlural: "파일", moreTags: "+ {n}개 더보기", hiddenResults: " ({n}개 필터링됨)", statItems: "총 에셋 수", statSize: "전체 용량", statImgSize: "그래픽 용량", statSpent: "예상 총 지출", statUpdated: "마지막 업데이트", labelTopTags: "가장 많이 쓰인 태그", btnDesc: "설명" },
+            'zh-Hans': { btnDetails: "详细信息", labelComp: "兼容资源", labelDesigned: "设计用于", warnDelisted: "<b>⚠️ 已下架内容</b> 此资源可能已在 Booth 停止售卖。", navTitle: "Booth 资源库", optionsBtn: "选项 ⚙", labelLanguage: "语言设置", labelSort: "排序方式", optId: "文件夹 ID", optNew: "最近添加", optName: "名称排序", optRel: "人气相关", optSize: "占用空间", labelAdult: "成人内容过滤", optAll: "显示全部内容", optHide: "隐藏成人内容", optOnly: "仅成人内容", labelWidth: "卡片显示宽度", optBlur: "禁用模糊效果", optHideIds: "隐藏资源 ID", optTranslate: "显示翻译名称", labelBinary: "本地文件", footBooth: "🛒 在 Booth 打开", footFolder: "📂 打开本地目录", footVrcAvatar: "👤 公开化身", footVrcWorld: "🌐 公开世界", searchPre: "正在搜索 ", searchSuf: " 个资源...", fileSingular: "文件", filePlural: "文件", moreTags: "+ {n} 个其他", hiddenResults: " ({n} 个已被过滤)", statItems: "资源总数", statSize: "库总大小", statImgSize: "图片大小", statSpent: "预计总支出", statUpdated: "最後更新時間", labelTopTags: "高频标签", btnDesc: "资源描述" },
+            'zh-Hant': { btnDetails: "詳細資訊", labelComp: "相容資源", labelDesigned: "設計用於", warnDelisted: "<b>⚠️ 已下架內容</b> 此資源可能已在 Booth 販售。", navTitle: "Booth 資源庫", optionsBtn: "選項 ⚙", labelLanguage: "語言設置", labelSort: "排序方式", optId: "資料夾 ID", optNew: "最近添加", optName: "名稱排序", optRel: "人氣相關", optSize: "占用空間", labelAdult: "成人內容過濾", optAll: "顯示全部內容", optHide: "隱藏成人內容", optOnly: "僅限成人內容", labelWidth: "卡片顯示寬度", optBlur: "禁用模糊效果", optHideIds: "隱藏資源 ID", optTranslate: "顯示翻譯名稱", labelBinary: "本地檔案", footBooth: "🛒 在 Booth 打開", footFolder: "📂 打開資料夾", footVrcAvatar: "👤 公開化身", footVrcWorld: "🌐 公開世界", searchPre: "正在搜尋 ", searchSuf: " 個資源...", fileSingular: "檔案", filePlural: "檔案", moreTags: "+ {n} 個其他", hiddenResults: " ({n} 個已被過濾)", statItems: "資源總數", statSize: "庫總大小", statImgSize: "圖片大小", statSpent: "預計總支出", statUpdated: "最後更新時間", labelTopTags: "高頻標籤", btnDesc: "詳細描述" },
+            de: { btnDetails: "Details", labelComp: "Passendes Zubehör", labelDesigned: "Entwickelt für", warnDelisted: "<b>⚠️ Nicht mehr gelistet</b> Dieses Asset ist möglicherweise nicht mehr verfügbar.", navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "Ordner ID", optNew: "Zuletzt hinzugefügt", optName: "Name (A-Z)", optRel: "Beliebtheit", optSize: "Dateigröße", labelAdult: "Filter", optAll: "Alles zeigen", optHide: "Nicht jugendfrei ausblenden", optOnly: "Nur 18+", labelWidth: "Kartenbreite", optBlur: "Kein Fokus", optHideIds: "IDs verbergen", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Auf Booth ansehen", footFolder: "📂 Ordner öffnen", footVrcAvatar: "👤 Avatar-Link", footVrcWorld: "🌐 Welt-Link", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {n} weitere", hiddenResults: " ({n} durch Filter versteckt)", statItems: "Gesamtanzahl", statSize: "Binärgröße", statImgSize: "Grafikgröße", statSpent: "Voraussichtliche Kosten", statUpdated: "Aktualisiert", labelTopTags: "Häufige Tags", btnDesc: "Beschreibung" },
+            nl: { btnDetails: "Details", labelComp: "Compatibele Assets", labelDesigned: "Ontworpen voor", warnDelisted: "<b>⚠️ Verwijderde Inhoud</b> Dit item is mogelijk nicht langer beschikbaar.", navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteren", optId: "ID", optNew: "Nieuwste eerst", optName: "Naam", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verberg 18+", optOnly: "Alleen 18+", labelWidth: "Breedte", optBlur: "Geen vervaging", optHideIds: "ID's verbergen", optTranslate: "Vertaalde titels", labelBinary: "Bestanden", footBooth: "🛒 Bekijk op Booth", footFolder: "📂 Map openen", footVrcAvatar: "👤 Openbare Avatar", footVrcWorld: "🌐 Openbare Wereld", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " ({n} items verborgen)", statItems: "Totaal Brass", statSize: "Totale grootte", statImgSize: "Beeldgrootte", statSpent: "Geschatte totale kosten", statUpdated: "Laatste update", labelTopTags: "Populaire tags", btnDesc: "Beschrijving" },
+            fr: { btnDetails: "Détails", labelComp: "Assets Compatibles", labelDesigned: "Conçu pour", warnDelisted: "<b>⚠️ Contenu non listé</b> Cet asset n'est probablement plus disponible.", navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier par", optId: "ID du dossier", optNew: "Ajoutés récemment", optName: "Nom (A-Z)", optRel: "Popularité", optSize: "Taille totale", labelAdult: "Filtre de contenu", optAll: "Tout afficher", optHide: "Masquer Adulte", optOnly: "Adulte uniquement", labelWidth: "Largeur des cartes", optBlur: "Désactiver le flou", optHideIds: "Masquer les IDs", optTranslate: "Titres traduits", labelBinary: "Fichiers locaux", footBooth: "🛒 Voir sur Booth", footFolder: "📂 Ouvrir le dossier", footVrcAvatar: "👤 Avatar Public", footVrcWorld: "🌐 Monde Public", searchPre: "Recherche de ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " ({n} masqués par filtre)", statItems: "Total des assets", statSize: "Taille binaire", statImgSize: "Taille images", statSpent: "Investissement estimé", statUpdated: "Mis à jour le", labelTopTags: "Tags fréquents", btnDesc: "Description" },
+            es: { btnDetails: "Details", labelComp: "Activos Compatibles", labelDesigned: "Diseñado para", warnDelisted: "<b>⚠️ Item no disponible</b> Es probable que este conteúdo ya no esté.", navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID de carpeta", optNew: "Añadidos recentemente", optName: "Nombre (A-Z)", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro de conteúdo", optAll: "Mostrar todo", optHide: "Ocultar adultos", optOnly: "Solo adultos", labelWidth: "Ancho de tarjeta", optBlur: "Quitar desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Archivos locales", footBooth: "🛒 Ver en Booth", footFolder: "📂 Abrir carpeta", footVrcAvatar: "👤 Avatar Público", footVrcWorld: "🌐 Mundo Público", searchPre: "Buscando ", searchSuf: " activos...", fileSingular: "archivo", filePlural: "archivos", moreTags: "+ {n} outros", hiddenResults: " ({n} ocultos)", statItems: "Activos totales", statSize: "Tamaño binario", statImgSize: "Tamaño images", statSpent: "Inversión estimada", statUpdated: "Última actualización", labelTopTags: "Etiquetas comunes", btnDesc: "Descripción" },
+            pt: { btnDetails: "Detalhes", labelComp: "Assets Compatíveis", labelDesigned: "Projetado para", warnDelisted: "<b>⚠️ Conteúdo removido</b> Este asset pode não estar mais disponible.", navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID da pasta", optNew: "Adicionados recentemente", optName: "Nombre (A-Z)", optRel: "Popularidade", optSize: "Tamanho total", labelAdult: "Filtre de conteúdo", optAll: "Mostrar tudo", optHide: "Ocultar 18+", optOnly: "Apenas 18+", labelWidth: "Largura dos cards", optBlur: "Sem desfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Arquivos locais", footBooth: "🛒 Ver no Booth", footFolder: "📂 Abrir pasta", footVrcAvatar: "👤 Avatar Público", footVrcWorld: "🌐 Mundo Público", searchPre: "Pesquisando ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} outros", hiddenResults: " ({n} itens ocultos)", statItems: "Total de itens", statSize: "Tamanho binário", statImgSize: "Tamanho images", statSpent: "Investimento estimado", statUpdated: "Última atualização", labelTopTags: "Tags frequentes", btnDesc: "Descrição" }
         };
         let currentCarouselIndex = 0, currentImages = [];
         const baseTitle = "Booth Asset Library";
@@ -320,15 +381,40 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
         }
         function handleSearchInput() { applyFilters(); }
         function clearSearch() { const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(); i.focus(); }
-        function tagSearch(tag) { const s = document.getElementById("searchInput"); s.value = tag; closeModal(); handleSearchInput(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        
+        function tagSearch(tag, isAuthor = false) {
+            const s = document.getElementById("searchInput");
+            s.value = isAuthor ? `author:${tag}` : tag;
+            closeModal();
+            handleSearchInput();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         function applyFilters(save = false) {
-            const query = document.getElementById("searchInput").value.toLowerCase();
+            let query = document.getElementById("searchInput").value.toLowerCase();
             const mode = document.getElementById("adultFilter").value;
             const items = document.getElementsByClassName("asset"), t = translations[state.lang] || translations['en'];
             let count = 0, totalMatchesButHidden = 0;
             if(save) localStorage.setItem('adultFilter', mode);
+
+            // Check if we're doing a prefixed search
+            const isAuthorSearch = query.startsWith('author:');
+            const authorQuery = isAuthorSearch ? query.replace('author:', '').trim() : '';
+
             for (let item of items) {
-                const isAdult = item.dataset.adult === 'true', searchMatch = item.dataset.search.includes(query), filterMatch = (mode === 'all') || (mode === 'hide' && !isAdult) || (mode === 'only' && isAdult);
+                const isAdult = item.dataset.adult === 'true';
+                const filterMatch = (mode === 'all') || (mode === 'hide' && !isAdult) || (mode === 'only' && isAdult);
+                
+                let searchMatch = false;
+                if (isAuthorSearch) {
+                    // Strict author comparison
+                    const authorO = item.dataset.authorOrig.toLowerCase();
+                    const authorT = item.dataset.authorTrans.toLowerCase();
+                    searchMatch = authorO.includes(authorQuery) || authorT.includes(authorQuery);
+                } else {
+                    searchMatch = item.dataset.search.includes(query);
+                }
+
                 if (searchMatch && !filterMatch) totalMatchesButHidden++;
                 const visible = searchMatch && filterMatch;
                 if (visible) { count++; item.style.display = ""; observer.observe(item); } else { item.style.display = "none"; }
@@ -339,6 +425,7 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             const notice = document.getElementById("filterNotice");
             if (totalMatchesButHidden > 0) { notice.innerText = t.hiddenResults.replace('{n}', totalMatchesButHidden).trim(); notice.style.display = "flex"; } else { notice.style.display = "none"; }
         }
+
         function sortAssets(save = false) {
             const list = document.getElementById('assetList'), order = document.getElementById('sortOrder').value;
             if(save) localStorage.setItem('sortOrder', order);
@@ -358,47 +445,89 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
             list.innerHTML = ""; items.forEach(i => list.appendChild(i));
             list.appendChild(notice); applyFilters();
         }
-        function toggleDescription() { const content = document.getElementById("modalDesc"), btn = document.getElementById("descToggle"); content.classList.toggle('open'); btn.classList.toggle('open'); }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const pane = document.getElementById('pane-' + tabId);
+            if (pane) pane.classList.add('active');
+            const tab = document.getElementById('tab-' + tabId);
+            if (tab) tab.classList.add('active');
+        }
+        
         function openDetails(id, skipHistory = false) {
             const el = document.querySelector(`.asset[data-id="${id}"]`), t = translations[state.lang] || translations['en'];
             if(!el) return;
-            document.getElementById("modalImg").src = ""; document.getElementById("modalBlurBg").src = "";
+            
+            switchTab('details');
+            document.getElementById("modalImg").src = ""; 
+            document.getElementById("modalBlurBg").src = "";
+            currentImages = JSON.parse(el.dataset.allImages); 
+            currentCarouselIndex = 0; 
+            updateCarousel();
+
             const displayTitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameTrans : el.dataset.nameOrig;
-            const displayAuthor = (state.showTrans && el.dataset.authorTrans) ? el.dataset.authorTrans : el.dataset.authorOrig;
-            const subtitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameOrig : "";
+            const authorOrig = el.dataset.authorOrig;
+            const authorTrans = (state.showTrans && el.dataset.authorTrans) ? el.dataset.authorTrans : authorOrig;
+            
             document.getElementById("modalName").innerText = displayTitle;
-            document.getElementById("modalSubtitle").innerText = (subtitle ? subtitle + " | " : "") + displayAuthor;
+            document.getElementById("modalSubtitle").innerHTML = `by <a class="modal-author-link" onclick="tagSearch('${authorOrig.replace(/'/g, "\\\\'")}', true)"><b class="author-primary">${authorTrans}</b></a>`;
+            
+            const meta = [];
+            if (el.dataset.nameTrans && state.showTrans) meta.push(`<div class="meta-pill">${el.dataset.nameOrig}</div>`);
+            meta.push(`<div class="meta-pill">${el.dataset.priceCurrency} ${parseFloat(el.dataset.priceValue).toLocaleString()}</div>`);
+            document.getElementById("modalMeta").innerHTML = meta.join('');
+
             document.getElementById("modalIdDisp").innerText = "#" + id;
             document.getElementById("openFolderLink").href = el.dataset.folder;
             document.getElementById("openBoothLink").href = el.dataset.boothUrl;
             document.getElementById("delistedWarn").style.display = (el.dataset.limited === 'true') ? 'block' : 'none';
             
-            const vrcAvatarLink = el.dataset.vrcAvatarLink;
-            const vrcAvatarBtn = document.getElementById("openVrcAvatarLink");
-            if(vrcAvatarLink) { vrcAvatarBtn.href = vrcAvatarLink; vrcAvatarBtn.style.display = "block"; } else { vrcAvatarBtn.style.display = "none"; }
+            const vrcA = el.dataset.vrcAvatarLink, vrcW = el.dataset.vrcWorldLink;
+            document.getElementById("openVrcAvatarLink").style.display = vrcA ? "block" : "none";
+            document.getElementById("openVrcAvatarLink").href = vrcA || "";
+            document.getElementById("openVrcWorldLink").style.display = vrcW ? "block" : "none";
+            document.getElementById("openVrcWorldLink").href = vrcW || "";
 
-            const vrcWorldLink = el.dataset.vrcWorldLink;
-            const vrcWorldBtn = document.getElementById("openVrcWorldLink");
-            if(vrcWorldLink) { vrcWorldBtn.href = vrcWorldLink; vrcWorldBtn.style.display = "block"; } else { vrcWorldBtn.style.display = "none"; }
+            const tags = JSON.parse(el.dataset.tags), tagContainer = document.getElementById("modalTags");
+            tagContainer.innerHTML = tags.map(tg => `<span class="tag-pill clickable" onclick="tagSearch('${tg.replace(/'/g, "\\\\'")}')">${tg}</span>`).join('');
 
             const transDesc = (state.showTrans && el.dataset.descTrans) ? el.dataset.descTrans : el.dataset.descOrig;
-            const descWrapper = document.getElementById("descWrapper"), modalDesc = document.getElementById("modalDesc"), descToggle = document.getElementById("descToggle");
-            modalDesc.innerHTML = formatDescription(transDesc || ""); 
-            modalDesc.classList.remove('open'); descToggle.classList.remove('open');
-            descWrapper.style.display = (transDesc && transDesc.trim()) ? "block" : "none";
+            document.getElementById("modalDesc").innerHTML = formatDescription(transDesc || "");
+            document.getElementById("tab-description").style.display = (transDesc && transDesc.trim()) ? "block" : "none";
 
-            currentImages = JSON.parse(el.dataset.allImages); currentCarouselIndex = 0; updateCarousel();
-            const tags = JSON.parse(el.dataset.tags), tagContainer = document.getElementById("modalTags");
-            const renderTagsInternal = (list) => list.map(tg => `<span class="tag-pill clickable" onclick="tagSearch('${tg.replace(/'/g, "\\\\'")}')">${tg}</span>`).join('');
-            if (tags.length > 25) { tagContainer.innerHTML = renderTagsInternal(tags.slice(0, 20)) + `<span class="tag-pill more-btn clickable" onclick="this.parentElement.innerHTML=window.renderTagsFull(JSON.parse(document.querySelector('.asset[data-id=\\\\'${id}\\\\\\']').dataset.tags))">${t.moreTags.replace('{n}', tags.length - 20)}</span>`; } else tagContainer.innerHTML = renderTagsInternal(tags);
-            window.renderTagsFull = renderTagsInternal;
+            const isAvatar = el.dataset.isAvatar === 'true';
+            const links = JSON.parse(el.dataset.links || "[]");
+            const relSection = document.getElementById("relSection");
+            if (links.length > 0) {
+                relSection.style.display = "block";
+                document.getElementById("relTitle").innerText = isAvatar ? t.labelComp : t.labelDesigned;
+                document.getElementById("relationshipContainer").innerHTML = links.map(linkId => {
+                    const target = document.querySelector(`.asset[data-id="${linkId}"]`);
+                    if (!target) return "";
+                    const n = (state.showTrans && target.dataset.nameTrans) ? target.dataset.nameTrans : target.dataset.nameOrig;
+                    return `<a href="#" class="asset-link-item" onclick="event.preventDefault(); openDetails('${linkId}')">
+                        <img class="asset-link-thumb" src="${target.dataset.img}">
+                        <span class="asset-link-name">${n}</span>
+                    </a>`;
+                }).join('');
+            } else { relSection.style.display = "none"; }
+
             const fileData = JSON.parse(el.dataset.files);
             fileData.sort((a, b) => b.name.toLowerCase().localeCompare(a.name.toLowerCase(), undefined, { numeric: true, sensitivity: 'base' }));
-            document.getElementById("fileList").innerHTML = fileData.map(f => `<li class="file-item"><a class="file-link" href="${f.path}" target="_blank">${f.name}</a><span style="color:#aaa;font-size:0.7rem;">${f.size}</span></li>`).join('');
-            const m = document.getElementById("detailModal"); m.classList.add('visible'); setTimeout(() => m.classList.add('active'), 10);
+            document.getElementById("fileList").innerHTML = fileData.map(f => `
+                <li class="file-item">
+                    <a class="file-link" href="${f.path}" target="_blank">${f.name}</a>
+                    <span style="color:#666; font-size:0.7rem;">${f.size}</span>
+                </li>`).join('');
+
+            const m = document.getElementById("detailModal"); 
+            m.classList.add('visible'); 
+            setTimeout(() => m.classList.add('active'), 10);
             document.title = baseTitle + " - #" + id;
             if (!skipHistory) { const newUrl = new URL(window.location); newUrl.searchParams.set('id', id); window.history.pushState({id: id}, '', newUrl); }
         }
+
         function carouselNext(dir) { if (currentImages.length <= 1) return; currentCarouselIndex = (currentCarouselIndex + dir + currentImages.length) % currentImages.length; updateCarousel(); }
         function updateCarousel() {
             if (!currentImages.length) return;
@@ -474,40 +603,31 @@ def parse_price(price_str):
     match = re.search(r'([\d.]+)\s*([A-Z]+)', clean)
     return (float(match.group(1)), match.group(2)) if match else (0.0, "")
 
-def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url, folder_path, tags, is_adult, wish_count, price_str, limited=False, description=""):
+def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url, folder_path, tags, is_adult, wish_count, price_str, limited=False, description="", is_avatar=False, related_links=None):
     if limited and "⚙Unlisted" not in tags:
         tags.append("⚙Unlisted")
-
     if is_adult and "⚙Adult" not in tags:
         tags.append("⚙Adult")
-
     vrc_av_match = re.search(r'(https://vrchat\.com/home/avatar/avtr_[a-f0-9-]+)', description)
     vrc_av_link = vrc_av_match.group(1) if vrc_av_match else ""
-    
     vrc_wr_match = re.search(r'(https://vrchat\.com/home/world/wrld_[a-f0-9-]+)', description)
     vrc_wr_link = vrc_wr_match.group(1) if vrc_wr_match else ""
-
     if (vrc_av_link or vrc_wr_link) and "⚙Preview" not in tags:
         tags.append("⚙Preview")
-
     binary_folder = os.path.join(folder_path, 'Binary')
     files_data, total_bytes = get_dir_data(binary_folder)
     img_bytes, all_imgs = get_image_folder_size(folder_path), get_all_local_images(folder_path, web_images)
     primary_img = all_imgs[0] if all_imgs else ""
     grid_thumb = get_optimized_thumb(asset_id, unquote(primary_img).replace('/', os.sep)) if (OPTIMIZE_THUMBNAILS and primary_img) else primary_img
-
     name_trans = translation_cache.get(asset_name.strip(), "")
     author_trans = translation_cache.get(author_name.strip(), "")
     desc_trans = description_cache.get(asset_id, "")
-    
     price_val, price_cur = parse_price(price_str)
     safe_name, safe_trans = asset_name.replace('"', '&quot;'), name_trans.replace('"', '&quot;')
     safe_author, safe_author_trans = author_name.replace('"', '&quot;'), author_trans.replace('"', '&quot;')
     safe_desc, safe_desc_trans = description.replace('"', '&quot;'), desc_trans.replace('"', '&quot;')
-    
     search_str = f"{asset_id} {asset_name} {name_trans} {author_name} {author_trans} {' '.join(tags)}".lower().replace("'", "")
     rel_folder = quote(os.path.relpath(binary_folder, start=os.getcwd()).replace('\\', '/'))
-    
     return f"""
     <li class="asset" onclick="openDetails('{asset_id}')" 
         data-id="{asset_id}" data-name-orig="{safe_name}" data-name-trans="{safe_trans}" 
@@ -518,7 +638,8 @@ def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url
         data-search='{search_str}' data-folder="{rel_folder}" data-booth-url="{booth_url}"
         data-filecount="{len(files_data)}" data-wish="{wish_count}" data-time="{int(os.path.getctime(folder_path))}"
         data-price-value="{price_val}" data-price-currency="{price_cur}" data-limited="{str(limited).lower()}"
-        data-desc-orig="{safe_desc}" data-desc-trans="{safe_desc_trans}" data-vrc-avatar-link="{vrc_av_link}" data-vrc-world-link="{vrc_wr_link}">
+        data-desc-orig="{safe_desc}" data-desc-trans="{safe_desc_trans}" data-vrc-avatar-link="{vrc_av_link}" data-vrc-world-link="{vrc_wr_link}"
+        data-is-avatar="{str(is_avatar).lower()}" data-links='{json.dumps(related_links or [])}'>
         <div class="skeleton-shimmer"></div>
         <div class="image-container"><div class="asset-id-tag">#{asset_id}</div><img class="{'image-thumbnail adult-content' if is_adult else 'image-thumbnail'}" loading="lazy"></div>
         <img class="image-backglow"><div class="content">
@@ -530,9 +651,46 @@ def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url
     </li>
     """
 
+def is_valid_avatar_name(name):
+    if not name: return False
+    n = name.lower().strip()
+    if n in FORBIDDEN_NAMES or len(n) < 2: return False
+    return True
+
+def get_base_name(name):
+    en_match = re.search(r'-(.*?)-', name)
+    if en_match:
+        cand = en_match.group(1).strip()
+        if is_valid_avatar_name(cand): return cand
+    matches = re.findall(r'【(.*?)】|\[(.*?)\]|\((.*?)\)', name)
+    for t in matches:
+        for cand in t:
+            if cand:
+                cleaned = re.sub(r'オリジナル3Dモデル|3Dモデル|アバター', '', cand).strip()
+                if is_valid_avatar_name(cleaned): return cleaned
+    core = re.sub(r'[\[(（【].*?[\])）】]', '', name).strip()
+    return core if is_valid_avatar_name(core) else None
+
+def contains_avatar_name(text, av_info):
+    if not text: return False
+    text = text.lower()
+    if av_info['trans']:
+        pattern = r'\b' + re.escape(av_info['trans'].lower()) + r'\b'
+        if re.search(pattern, text): return True
+    orig = av_info['orig'].lower()
+    if orig:
+        if orig in text:
+            idx = text.find(orig)
+            after = text[idx + len(orig):idx + len(orig) + 1]
+            if after and after in "ろうくんちゃん": return False
+            return True
+    return False
+
 print("[Scan] Reading folders...")
 asset_data_list, short_strings_to_translate = [], []
 desc_tasks = {}
+avatars = {} 
+assets_to_avatar = {} 
 
 for folder in sorted(os.listdir(ROOT_FOLDER)):
     path = os.path.join(ROOT_FOLDER, folder)
@@ -545,7 +703,8 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
             name, author, desc = data.get('name', 'N/A'), data.get('shop', {}).get('name', 'N/A'), data.get('description', '')
             tags = [t.get('name', '') for t in data.get('tags', [])]
             short_strings_to_translate.extend([name, author] + tags)
-            asset_data_list.append(('json', folder, (name, author, data, desc), path, data.get('wish_lists_count', 0)))
+            is_avatar = data.get('category', {}).get('name') == "3D Characters"
+            asset_data_list.append(('json', folder, (name, author, data, desc), path, data.get('wish_lists_count', 0), is_avatar))
             if not SKIP_TRANSLATION and desc and folder not in description_cache and contains_japanese(desc):
                 desc_tasks[folder] = desc
         else:
@@ -556,15 +715,46 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
                 a_m = re.search(r'text-text-gray600 break-all\">(.*?)<\/div>', item)
                 name, author = n_m.group(1) if n_m else "N/A", a_m.group(1) if a_m else "N/A"
                 short_strings_to_translate.extend([name, author])
-                asset_data_list.append(('limited', folder, (name, author, item, ""), path, 0))
+                asset_data_list.append(('limited', folder, (name, author, item, ""), path, 0, False))
 
-# Parallelize short terms
 bulk_translate_short_terms(short_strings_to_translate)
 
-# Parallelize long descriptions
+for atype, folder, data, path, wish, is_avatar in asset_data_list:
+    if is_avatar:
+        name = data[0]
+        orig_base = get_base_name(name)
+        trans_base = get_base_name(translation_cache.get(name.strip(), ""))
+        if orig_base or trans_base:
+            avatars[folder] = {"orig": orig_base, "trans": trans_base}
+
+for atype, folder, data, path, wish, is_avatar in asset_data_list:
+    if is_avatar: continue
+    name, author, content, desc = data
+    tags = variations = []
+    if atype == 'json':
+        tags = [t.get('name', '').lower() for t in content.get('tags', [])]
+        variations = [v.get('name', '').lower() for v in content.get('variations', []) if v.get('name')]
+    for av_id, av_info in avatars.items():
+        matched = False
+        for t in tags + variations:
+            if t in FORBIDDEN_NAMES: continue
+            if contains_avatar_name(t, av_info): matched = True; break
+        if not matched and contains_avatar_name(name, av_info): matched = True
+        if not matched and av_info['orig'] and len(av_info['orig']) > 2:
+            if contains_avatar_name(desc, av_info): matched = True
+        if matched:
+            if folder not in assets_to_avatar: assets_to_avatar[folder] = []
+            assets_to_avatar[folder].append(av_id)
+
+avatar_to_assets = {}
+for asset_id, av_list in assets_to_avatar.items():
+    for av_id in av_list:
+        if av_id not in avatar_to_assets: avatar_to_assets[av_id] = []
+        avatar_to_assets[av_id].append(asset_id)
+
 if desc_tasks:
     total_descs = len(desc_tasks)
-    print(f"[Translate] Processing {total_descs} long descriptions using {MAX_WORKERS} workers...")
+    print(f"[Translate] Processing descriptions...")
     completed_descs = 0
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_folder = {executor.submit(translate_single_text, text): folder for folder, text in desc_tasks.items()}
@@ -576,22 +766,22 @@ if desc_tasks:
             except: pass
             completed_descs += 1
             print_progress(completed_descs, total_descs, "Descriptions")
-    
     with open(DESC_CACHE_FILE, 'w', encoding='utf-8') as f:
         json.dump(description_cache, f, ensure_ascii=False, indent=2)
 
-print(f"[Build] Generating asset items...")
+print(f"[Build] Generating HTML...")
 asset_items_final = []
-for atype, folder, data, path, wish in asset_data_list:
+for atype, folder, data, path, wish, is_avatar in asset_data_list:
     name, author, content, desc = data
+    related_links = avatar_to_assets.get(folder, []) if is_avatar else assets_to_avatar.get(folder, [])
     if atype == 'json':
         web_imgs = [img.get('original', '') for img in content.get('images', [])]
         tags = [t.get('name', '') for t in content.get('tags', [])]
-        asset_items_final.append(generate_asset_html(folder, name, author, web_imgs, content.get('url', ''), path, tags, content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', ''), description=desc))
+        asset_items_final.append(generate_asset_html(folder, name, author, web_imgs, content.get('url', ''), path, tags, content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', ''), description=desc, is_avatar=is_avatar, related_links=related_links))
     else:
         i_m, u_m = re.search(r'src=\"([^\"]+)\"', content), re.search(r'href=\"([^\"]+)\"', content)
         img, url = i_m.group(1) if i_m else "", u_m.group(1) if u_m else ""
-        asset_items_final.append(generate_asset_html(folder, name, author, [img], url, path, [], is_adult_content(name), 0, "", limited=True))
+        asset_items_final.append(generate_asset_html(folder, name, author, [img], url, path, [], is_adult_content(name), 0, "", limited=True, related_links=related_links))
 
 with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
     f.write(HTML_PART_1 + "\n".join(asset_items_final) + HTML_PART_2)
