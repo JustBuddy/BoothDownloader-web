@@ -28,7 +28,7 @@ FORBIDDEN_NAMES = {
     "vrchat", "vrc", "unity", "fbx", "avatar", "3d", "model", "quest", "pc", 
     "original", "character", "boy", "girl", "boy's", "girl's", "android", "human",
     "unlisted", "adult", "preview", "cloth", "clothing", "accessory", "hair",
-    "eye", "texture", "physbone", "blendshape", "maya", "blender", "hotogiya"
+    "eye", "texture", "physbone", "blendshape", "maya", "blender"
 }
 
 print(f"--- Starting Library Generation ---")
