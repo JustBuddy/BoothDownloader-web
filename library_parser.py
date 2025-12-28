@@ -723,18 +723,35 @@ def is_valid_avatar_name(name):
 
 def get_base_name(name):
     if not name: return None
-    en_match = re.search(r'-(.*?)-', name)
-    if en_match:
-        cand = en_match.group(1).strip()
-        if is_valid_avatar_name(cand): return cand
+    # 1. Look for brackets
     matches = re.findall(r'【(.*?)】|\[(.*?)\]|\((.*?)\)|「(.*?)」', name)
     for t in matches:
         for cand in t:
             if cand:
                 cleaned = re.sub(r'オリジナル3Dモデル|3Dモデル|アバター|Ver\..*', '', cand).strip()
                 if is_valid_avatar_name(cleaned): return cleaned
+
+    # 2. Look for hashtags (Common for mio3works like #Shinra3D)
+    hash_match = re.search(r'#([a-zA-Z\d]+)', name)
+    if hash_match:
+        cand = re.sub(r'3D|Model', '', hash_match.group(1), flags=re.I).strip()
+        if is_valid_avatar_name(cand): return cand
+
+    # 3. Handle patterns like "森羅 オリジナル3Dモデル #Shinra3D" or "-Moe-"
+    en_match = re.search(r'-(.*?)-', name)
+    if en_match:
+        cand = en_match.group(1).strip()
+        if is_valid_avatar_name(cand): return cand
+
+    # 4. Fallback: Clean string of brackets and take first non-japanese word if available
     core = re.sub(r'[\[(（【「].*?[\])）】」]', '', name)
     core = re.sub(r'オリジナル3Dモデル|3Dモデル|アバター|Ver\..*', '', core).strip()
+    
+    # Try to find an English name at the start or end of string if mixed with Japanese
+    eng_parts = re.findall(r'[a-zA-Z]{3,}', core)
+    for part in eng_parts:
+        if is_valid_avatar_name(part): return part
+
     return core if is_valid_avatar_name(core) else None
 
 def contains_avatar_name(text, av_info):
