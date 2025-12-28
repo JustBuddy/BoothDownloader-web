@@ -12,7 +12,7 @@ A high-performance local web gallery generator for your [BoothDownloader](https:
 - **Smart Filtering:** Built-in NSFW/Adult content filter and tag-based searching.
 - **VRChat Integration:** Detects and links public VRChat Avatars (`avtr_`) and Worlds (`wrld_`) directly from item descriptions.
 - **Asset Optimization:** Generates WebP thumbnails for lightning-fast loading.
-- **Detailed Stats:** Track total library size, image storage, and estimated investment across different currencies.
+- **Detailed Stats:** Track total library size, image storage, and estimated amount spent on booth.
 - **Multilingual UI:** Support for English, Japanese, Korean, Chinese, German, French, and more.
 
 ## Installation & Requirements
