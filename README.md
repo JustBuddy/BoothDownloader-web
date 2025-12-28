@@ -8,12 +8,20 @@ A high-performance local web gallery generator for your [BoothDownloader](https:
 ![Preview2](https://splash.buddyworks.wtf/PbDQP6hU.png)
 
 ## Features
+- **Smart Asset Relationships:** Automatically links clothing and accessories to their base avatars by parsing names, tags, and descriptions.
 - **Auto-Translation:** Automatically translates Japanese titles, authors, and tags to English via Google Translate (cached locally).
 - **Smart Filtering:** Built-in NSFW/Adult content filter and tag-based searching.
 - **VRChat Integration:** Detects and links public VRChat Avatars (`avtr_`) and Worlds (`wrld_`) directly from item descriptions.
 - **Asset Optimization:** Generates WebP thumbnails for lightning-fast loading.
 - **Detailed Stats:** Track total library size, image storage, and estimated amount spent on booth.
 - **Multilingual UI:** Support for English, Japanese, Korean, Chinese, German, French, and more.
+
+## Asset Relationships
+The script features an intelligent cross-referencing system:
+- **Base Avatars:** Automatically identified when items are placed in the "3D Characters" category.
+- **Compatibility Detection:** Accessories, hair, and clothing are scanned for avatar names in their metadata.
+- **Bidirectional Links:** In the item details modal, avatars will show "Compatible Assets," while clothes will show "Designed For" links to the respective avatars.
+- **Filter Aware:** Related assets respect your current Adult Content filter settings.
 
 ## Installation & Requirements
 1. Install Python 3.
