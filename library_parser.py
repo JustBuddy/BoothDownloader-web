@@ -10,7 +10,7 @@ from deep_translator import GoogleTranslator
 from PIL import Image
 
 # Configuration
-ROOT_FOLDER = "Data"
+ROOT_FOLDER = "BoothDownloaderOut"
 OUTPUT_FILE = "asset_library.html"
 CACHE_FILE = "web_data/cache/translation_cache.json"
 DESC_CACHE_FILE = "web_data/cache/descriptions_cache.json"
