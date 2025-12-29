@@ -60,4 +60,5 @@ Initial build /w translations: around 20 minutes (6506 short terms, 1544 descrip
 Subsequent cached build: 2.4s (NVME SSD, important)  
 html page size: 8.1MB  
   
-Storage matters a lot for performance, it should be capable of handline any reasonably sized booth library.  
+What kind of storage this lives on matters a lot, an NVME will net you best results.  
+Having it on an HDD network storage drive usually slows generation down by 3-4x.   
