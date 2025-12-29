@@ -53,3 +53,11 @@ The following variables can be adjusted at the top of the script:
 
 ## Contributing
 Feel free to submit Pull Requests for translations, UI improvements or bug fixes. Please maintain the existing color palette (Inter font, dark aesthetic, yellow accents).
+
+## Benchmark
+Database entries: 1667 items  
+Initial build /w translations: around 20 minutes (6506 short terms, 1544 descriptions)  
+Subsequent cached build: 2.4s (NVME SSD, important)  
+html page size: 8.1MB  
+  
+Storage matters a lot for performance, it should be capable of handline any reasonably sized booth library.  
