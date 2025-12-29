@@ -62,3 +62,4 @@ html page size: 8.1MB
   
 What kind of storage this lives on matters a lot, an NVME will net you best results.  
 Having it on an HDD network storage drive usually slows generation down by 3-4x.   
+Effective performance using the page didn't noticable change, but faster storage will make item loading faster.  
