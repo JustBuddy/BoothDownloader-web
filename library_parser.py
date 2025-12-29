@@ -23,12 +23,15 @@ OPTIMIZE_THUMBNAILS = True
 THUMBNAIL_SIZE = (256, 256)
 IMG_OUT_DIR = "img"
 
+# Shared Body Groups (Case-insensitive)
+BODY_GROUPS = ["MameFriends", "MaruBody", "+Head", "Plushead"]
+
 # Keywords that should NEVER be considered an avatar name
 FORBIDDEN_NAMES = {
     "vrchat", "vrc", "unity", "fbx", "avatar", "3d", "model", "quest", "pc", 
     "original", "character", "boy", "girl", "boy's", "girl's", "android", "human",
     "unlisted", "adult", "preview", "cloth", "clothing", "accessory", "hair",
-    "eye", "texture", "physbone", "blendshape", "maya", "blender", "hotogiya",
+    "eye", "texture", "physbone", "blendshape", "blender",
     "mobile", "compatible", "version", "support", "sdk3", "prefab"
 }
 
@@ -171,6 +174,17 @@ HTML_PART_1 = """<!doctype html>
         .asset-link-view-all:hover { background: rgba(253, 218, 13, 0.15); transform: translateY(-2px); }
         .asset-link-view-all span { color: #FDDA0D; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
         .asset-link-grid { align-items: stretch; }
+
+        .asset .stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 8px;
+            height: auto;
+            min-height: 1.2rem;
+        }
+        .asset .stats span {
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -189,6 +203,11 @@ HTML_PART_1 = """<!doctype html>
             <div class="setting-group"><span class="setting-label" data-i18n="labelLanguage">Language</span>
                 <select id="langSelect" onchange="updateLanguage(this.value)">
                     <option value="de">Deutsch</option><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="nl">Nederlands</option><option value="pt">Português</option><option value="zh-Hans">简体中文</option><option value="zh-Hant">繁體中文</option>
+                </select>
+            </div>
+            <div class="setting-group"><span class="setting-label" data-i18n="labelType">Item Type</span>
+                <select id="typeFilter" onchange="applyFilters(true)">
+                    <option value="all" data-i18n="optTypeAll">All Items</option><option value="avatar" data-i18n="optTypeAvatar">Avatars</option><option value="asset" data-i18n="optTypeAsset">Assets</option>
                 </select>
             </div>
             <div class="setting-group"><span class="setting-label" data-i18n="labelSort">Sort Order</span>
@@ -277,21 +296,21 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
     </div>
     <script>
         const translations = {
-            en: { btnDetails: "Details", labelComp: "Compatible Assets", labelDesigned: "Designed For", labelViewRel: "View All", warnDelisted: "<b>⚠️ Delisted Item</b> This asset may no longer be available on Booth.", navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optNew: "Recently Added", optName: "A-Z Name", optRel: "Popularity", optSize: "Storage Size", labelAdult: "Content Filter", optAll: "Show Everything", optHide: "Hide Adult", optOnly: "Adult Only", labelWidth: "Card Width", optBlur: "Disable Blur", optHideIds: "Hide Asset IDs", optTranslate: "Show English Titles", labelBinary: "Local Files", footBooth: "🛒 View on Booth", footFolder: "📂 Open Folder", footVrcAvatar: "👤 Public Avatar", footVrcWorld: "🌐 Public World", searchPre: "Searching ", searchSuf: " assets...", fileSingular: "file", filePlural: "files", moreTags: "+ {n} others", hiddenResults: " ({n} items hidden by filter)", statItems: "Total Assets", statSize: "Library Size", statImgSize: "Graphics Size", statSpent: "Estimated Investment", statUpdated: "Last Refreshed", labelTopTags: "Frequent Tags", btnDesc: "Description" },
-            ja: { btnDetails: "詳細", labelComp: "対応アセット", labelDesigned: "対応モデル", labelViewRel: "すべて見る", warnDelisted: "<b>⚠️ 公開停止</b> このアイテムは現在Boothで公開されていない可能性があります。", navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "表示言語", labelSort: "並び替え", optId: "ID順", optNew: "追加日順", optName: "名前順", optRel: "人気順", optSize: "サイズ順", labelAdult: "成人向けフィルター", optAll: "すべて表示", optHide: "成人向けを隠す", optOnly: "成人向けのみ", labelWidth: "カードの幅", optBlur: "ぼかしを無効化", optHideIds: "IDを非表示", optTranslate: "翻訳された名前を表示", labelBinary: "構成ファイル", footBooth: "🛒 Boothで見る", footFolder: "📂 フォルダを開く", footVrcAvatar: "👤 パブリックアバター", footVrcWorld: "🌐 パブリックワールド", searchPre: "検索中: ", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル", moreTags: "他 {n} 件", hiddenResults: " ({n} 件が非表示)", statItems: "総アイテム数", statSize: "ライブラリ容量", statImgSize: "グラフィックス容量", statSpent: "推定支出合計", statUpdated: "最終更新", labelTopTags: "人気のタグ", btnDesc: "商品説明" },
-            ko: { btnDetails: "상세 정보", labelComp: "호환 에셋", labelDesigned: "호환 모델", labelViewRel: "모두 보기", warnDelisted: "<b>⚠️ 판매 중지됨</b> 이 에셋은 현재 Booth에서 제공되지 않을 수 있습니다.", navTitle: "Booth 에셋 라이브러리", optionsBtn: "설정 ⚙", labelLanguage: "언어 선택", labelSort: "정렬 기준", optId: "폴더 ID", optNew: "최근 추가됨", optName: "이름순", optRel: "인기순", optSize: "용량순", labelAdult: "성인 콘텐츠 필터", optAll: "모두 보기", optHide: "성인 콘텐츠 숨기기", optOnly: "성인 콘텐츠만", labelWidth: "카드 너비", optBlur: "블러 효과 끄기", optHideIds: "항목 ID 숨기기", optTranslate: "번역된 제목 사용", labelBinary: "로컬 파일", footBooth: "🛒 Booth에서 보기", footFolder: "📂 폴더 열기", footVrcAvatar: "👤 퍼블릭 아바타", footVrcWorld: "🌐 퍼블릭 월드", searchPre: "検索結果: ", searchSuf: "개", fileSingular: "파일", filePlural: "파일", moreTags: "+ {n}개 더보기", hiddenResults: " ({n}개 필터링됨)", statItems: "총 에셋 수", statSize: "전체 용량", statImgSize: "그래픽 용량", statSpent: "예상 총 지출", statUpdated: "마지막 업데이트", labelTopTags: "가장 많이 쓰인 태그", btnDesc: "설명" },
-            'zh-Hans': { btnDetails: "详细信息", labelComp: "兼容资源", labelDesigned: "设计用于", labelViewRel: "查看全部", warnDelisted: "<b>⚠️ 已下架内容</b> 此资源可能已在 Booth 停止售卖。", navTitle: "Booth 资源库", optionsBtn: "选项 ⚙", labelLanguage: "语言设置", labelSort: "排序方式", optId: "文件夹 ID", optNew: "最近添加", optName: "名称排序", optRel: "人气相关", optSize: "占用空间", labelAdult: "成人内容过滤", optAll: "显示全部内容", optHide: "隐藏成人内容", optOnly: "仅成人内容", labelWidth: "卡片显示宽度", optBlur: "禁用模糊效果", optHideIds: "隐藏资源 ID", optTranslate: "显示翻译名称", labelBinary: "本地文件", footBooth: "🛒 在 Booth 打开", footFolder: "📂 打开本地目录", footVrcAvatar: "👤 公开化身", footVrcWorld: "🌐 公开世界", searchPre: "正在搜索 ", searchSuf: " 个资源...", fileSingular: "文件", filePlural: "文件", moreTags: "+ {n} 个其他", hiddenResults: " ({n} 个已被过滤)", statItems: "资源总数", statSize: "库总大小", statImgSize: "图片大小", statSpent: "预计总支出", statUpdated: "最後更新時間", labelTopTags: "高频标签", btnDesc: "资源描述" },
-            'zh-Hant': { btnDetails: "詳細資訊", labelComp: "相容資源", labelDesigned: "設計用於", labelViewRel: "查看全部", warnDelisted: "<b>⚠️ 已下架內容</b> 此資源可能已在 Booth 販售。", navTitle: "Booth 資源庫", optionsBtn: "選項 ⚙", labelLanguage: "語言設置", labelSort: "排序方式", optId: "資料夾 ID", optNew: "最近添加", optName: "名稱排序", optRel: "人氣相關", optSize: "占用空間", labelAdult: "成人內容過濾", optAll: "顯示全部內容", optHide: "隱藏成人內容", optOnly: "僅限成人內容", labelWidth: "卡片顯示寬度", optBlur: "禁用模糊效果", optHideIds: "隱藏資源 ID", optTranslate: "顯示翻譯名稱", labelBinary: "本地檔案", footBooth: "🛒 在 Booth 打開", footFolder: "📂 打開資料夾", footVrcAvatar: "👤 公開化身", footVrcWorld: "🌐 公開世界", searchPre: "正在搜尋 ", searchSuf: " 個資源...", fileSingular: "檔案", filePlural: "檔案", moreTags: "+ {n} 個其他", hiddenResults: " ({n} 個已被過濾)", statItems: "資源總數", statSize: "庫總大小", statImgSize: "圖片大小", statSpent: "預計總支出", statUpdated: "最後更新時間", labelTopTags: "高頻標籤", btnDesc: "詳細描述" },
-            de: { btnDetails: "Details", labelComp: "Passendes Zubehör", labelDesigned: "Entwickelt für", labelViewRel: "Alle zeigen", warnDelisted: "<b>⚠️ Nicht mehr gelistet</b> Dieses Asset ist möglicherweise nicht mehr verfügbar.", navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "Ordner ID", optNew: "Zuletzt hinzugefügt", optName: "Name (A-Z)", optRel: "Beliebtheit", optSize: "Dateigröße", labelAdult: "Filter", optAll: "Alles zeigen", optHide: "Nicht jugendfrei ausblenden", optOnly: "Nur 18+", labelWidth: "Kartenbreite", optBlur: "Kein Fokus", optHideIds: "IDs verbergen", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Auf Booth ansehen", footFolder: "📂 Ordner öffnen", footVrcAvatar: "👤 Avatar-Link", footVrcWorld: "🌐 Welt-Link", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {n} weitere", hiddenResults: " ({n} durch Filter versteckt)", statItems: "Gesamtanzahl", statSize: "Binärgröße", statImgSize: "Grafikgröße", statSpent: "Voraussichtliche Kosten", statUpdated: "Aktualisiert", labelTopTags: "Häufige Tags", btnDesc: "Beschreibung" },
-            nl: { btnDetails: "Details", labelComp: "Compatibele Assets", labelDesigned: "Ontworpen voor", labelViewRel: "Toon alles", warnDelisted: "<b>⚠️ Verwijderde Inhoud</b> Dit item is mogelijk nicht langer beschikbaar.", navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteren", optId: "ID", optNew: "Nieuwste eerst", optName: "Naam", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verberg 18+", optOnly: "Alleen 18+", labelWidth: "Breedte", optBlur: "Geen vervaging", optHideIds: "ID's verbergen", optTranslate: "Vertaalde titels", labelBinary: "Bestanden", footBooth: "🛒 Bekijk op Booth", footFolder: "📂 Map openen", footVrcAvatar: "👤 Openbare Avatar", footVrcWorld: "🌐 Openbare Wereld", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " ({n} items verborgen)", statItems: "Total de items", statSize: "Binärgröße", statImgSize: "Tamanho images", statSpent: "Voraussichtliche Kosten", statUpdated: "Aktualisiert", labelTopTags: "Popular tags", btnDesc: "Beschreibung" },
-            fr: { btnDetails: "Détails", labelComp: "Assets Compatibles", labelDesigned: "Conçu pour", labelViewRel: "Tout voir", warnDelisted: "<b>⚠️ Contenu non listé</b> Cet asset n'est probablement plus disponible.", navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier par", optId: "ID du dossier", optNew: "Ajoutés récemment", optName: "Nom (A-Z)", optRel: "Popularité", optSize: "Taille totale", labelAdult: "Filtre de contenu", optAll: "Tout afficher", optHide: "Masquer Adulte", optOnly: "Adulte uniquement", labelWidth: "Largeur des cartes", optBlur: "Désactiver le flou", optHideIds: "Masquer les IDs", optTranslate: "Titres traduits", labelBinary: "Fichiers locaux", footBooth: "🛒 Voir sur Booth", footFolder: "📂 Ouvrir le dossier", footVrcAvatar: "👤 Avatar Public", footVrcWorld: "🌐 Monde Public", searchPre: "Recherche de ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " ({n} masqués par filtre)", statItems: "Total des assets", statSize: "Size binaire", statImgSize: "Taille images", statSpent: "Investissement estimé", statUpdated: "Mis à jour le", labelTopTags: "Tags fréquents", btnDesc: "Description" },
-            es: { btnDetails: "Details", labelComp: "Activos Compatibles", labelDesigned: "Diseñado para", labelViewRel: "Ver todo", warnDelisted: "<b>⚠️ Item no disponible</b> Es probable que este conteúdo ya no esté.", navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID de carpeta", optNew: "Añadidos recentemente", optName: "Nombre (A-Z)", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro de conteúdo", optAll: "Mostrar todo", optHide: "Ocultar adultos", optOnly: "Solo adultos", labelWidth: "Ancho de tarjeta", optBlur: "Quitar desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Archivos locales", footBooth: "🛒 Ver en Booth", footFolder: "📂 Abrir carpeta", footVrcAvatar: "👤 Avatar Público", footVrcWorld: "🌐 Mundo Público", searchPre: "Buscando ", searchSuf: " activos...", fileSingular: "archivo", filePlural: "archivos", moreTags: "+ {n} outros", hiddenResults: " ({n} ocultos)", statItems: "Activos totales", statSize: "Size binario", statImgSize: "Tamaño images", statSpent: "Inversión estimada", statUpdated: "Última actualización", labelTopTags: "Etiquetas comunes", btnDesc: "Description" },
-            pt: { btnDetails: "Detalhes", labelComp: "Assets Compatíveis", labelDesigned: "Projetado para", labelViewRel: "Ver todos", warnDelisted: "<b>⚠️ Conteúdo removido</b> Este asset pode não estar mais disponible.", navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID da pasta", optNew: "Adicionados recentemente", optName: "Nombre (A-Z)", optRel: "Popularidade", optSize: "Tamanho total", labelAdult: "Filtre de conteúdo", optAll: "Mostrar tudo", optHide: "Ocultar 18+", optOnly: "Apenas 18+", labelWidth: "Largura dos cards", optBlur: "Sem desfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Arquivos locais", footBooth: "🛒 Ver no Booth", footFolder: "📂 Abrir pasta", footVrcAvatar: "👤 Avatar Público", footVrcWorld: "🌐 Mundo Público", searchPre: "Pesquisando ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} outros", hiddenResults: " ({n} itens ocultos)", statItems: "Total de itens", statSize: "Size binário", statImgSize: "Tamanho images", statSpent: "Investimento estimado", statUpdated: "Última actualización", labelTopTags: "Tags frequentes", btnDesc: "Descrição" }
+            en: { btnDetails: "Details", labelComp: "Compatible Assets", labelDesigned: "Designed For", labelViewRel: "View All", warnDelisted: "<b>⚠️ Delisted Item</b> This asset may no longer be available on Booth.", navTitle: "Booth Asset Library", optionsBtn: "Options ⚙", labelLanguage: "Language", labelSort: "Sort Order", optId: "Folder ID", optNew: "Recently Added", optName: "A-Z Name", optRel: "Popularity", optSize: "Storage Size", labelAdult: "Content Filter", optAll: "Show Everything", optHide: "Hide Adult", optOnly: "Adult Only", labelWidth: "Card Width", optBlur: "Disable Blur", optHideIds: "Hide Asset IDs", optTranslate: "Show English Titles", labelBinary: "Local Files", footBooth: "🛒 View on Booth", footFolder: "📂 Open Folder", footVrcAvatar: "👤 Public Avatar", footVrcWorld: "🌐 Public World", searchPre: "Searching ", searchSuf: " assets...", fileSingular: "file", filePlural: "files", moreTags: "+ {n} others", hiddenResults: " ({n} items hidden by filter)", statItems: "Total Assets", statSize: "Library Size", statImgSize: "Graphics Size", statSpent: "Estimated Investment", statUpdated: "Last Refreshed", labelTopTags: "Frequent Tags", btnDesc: "Description", matchSingular: "match", matchPlural: "matches", labelType: "Item Type", optTypeAll: "All Items", optTypeAvatar: "Avatars", optTypeAsset: "Assets" },
+            ja: { btnDetails: "詳細", labelComp: "対応アセット", labelDesigned: "対応モデル", labelViewRel: "すべて見る", warnDelisted: "<b>⚠️ 公開停止</b> このアイテムは現在Boothで公開されていない可能性があります。", navTitle: "Boothアセットライブラリ", optionsBtn: "設定 ⚙", labelLanguage: "表示言語", labelSort: "並び替え", optId: "ID順", optNew: "追加日順", optName: "名前順", optRel: "人気順", optSize: "サイズ順", labelAdult: "成人向けフィルター", optAll: "すべて表示", optHide: "成人向けを隠す", optOnly: "成人向けのみ", labelWidth: "カードの幅", optBlur: "ぼかしを無効化", optHideIds: "IDを非表示", optTranslate: "翻訳された名前を表示", labelBinary: "構成ファイル", footBooth: "🛒 Boothで見る", footFolder: "📂 フォルダを開く", footVrcAvatar: "👤 パブリックアバター", footVrcWorld: "🌐 パブリックワールド", searchPre: "検索中: ", searchSuf: " 件", fileSingular: "ファイル", filePlural: "ファイル", moreTags: "他 {n} 件", hiddenResults: " ({n} 件が非表示)", statItems: "総アイテム数", statSize: "ライブラリ容量", statImgSize: "グラフィックス容量", statSpent: "推定支出合計", statUpdated: "最終更新", labelTopTags: "人気のタグ", btnDesc: "商品説明", matchSingular: "一致", matchPlural: "一致", labelType: "アイテムの種類", optTypeAll: "すべて表示", optTypeAvatar: "アバターのみ", optTypeAsset: "アセットのみ" },
+            ko: { btnDetails: "상세 정보", labelComp: "호환 에셋", labelDesigned: "호환 모델", labelViewRel: "모두 보기", warnDelisted: "<b>⚠️ 판매 중지됨</b> 이 에셋은 현재 Booth에서 제공되지 않을 수 있습니다.", navTitle: "Booth 에셋 라이브러리", optionsBtn: "설정 ⚙", labelLanguage: "언어 선택", labelSort: "정렬 기준", optId: "폴더 ID", optNew: "최근 추가됨", optName: "이름순", optRel: "人気順", optSize: "용량순", labelAdult: "성인 콘텐츠 필터", optAll: "모두 보기", optHide: "성인 콘텐츠 숨기기", optOnly: "성인 콘텐츠만", labelWidth: "카드 너비", optBlur: "블러 효과 끄기", optHideIds: "항목 ID 숨기기", optTranslate: "번역된 제목 사용", labelBinary: "로컬 파일", footBooth: "🛒 Booth에서 보기", footFolder: "📂 폴더 열기", footVrcAvatar: "👤 퍼블릭 아바타", footVrcWorld: "🌐 퍼블릭 월드", searchPre: "検索結果: ", searchSuf: "개", fileSingular: "파일", filePlural: "파일", moreTags: "+ {n}개 더보기", hiddenResults: " ({n}개 필터링됨)", statItems: "총 에셋 수", statSize: "전체 용량", statImgSize: "그래픽 용량", statSpent: "예상 총 지출", statUpdated: "마지막 업데이트", labelTopTags: "가장 많이 쓰인 태그", btnDesc: "설명", matchSingular: "매치", matchPlural: "매치", labelType: "아이템 타입", optTypeAll: "모든 아이템", optTypeAvatar: "아바타", optTypeAsset: "에셋" },
+            'zh-Hans': { btnDetails: "详细信息", labelComp: "兼容资源", labelDesigned: "设计用于", labelViewRel: "查看全部", warnDelisted: "<b>⚠️ 已下架内容</b> 此资源可能已在 Booth 停止售卖。", navTitle: "Booth 资源库", optionsBtn: "选项 ⚙", labelLanguage: "语言设置", labelSort: "排序方式", optId: "文件夹 ID", optNew: "最近添加", optName: "名称排序", optRel: "人气相关", optSize: "占用空间", labelAdult: "成人内容过滤", optAll: "显示全部内容", optHide: "隐藏成人内容", optOnly: "仅成人内容", labelWidth: "卡片显示宽度", optBlur: "禁用模糊效果", optHideIds: "隐藏资源 ID", optTranslate: "显示翻译名称", labelBinary: "本地文件", footBooth: "🛒 在 Booth 打开", footFolder: "📂 打开本地目录", footVrcAvatar: "👤 公开化身", footVrcWorld: "🌐 公开世界", searchPre: "正在搜索 ", searchSuf: " 个资源...", fileSingular: "文件", filePlural: "文件", moreTags: "+ {n} 个其他", hiddenResults: " ({n} 个已被过滤)", statItems: "资源总数", statSize: "库总大小", statImgSize: "图片大小", statSpent: "预计总支出", statUpdated: "最後更新時間", labelTopTags: "高频标签", btnDesc: "资源描述", matchSingular: "匹配", matchPlural: "匹配", labelType: "项目类型", optTypeAll: "全部项目", optTypeAvatar: "仅化身", optTypeAsset: "仅资源" },
+            'zh-Hant': { btnDetails: "詳細資訊", labelComp: "相容資源", labelDesigned: "設計用於", labelViewRel: "查看全部", warnDelisted: "<b>⚠️ 已下架內容</b> 此資源可能已在 Booth 販售。", navTitle: "Booth 資源庫", optionsBtn: "選項 ⚙", labelLanguage: "語言設置", labelSort: "排序方式", optId: "資料夾 ID", optNew: "最近添加", optName: "名稱排序", optRel: "人氣相關", optSize: "占用空間", labelAdult: "成人內容過濾", optAll: "顯示全部內容", optHide: "隱藏成人內容", optOnly: "僅限成人內容", labelWidth: "卡片顯示寬度", optBlur: "禁用模糊效果", optHideIds: "隱藏資源 ID", optTranslate: "顯示翻譯名稱", labelBinary: "本地檔案", footBooth: "🛒 在 Booth 打開", footFolder: "📂 打開資料夾", footVrcAvatar: "👤 公開化身", footVrcWorld: "🌐 公開世界", searchPre: "正在搜尋 ", searchSuf: " 個資源...", fileSingular: "檔案", filePlural: "檔案", moreTags: "+ {n} 個其他", hiddenResults: " ({n} 個已被過濾)", statItems: "資源總數", statSize: "庫總大小", statImgSize: "圖片大小", statSpent: "預計總支出", statUpdated: "最後更新時間", labelTopTags: "高頻標籤", btnDesc: "詳細描述", matchSingular: "匹配", matchPlural: "匹配", labelType: "項目類型", optTypeAll: "全部項目", optTypeAvatar: "僅限化身", optTypeAsset: "僅限資源" },
+            de: { btnDetails: "Details", labelComp: "Passendes Zubehör", labelDesigned: "Entwickelt für", labelViewRel: "Alle zeigen", warnDelisted: "<b>⚠️ Nicht mehr gelistet</b> Dieses Asset ist möglicherweise nicht mehr verfügbar.", navTitle: "Booth Bibliothek", optionsBtn: "Optionen ⚙", labelLanguage: "Sprache", labelSort: "Sortierung", optId: "Ordner ID", optNew: "Zuletzt hinzugefügt", optName: "Name (A-Z)", optRel: "Beliebtheit", optSize: "Dateigröße", labelAdult: "Filter", optAll: "Alles zeigen", optHide: "Nicht jugendfrei ausblenden", optOnly: "Nur 18+", labelWidth: "Kartenbreite", optBlur: "Kein Fokus", optHideIds: "IDs verbergen", optTranslate: "Übersetzte Titel", labelBinary: "Dateien", footBooth: "🛒 Auf Booth ansehen", footFolder: "📂 Ordner öffnen", footVrcAvatar: "👤 Avatar-Link", footVrcWorld: "🌐 Welt-Link", searchPre: "Suche ", searchSuf: " Artikel...", fileSingular: "Datei", filePlural: "Dateien", moreTags: "+ {n} weitere", hiddenResults: " ({n} durch Filter versteckt)", statItems: "Gesamtanzahl", statSize: "Binärgröße", statImgSize: "Grafikgröße", statSpent: "Voraussichtliche Kosten", statUpdated: "Aktualisiert", labelTopTags: "Häufige Tags", btnDesc: "Beschreibung", matchSingular: "Treffer", matchPlural: "Treffer", labelType: "Objekttyp", optTypeAll: "Alle Objekte", optTypeAvatar: "Avatare", optTypeAsset: "Assets" },
+            nl: { btnDetails: "Details", labelComp: "Compatibele Assets", labelDesigned: "Ontworpen voor", labelViewRel: "Toon alles", warnDelisted: "<b>⚠️ Verwijderde Inhoud</b> Dit item is mogelijk nicht langer beschikbaar.", navTitle: "Booth Bibliotheek", optionsBtn: "Opties ⚙", labelLanguage: "Taal", labelSort: "Sorteren", optId: "ID", optNew: "Nieuwste eerst", optName: "Naam", optRel: "Relevantie", optSize: "Grootte", labelAdult: "Filter", optAll: "Alles tonen", optHide: "Verberg 18+", optOnly: "Alleen 18+", labelWidth: "Breedte", optBlur: "Geen vervaging", optHideIds: "ID's verbergen", optTranslate: "Vertaalde titels", labelBinary: "Bestanden", footBooth: "🛒 Bekijk op Booth", footFolder: "📂 Map openen", footVrcAvatar: "👤 Openbare Avatar", footVrcWorld: "🌐 Openbare Wereld", searchPre: "Zoek in ", searchSuf: " items...", fileSingular: "bestand", filePlural: "bestanden", moreTags: "+ {n} meer", hiddenResults: " ({n} items verborgen)", statItems: "Totaal de items", statSize: "Binärgröße", statImgSize: "Tamanho images", statSpent: "Voraussichtliche Kosten", statUpdated: "Aktualisiert", labelTopTags: "Popular tags", btnDesc: "Beschrijving", matchSingular: "match", matchPlural: "matches", labelType: "Itemtype", optTypeAll: "Alle items", optTypeAvatar: "Avatars", optTypeAsset: "Assets" },
+            fr: { btnDetails: "Détails", labelComp: "Assets Compatibles", labelDesigned: "Conçu pour", labelViewRel: "Tout voir", warnDelisted: "<b>⚠️ Contenu non listé</b> Cet asset n'est probablement plus disponible.", navTitle: "Bibliothèque Booth", optionsBtn: "Options ⚙", labelLanguage: "Langue", labelSort: "Trier par", optId: "ID du dossier", optNew: "Ajoutés récemment", optName: "Nom (A-Z)", optRel: "Popularité", optSize: "Taille totale", labelAdult: "Filtre de contenu", optAll: "Tout afficher", optHide: "Masquer Adulte", optOnly: "Adulte uniquement", labelWidth: "Largeur des cartes", optBlur: "Désactiver le flou", optHideIds: "Masquer les IDs", optTranslate: "Titres traduits", labelBinary: "Fichiers locaux", footBooth: "🛒 Voir sur Booth", footFolder: "📂 Ouvrir le dossier", footVrcAvatar: "👤 Avatar Public", footVrcWorld: "🌐 Monde Public", searchPre: "Recherche de ", searchSuf: " items...", fileSingular: "fichier", filePlural: "fichiers", moreTags: "+ {n} de plus", hiddenResults: " ({n} masqués par filtre)", statItems: "Total des assets", statSize: "Size binaire", statImgSize: "Taille images", statSpent: "Investissement estimé", statUpdated: "Mis à jour le", labelTopTags: "Tags fréquents", btnDesc: "Description", matchSingular: "correspondance", matchPlural: "correspondances", labelType: "Type d'objet", optTypeAll: "Tous les objets", optTypeAvatar: "Avatars", optTypeAsset: "Assets" },
+            es: { btnDetails: "Details", labelComp: "Activos Compatibles", labelDesigned: "Diseñado para", labelViewRel: "Ver todo", warnDelisted: "<b>⚠️ Item no disponible</b> Es probable que este conteúdo ya no esté.", navTitle: "Biblioteca Booth", optionsBtn: "Opciones ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID de carpeta", optNew: "Añadidos recentemente", optName: "Nombre (A-Z)", optRel: "Relevancia", optSize: "Tamaño", labelAdult: "Filtro de conteúdo", optAll: "Mostrar todo", optHide: "Ocultar adultos", optOnly: "Solo adultos", labelWidth: "Ancho de tarjeta", optBlur: "Quitar desenfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Archivos locales", footBooth: "🛒 Ver en Booth", footFolder: "📂 Abrir carpeta", footVrcAvatar: "👤 Avatar Público", footVrcWorld: "🌐 Mundo Público", searchPre: "Buscando ", searchSuf: " activos...", fileSingular: "archivo", filePlural: "archivos", moreTags: "+ {n} outros", hiddenResults: " ({n} ocultos)", statItems: "Activos totales", statSize: "Size binario", statImgSize: "Tamaño images", statSpent: "Inversión estimada", statUpdated: "Última actualización", labelTopTags: "Etiquetas comunes", btnDesc: "Description", matchSingular: "coincidencia", matchPlural: "coincidencias", labelType: "Tipo de artículo", optTypeAll: "Todos los artículos", optTypeAvatar: "Avatares", optTypeAsset: "Activos" },
+            pt: { btnDetails: "Detalhes", labelComp: "Assets Compatíveis", labelDesigned: "Projetado para", labelViewRel: "Ver todos", warnDelisted: "<b>⚠️ Conteúdo removido</b> Este asset pode não estar mais disponible.", navTitle: "Biblioteca Booth", optionsBtn: "Opções ⚙", labelLanguage: "Idioma", labelSort: "Ordenar por", optId: "ID da pasta", optNew: "Adicionados recentemente", optName: "Nombre (A-Z)", optRel: "Popularidade", optSize: "Tamanho total", labelAdult: "Filtre de conteúdo", optAll: "Mostrar tudo", optHide: "Ocultar 18+", optOnly: "Apenas 18+", labelWidth: "Largura dos cards", optBlur: "Sem desfoque", optHideIds: "Ocultar IDs", optTranslate: "Títulos traducidos", labelBinary: "Arquivos locais", footBooth: "🛒 Ver no Booth", footFolder: "📂 Abrir pasta", footVrcAvatar: "👤 Avatar Público", footVrcWorld: "🌐 Mundo Público", searchPre: "Pesquisando ", searchSuf: " itens...", fileSingular: "arquivo", filePlural: "arquivos", moreTags: "+ {n} outros", hiddenResults: " ({n} itens ocultos)", statItems: "Total de itens", statSize: "Size binário", statImgSize: "Tamanho images", statSpent: "Investimento estimado", statUpdated: "Última actualización", labelTopTags: "Tags frequentes", btnDesc: "Descrição", matchSingular: "correspondência", matchPlural: "correspondências", labelType: "Tipo de item", optTypeAll: "Todos os itens", optTypeAvatar: "Avatares", optTypeAsset: "Assets" }
         };
         let currentCarouselIndex = 0, currentImages = [];
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
-        const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), adultFilter: getLS('adultFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
+        const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
         
         function formatBytes(bytes) {
             if (bytes === 0) return '0 B';
@@ -319,7 +338,7 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
                 requestAnimationFrame(() => {
                     updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
                     document.getElementById('gridRange').value = state.gridSize; document.getElementById('blurToggle').checked = state.disableBlur; document.getElementById('sortOrder').value = state.sortOrder;
-                    document.getElementById('adultFilter').value = state.adultFilter; document.getElementById('hideIdToggle').checked = state.hideIds; document.getElementById('translateToggle').checked = state.showTrans;
+                    document.getElementById('adultFilter').value = state.adultFilter; document.getElementById('typeFilter').value = state.typeFilter; document.getElementById('hideIdToggle').checked = state.hideIds; document.getElementById('translateToggle').checked = state.showTrans;
                     
                     const items = document.getElementsByClassName('asset');
                     let totalBinaryBytes = 0, totalImageBytes = 0;
@@ -435,19 +454,30 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
         function applyFilters(save = false) {
             let query = document.getElementById("searchInput").value.toLowerCase();
             const mode = document.getElementById("adultFilter").value;
+            const typeMode = document.getElementById("typeFilter").value;
             const items = document.getElementsByClassName("asset"), t = translations[state.lang] || translations['en'];
             let count = 0, totalMatchesButHidden = 0;
-            if(save) { state.adultFilter = mode; localStorage.setItem('adultFilter', mode); }
+            if(save) { 
+                state.adultFilter = mode; 
+                state.typeFilter = typeMode;
+                localStorage.setItem('adultFilter', mode); 
+                localStorage.setItem('typeFilter', typeMode);
+            }
 
             const isAuthorSearch = query.startsWith('author:');
             const isRelSearch = query.startsWith('rel:');
+            const isTypeSearch = query.startsWith('type:');
             
             const authorQuery = isAuthorSearch ? query.replace('author:', '').trim() : '';
             const relQuery = isRelSearch ? query.replace('rel:', '').trim() : '';
+            const typeSearchVal = isTypeSearch ? query.replace('type:', '').trim() : '';
 
             for (let item of items) {
                 const isAdult = item.dataset.adult === 'true';
-                const filterMatch = (mode === 'all') || (mode === 'hide' && !isAdult) || (mode === 'only' && isAdult);
+                const isAvatar = item.dataset.isAvatar === 'true';
+                
+                const adultFilterMatch = (mode === 'all') || (mode === 'hide' && !isAdult) || (mode === 'only' && isAdult);
+                const typeFilterMatch = (typeMode === 'all') || (typeMode === 'avatar' && isAvatar) || (typeMode === 'asset' && !isAvatar);
                 
                 let searchMatch = false;
                 if (isRelSearch) {
@@ -457,15 +487,25 @@ HTML_PART_2 = """<li id="filterNotice"></li></ul></div>
                     const authorO = item.dataset.authorOrig.toLowerCase();
                     const authorT = item.dataset.authorTrans.toLowerCase();
                     searchMatch = (authorO === authorQuery) || (authorT === authorQuery) || (authorO.includes(authorQuery)) || (authorT.includes(authorQuery));
+                } else if (isTypeSearch) {
+                    if (typeSearchVal === 'avatar') searchMatch = isAvatar;
+                    else if (typeSearchVal === 'asset') searchMatch = !isAvatar;
                 } else {
                     searchMatch = item.dataset.search.includes(query);
                 }
 
-                if (searchMatch && !filterMatch) totalMatchesButHidden++;
-                const visible = searchMatch && filterMatch;
+                const visible = searchMatch && adultFilterMatch && typeFilterMatch;
+                if (searchMatch && !(adultFilterMatch && typeFilterMatch)) totalMatchesButHidden++;
+                
                 if (visible) { count++; item.style.display = ""; observer.observe(item); } else { item.style.display = "none"; }
+                
                 const fc = parseInt(item.dataset.filecount);
-                item.querySelector('.file-label-dynamic').innerText = fc + " " + (fc === 1 ? t.fileSingular : t.filePlural);
+                const flabel = item.querySelector('.file-label-dynamic');
+                if (flabel) flabel.innerText = fc + " " + (fc === 1 ? t.fileSingular : t.filePlural);
+                
+                const matches = JSON.parse(item.dataset.links || "[]").length;
+                const mlabel = item.querySelector('.match-label-dynamic');
+                if (mlabel) mlabel.innerText = matches + " " + (matches === 1 ? t.matchSingular : t.matchPlural);
             }
             document.getElementById("searchInput").placeholder = t.searchPre + count + t.searchSuf;
             const notice = document.getElementById("filterNotice");
@@ -692,6 +732,16 @@ def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url
     safe_desc, safe_desc_trans = description.replace('"', '&quot;'), desc_trans.replace('"', '&quot;')
     search_str = f"{asset_id} {asset_name} {name_trans} {author_name} {author_trans} {' '.join(tags)}".lower().replace("'", "")
     rel_folder = quote(os.path.relpath(binary_folder, start=os.getcwd()).replace('\\', '/'))
+    
+    bin_stats_html = ""
+    if total_bytes > 0:
+        bin_stats_html = f"<span>{get_readable_size(total_bytes)}</span>"
+    if len(files_data) > 0:
+        bin_stats_html += f"<span class='file-label-dynamic'></span>"
+    
+    match_count = len(related_links or [])
+    match_html = f"<span class='match-label-dynamic'></span>" if match_count > 0 else ""
+
     return f"""
     <li class="asset" onclick="openDetails('{asset_id}')" 
         data-id="{asset_id}" data-name-orig="{safe_name}" data-name-trans="{safe_trans}" 
@@ -709,53 +759,53 @@ def generate_asset_html(asset_id, asset_name, author_name, web_images, booth_url
         <img class="image-backglow"><div class="content">
             <div class="name"><span class="name-primary">{asset_name}</span></div>
             <div class="author-label">by <b class="author-primary">{author_name}</b></div>
-            <div class="stats"><span>{get_readable_size(total_bytes)}</span><span class="file-label-dynamic"></span></div>
+            <div class="stats">{bin_stats_html}{match_html}</div>
             <div class="tag-row">{"".join([f'<span class="tag-pill">{t}</span>' for t in tags[:12]])}</div>
         </div>
     </li>
     """
 
-def get_avatar_search_profile(orig_name, trans_name):
-    """Safe core extraction from English translation and alphanumeric parts of Original."""
+def get_avatar_search_profile(orig_name, trans_name, tags):
     search_terms = set()
-    
-    # 1. Alphanumeric extraction from Japanese Original (for names like -Rusk-)
+    groups = set()
+    all_context = (orig_name + " " + (trans_name or "") + " " + " ".join(tags)).lower()
+    for g in BODY_GROUPS:
+        if g.lower() in all_context: groups.add(g.lower())
     orig_parts = re.findall(r'[a-zA-Z0-9]{2,}', orig_name)
     for part in orig_parts:
         if part.lower() not in FORBIDDEN_NAMES: search_terms.add(part.lower())
-
-    # 2. Extract from translated English title
     if trans_name:
         quoted = re.findall(r"['\"\[](.*?)['\"\]]", trans_name)
         for cand in quoted:
             cleaned = re.sub(r'Original 3D Model|3D Model|Avatar|Ver\..*', '', cand, flags=re.IGNORECASE).strip()
             if cleaned.lower() not in FORBIDDEN_NAMES and len(cleaned) > 1: search_terms.add(cleaned.lower())
-        
         core = re.sub(r'Original 3D Model|3D Model|Avatar|Ver\..*|#\w+|chan|kun', '', trans_name, flags=re.IGNORECASE).strip()
         parts = [p.strip() for p in core.split() if p.strip().lower() not in FORBIDDEN_NAMES]
         if parts: search_terms.add(parts[0].lower())
-
-    return list(search_terms)
+    return {"names": list(search_terms), "groups": list(groups)}
 
 def check_english_match(outfit_data, profile):
-    """Normalizes vowel variations and symbols for strict English matching."""
     if not profile: return False
     trans_title, trans_tags, trans_variations = outfit_data
-    
     def normalize(text):
-        # Convert all punctuation/symbols to spaces
         text = re.sub(r'[^a-zA-Z0-9]', ' ', text).lower()
-        # Normalization for common Japanese Romanization variations (long vowel o -> ou)
-        # Replacing 'ou' with 'o' at end of words/tokens to match 'Kikyou' to 'Kikyo'
         return re.sub(r'ou\b', 'o', text)
-
-    blob = normalize(" ".join([trans_title] + trans_tags + trans_variations))
-    
-    for term in profile:
+    def collapse(text):
+        return re.sub(r'[^a-zA-Z0-9]', '', text).lower().replace('ou', 'o')
+    base_str = " ".join([trans_title] + trans_tags + trans_variations)
+    blob = normalize(base_str)
+    collapsed_parts = [collapse(trans_title)] + [collapse(t) for t in trans_tags] + [collapse(v) for v in trans_variations]
+    for term in profile.get("names", []):
         norm_term = normalize(term).strip()
+        collapsed_term = collapse(term).strip()
         if not norm_term: continue
         pattern = r'\b' + re.escape(norm_term) + r'\b'
-        if re.search(pattern, blob): return True
+        if re.search(pattern, blob) or collapsed_term in collapsed_parts: return True
+    for g_term in profile.get("groups", []):
+        norm_g = normalize(g_term).strip()
+        collapsed_g = collapse(g_term).strip()
+        pattern = r'\b' + re.escape(norm_g) + r'\b'
+        if re.search(pattern, blob) or collapsed_g in collapsed_parts: return True
     return False
 
 print("[Scan] Reading folders...")
@@ -790,14 +840,14 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
 
 bulk_translate_short_terms(short_strings_to_translate)
 
-# Logic for Relationships using Translated English data with normalization
 print("[Relate] Mapping Avatars...")
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if is_avatar:
         name = data[0]
         trans_name = translation_cache.get(name.strip(), "")
-        profile = get_avatar_search_profile(name, trans_name)
-        if profile:
+        tags = [t.get('name', '') for t in data[2].get('tags', [])] if atype == 'json' else []
+        profile = get_avatar_search_profile(name, trans_name, tags)
+        if profile["names"] or profile["groups"]:
             avatar_profiles[folder] = profile
 
 assets_to_avatar = {}
@@ -810,7 +860,6 @@ for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if atype == 'json':
         t_tags = [translation_cache.get(t.get('name', ''), '').lower() for t in content.get('tags', [])]
         t_vars = [translation_cache.get(v.get('name', ''), '').lower() for v in content.get('variations', []) if v.get('name')]
-    
     for av_id, profile in avatar_profiles.items():
         if check_english_match((t_name, t_tags, t_vars), profile):
             if folder not in assets_to_avatar: assets_to_avatar[folder] = []
