@@ -10,19 +10,19 @@ from deep_translator import GoogleTranslator
 from PIL import Image
 
 # Configuration
-ROOT_FOLDER = "BoothDownloaderOut" # Point to the output folder of BoothDownloader
-OUTPUT_FILE = "asset_library.html" # Path and name of the generated html file
-CACHE_FILE = "web_data/cache/translation_cache.json" # Cache file for the asset translations
-DESC_CACHE_FILE = "web_data/cache/descriptions_cache.json" # Cache file for the description translations
-FILTER_FILE = "web_data/filters.json" # Optional: json filterlist for words that should be considered for adult tagging
-L18N_FILE = "web_data/l18n.json" # UI translation file
-SKIP_TRANSLATION = False  # Skip the automatic asset and description translations
-MAX_WORKERS = 5  # Amount of threads used for translation. Higher than 5 tends to trip rate limits.
+ROOT_FOLDER = "Data"
+OUTPUT_FILE = "asset_library.html"
+CACHE_FILE = "web_data/cache/translation_cache.json"
+DESC_CACHE_FILE = "web_data/cache/descriptions_cache.json"
+FILTER_FILE = "web_data/filters.json"
+L18N_FILE = "web_data/l18n.json"
+SKIP_TRANSLATION = False  
+MAX_WORKERS = 5 
 
 # Thumbnail Optimization
-OPTIMIZE_THUMBNAILS = True # Whenever to optimize the thumbnails to webp
-THUMBNAIL_SIZE = (256, 256) # Size of those thumbnails
-IMG_OUT_DIR = "web_data/img" # Storage path for the thumbnails
+OPTIMIZE_THUMBNAILS = True
+THUMBNAIL_SIZE = (256, 256)
+IMG_OUT_DIR = "web_data/img"
 
 # Shared Body Groups (Case-insensitive)
 BODY_GROUPS = ["MameFriends", "MaruBody", "+Head", "Plushead"]
@@ -836,7 +836,11 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
             name, author, desc = data.get('name', 'N/A'), data.get('shop', {}).get('name', 'N/A'), data.get('description', '')
             tags = [t.get('name', '') for t in data.get('tags', [])]
             short_strings_to_translate.extend([name, author] + tags)
-            is_avatar = data.get('category', {}).get('name') == "3D Characters"
+            
+            # Use Category ID 208 or localized name variants
+            cat = data.get('category', {})
+            is_avatar = cat.get('id') == 208 or cat.get('name') in ["3D Characters", "3Dキャラクター", "3D캐릭터"]
+            
             asset_data_list.append(('json', folder, (name, author, data, desc), path, data.get('wish_lists_count', 0), is_avatar))
             if not SKIP_TRANSLATION and desc and folder not in description_cache and contains_japanese(desc):
                 desc_tasks[folder] = desc
@@ -916,7 +920,7 @@ for atype, folder, data, path, wish, is_avatar in asset_data_list:
 
 final_html = HTML_PART_1 + "\n".join(asset_items_final) + HTML_PART_2
 
-# Injection logic unified to a single token.
+# Safely inject the JSON into the template
 l18n_json_string = json.dumps(l18n_data, ensure_ascii=False)
 final_html = final_html.replace("__L18N_INJECT_POINT__", l18n_json_string)
 
