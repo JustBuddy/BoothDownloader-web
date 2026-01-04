@@ -352,7 +352,11 @@ HTML_TEMPLATE = """<!doctype html>
                 const isAdult = item.adult ? 'adult-content' : '';
                 return `<li class="asset" id="asset-${item.id}" onclick="openDetails('${item.id}')" data-id="${item.id}">
                     <div class="skeleton-shimmer"></div>
-                    <div class="image-container"><div class="asset-id-tag">#${item.id}</div><img class="image-thumbnail ${isAdult}" loading="lazy"></div>
+                    <div class="image-container">
+                        <div class="asset-id-tag">#${item.id}</div>
+                        ${item.adult ? '<div class="adult-badge">18+</div>' : ''}
+                        <img class="image-thumbnail ${isAdult}" loading="lazy">
+                    </div>
                     <img class="image-backglow"><div class="content">
                         <div class="name"><span class="name-primary"></span></div>
                         <div class="author-label">by <b class="author-primary"></b></div>

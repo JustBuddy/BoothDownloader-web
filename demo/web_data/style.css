@@ -252,6 +252,32 @@ body.hide-ids .asset-id-tag {
   opacity: 0;
 }
 
+/* ADULT OVERLAY */
+.adult-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 25;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-weight: 900;
+  font-size: 1.8rem;
+  letter-spacing: 1px;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.asset:hover .adult-badge {
+  opacity: 0;
+}
+
+body.no-blur .adult-badge {
+  display: none;
+}
+
 /* SKELETON & VISIBILITY */
 .skeleton-shimmer {
   position: absolute;
