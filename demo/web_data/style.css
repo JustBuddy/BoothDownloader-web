@@ -551,6 +551,7 @@ body.no-blur .adult-content {
   background: rgba(255, 255, 255, 1);
   cursor: pointer;
   transition: 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .dot.active {
