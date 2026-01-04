@@ -49,11 +49,7 @@ if OPTIMIZE_THUMBNAILS and not os.path.exists(IMG_OUT_DIR):
     os.makedirs(IMG_OUT_DIR)
 
 # Load External Filters
-ADULT_KEYWORDS = [
-    r"R-?18", r"adult", r"nude", r"semen", r"nsfw", r"sexual", r"erotic",
-    r"pussy", r"dick", r"vagina", r"penis", r"otimpo", r"otinpo",
-    "精液", "だぷだぷ", "ヌード", "エロ", "クリトリス", "おまんこ", "おちんぽ", "おてぃんぽ"
-]
+ADULT_KEYWORDS = []
 if os.path.exists(FILTER_FILE):
     try:
         with open(FILTER_FILE, 'r', encoding='utf-8') as f:
