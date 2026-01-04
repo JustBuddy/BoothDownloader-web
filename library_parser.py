@@ -549,8 +549,15 @@ HTML_TEMPLATE = """<!doctype html>
         function updateCarousel() {
             const imgUrl = currentImages[currentCarouselIndex], mI = document.getElementById("modalImg"), mB = document.getElementById("modalBlurBg"), dots = document.getElementById("carouselDots");
             mI.src = imgUrl; mB.src = imgUrl;
-            if (currentImages.length > 1) { dots.style.display = "flex"; dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join(''); }
-            else dots.style.display = "none";
+            
+            const showUI = currentImages.length > 1;
+            document.getElementById("carouselPrev").style.display = showUI ? "block" : "none";
+            document.getElementById("carouselNext").style.display = showUI ? "block" : "none";
+            dots.style.display = showUI ? "flex" : "none";
+            
+            if (showUI) {
+                dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join('');
+            }
         }
         function closeModal(skipHistory = false) { 
             const m = document.getElementById("detailModal"); m.classList.remove('active'); setTimeout(() => { if(!m.classList.contains('active')) m.classList.remove('visible'); }, 300);
