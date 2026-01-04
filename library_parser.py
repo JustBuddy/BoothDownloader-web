@@ -34,7 +34,8 @@ FORBIDDEN_NAMES = {
     "original", "character", "boy", "girl", "boy's", "girl's", "android", "human",
     "unlisted", "adult", "preview", "cloth", "clothing", "accessory", "hair",
     "eye", "texture", "physbone", "blendshape", "blender",
-    "mobile", "compatible", "version", "support", "sdk3", "prefab"
+    "mobile", "compatible", "version", "support", "sdk3", "prefab", "physbones",
+    "fullset", "edition", "sf", "3dcg", "vrm", "mmd"
 }
 
 print(f"--- Starting Library Generation ---")
@@ -704,12 +705,23 @@ def get_avatar_search_profile(orig_name, trans_name, tags):
             if p.strip().lower() not in FORBIDDEN_NAMES: search_terms.add(p.strip().lower())
     return {"names": list(search_terms), "groups": list(groups)}
 
-def check_english_match(outfit_data, profile):
-    title, tags, vars = outfit_data
-    blob = re.sub(r'[^a-zA-Z0-9]', ' ', f"{title} {' '.join(tags)} {' '.join(vars)}").lower().replace('ou', 'o')
-    for term in profile.get("names", []) + profile.get("groups", []):
+def check_english_match(asset_info, profile):
+    title, tags, vars = asset_info
+    asset_context = (title + " " + " ".join(tags) + " " + " ".join(vars)).lower()
+    
+    # 1. Check for Shared Body Groups
+    for group in profile.get("groups", []):
+        if group in asset_context:
+            return True
+
+    # 2. Check for Name-based Matching
+    relevant_tags = [t for t in tags if t not in FORBIDDEN_NAMES]
+    blob = re.sub(r'[^a-zA-Z0-9]', ' ', f"{title} {' '.join(relevant_tags)} {' '.join(vars)}").lower().replace('ou', 'o')
+    
+    for term in profile.get("names", []):
         norm = re.sub(r'[^a-zA-Z0-9]', ' ', term).lower().replace('ou', 'o').strip()
-        if norm and re.search(r'\b' + re.escape(norm) + r'\b', blob): return True
+        if norm and norm not in FORBIDDEN_NAMES and len(norm) > 1:
+            if re.search(r'\b' + re.escape(norm) + r'\b', blob): return True
     return False
 
 # Execution logic
@@ -779,11 +791,9 @@ for atype, folder, data, path, wish, is_avatar in asset_data_list:
         manual_ids = [str(x) for x in data[2]['related_booth_ids']]
         for target_id in manual_ids:
             if is_avatar:
-                # Custom item is Avatar, manual_ids are Assets
                 avatar_to_assets.setdefault(folder, []).append(target_id)
                 assets_to_avatar.setdefault(target_id, []).append(folder)
             else:
-                # Custom item is Asset, manual_ids are Avatars
                 assets_to_avatar.setdefault(folder, []).append(target_id)
                 avatar_to_assets.setdefault(target_id, []).append(folder)
 
@@ -791,12 +801,12 @@ for atype, folder, data, path, wish, is_avatar in asset_data_list:
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if is_avatar: continue
     
-    t_name = translation_cache.get(data[0].strip(), "").lower()
+    t_name = (translation_cache.get(data[0].strip(), "") or data[0]).lower()
     if atype == 'json':
-        t_tags = [translation_cache.get(t.get('name', ''), '').lower() for t in data[2].get('tags', [])]
-        t_vars = [translation_cache.get(v.get('name', ''), '').lower() for v in data[2].get('variations', []) if v.get('name')]
+        t_tags = [ (translation_cache.get(t.get('name', ''), '') or t.get('name', '')).lower() for t in data[2].get('tags', [])]
+        t_vars = [ (translation_cache.get(v.get('name', ''), '') or v.get('name', '')).lower() for v in data[2].get('variations', []) if v.get('name')]
     elif atype == 'custom':
-        t_tags = [translation_cache.get(t.strip(), '').lower() for t in data[2].get('tags', []) if t]
+        t_tags = [ (translation_cache.get(t.strip(), '') or t.strip()).lower() for t in data[2].get('tags', []) if t]
         t_vars = []
     else:
         t_tags, t_vars = [], []
