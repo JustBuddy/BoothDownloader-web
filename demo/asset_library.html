@@ -13,34 +13,12 @@
         #mainWrapper { opacity: 0; transition: opacity 0.8s ease; visibility: hidden; }
         body.loaded #mainWrapper { opacity: 1; visibility: visible; }
         body.loaded #appLoader { opacity: 0; pointer-events: none; }
-        
-        .asset-link-view-all { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            background: rgba(253, 218, 13, 0.05); 
-            border: 1px dashed #FDDA0D; 
-            border-radius: 6px; 
-            text-decoration: none; 
-            transition: 0.2s; 
-            padding: 8px;
-            height: 46px;
-            box-sizing: border-box;
-        }
+        .asset-link-view-all { display: flex; align-items: center; justify-content: center; background: rgba(253, 218, 13, 0.05); border: 1px dashed #FDDA0D; border-radius: 6px; text-decoration: none; transition: 0.2s; padding: 8px; height: 46px; box-sizing: border-box; }
         .asset-link-view-all:hover { background: rgba(253, 218, 13, 0.15); transform: translateY(-2px); }
         .asset-link-view-all span { color: #FDDA0D; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
         .asset-link-grid { align-items: stretch; }
-
-        .asset .stats {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px 8px;
-            height: auto;
-            min-height: 1.2rem;
-        }
-        .asset .stats span {
-            white-space: nowrap;
-        }
+        .asset .stats { display: flex; flex-wrap: wrap; gap: 4px 8px; height: auto; min-height: 1.2rem; }
+        .asset .stats span { white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -90,218 +68,7 @@
                 <div id="commonTags" class="common-tags-grid"></div>
             </div>
         </div>
-        <div class="container"><ul id="assetList">
-    <li class="asset" onclick="openDetails('5541093')" 
-        data-id="5541093" data-name-orig="[Free] シンプルクロップトップ [萌Moe]" data-name-trans="[Free] Simple crop top [Moe Moe]" 
-        data-author-orig="BUDDYWORKS" data-author-trans="" data-img="web_data/img/5541093_thumb.webp" 
-        data-all-images='["BoothDownloaderOut/5541093/0f422e2e-a68c-4c7e-bd53-61286d230b3d_base_resized.jpg", "BoothDownloaderOut/5541093/5b5d85a4-08c9-4032-9a3d-7d627c228551_base_resized.jpg", "BoothDownloaderOut/5541093/ea6a6f07-00a5-41d4-92a4-6a0278d4d2b8_base_resized.jpg", "BoothDownloaderOut/5541093/0b7ecc6e-c413-4010-9b7c-85d7999d1c9a_base_resized.jpg"]'
-        data-bytes="698146" data-img-bytes="698146" data-files='[{"name": "Image (1).jpg", "path": "BoothDownloaderOut/5541093/Binary/Image%20%281%29.jpg", "size": "128.4KB"}, {"name": "Image (2).jpg", "path": "BoothDownloaderOut/5541093/Binary/Image%20%282%29.jpg", "size": "246.9KB"}, {"name": "Image (3).jpg", "path": "BoothDownloaderOut/5541093/Binary/Image%20%283%29.jpg", "size": "165.5KB"}, {"name": "Image (4).jpg", "path": "BoothDownloaderOut/5541093/Binary/Image%20%284%29.jpg", "size": "141.0KB"}]'
-        data-tags='["\u8863\u88c5", "\u840c", "VRChat", "VRChat\u53ef", "VRC\u60f3\u5b9a\u30e2\u30c7\u30eb", "vrchat\u5411\u3051", "tank top", "tanktop", "Moe\u7528", "Moe\u5bfe\u5fdc", "moe\u7528", "Moe (\u840c)", "moe\u3061\u3083\u3093", "Moe\u5c02\u7528"]' data-adult="false" 
-        data-search='5541093 [free] シンプルクロップトップ [萌moe] [free] simple crop top [moe moe] buddyworks  衣装 萌 vrchat vrchat可 vrc想定モデル vrchat向け tank top tanktop moe用 moe対応 moe用 moe (萌) moeちゃん moe専用' data-folder="BoothDownloaderOut/5541093/Binary" data-booth-url="https://buddyworks.booth.pm/items/5541093"
-        data-filecount="4" data-wish="143" data-time="1766760002"
-        data-price-value="100.0" data-price-currency="JPY" data-limited="false"
-        data-desc-orig="シンプルなタンクトップです。
-適用するにはBlenderの知識が必要です。
-
-使用したシェーダー：Poiyomi Toon
-
-胸のサイズを0以外に設定すると、動作中に問題が発生する可能性があります。
-
-利用規約：自由にご利用ください。帰属表示は歓迎しますが、任意です。
-
-お楽しみください 💖
-
-アバターやその他のタンクトップとは関係のないデータは含まれません。
-Avatar (Body): https://booth.pm/en/items/4667400
-Avatar (Head): https://booth.pm/ja/items/3445873
-Hair: https://booth.pm/ja/items/4054314" data-desc-trans="A simple tank top.
-Knowledge of Blender is required to apply.
-
-Shader used: Poiyomi Toon
-
-Setting the chest size to a value other than 0 may cause problems during operation.
-
-Terms of Use: Please feel free to use. Attribution is welcome but optional.
-
-Enjoy 💖
-
-It does not include avatars or other data unrelated to tank tops.
-Avatar (Body): https://booth.pm/en/items/4667400
-Avatar (Head): https://booth.pm/ja/items/3445873
-Hair: https://booth.pm/ja/items/4054314" data-vrc-avatar-link="" data-vrc-world-link=""
-        data-is-avatar="false" data-links='[]'>
-        <div class="skeleton-shimmer"></div>
-        <div class="image-container"><div class="asset-id-tag">#5541093</div><img class="image-thumbnail" loading="lazy"></div>
-        <img class="image-backglow"><div class="content">
-            <div class="name"><span class="name-primary">[Free] シンプルクロップトップ [萌Moe]</span></div>
-            <div class="author-label">by <b class="author-primary">BUDDYWORKS</b></div>
-            <div class="stats"><span>681.8KB</span><span class='file-label-dynamic'></span></div>
-            <div class="tag-row"><span class="tag-pill">衣装</span><span class="tag-pill">萌</span><span class="tag-pill">VRChat</span><span class="tag-pill">VRChat可</span><span class="tag-pill">VRC想定モデル</span><span class="tag-pill">vrchat向け</span><span class="tag-pill">tank top</span><span class="tag-pill">tanktop</span><span class="tag-pill">Moe用</span><span class="tag-pill">Moe対応</span><span class="tag-pill">moe用</span><span class="tag-pill">Moe (萌)</span></div>
-        </div>
-    </li>
-    
-
-    <li class="asset" onclick="openDetails('5542201')" 
-        data-id="5542201" data-name-orig="「Stranded」のビーチウェア「3アバター対応」" data-name-trans="&quot;Stranded&quot; beachwear &quot;compatible with 3 avatars&quot;" 
-        data-author-orig="BUDDYWORKS" data-author-trans="" data-img="web_data/img/5542201_thumb.webp" 
-        data-all-images='["BoothDownloaderOut/5542201/1678393c-537d-44d4-babb-7671878488d0_base_resized.jpg", "BoothDownloaderOut/5542201/86c1d66e-e3e6-4c52-93d7-ad2994122b5b_base_resized.jpg", "BoothDownloaderOut/5542201/5e5f1e90-2e3c-47d7-841c-df8ca189f30e_base_resized.jpg", "BoothDownloaderOut/5542201/44d4f43f-5bc1-432b-baa9-231915165eed_base_resized.jpg", "BoothDownloaderOut/5542201/bc9f1ef4-2fa8-4153-99f1-ff1b691bcba8_base_resized.jpg", "BoothDownloaderOut/5542201/bb599940-6975-4802-a706-6efe6d321a85_base_resized.jpg", "BoothDownloaderOut/5542201/b7d559c0-0104-49fb-8c6c-8259385ccc03_base_resized.jpg", "BoothDownloaderOut/5542201/59c74c00-a29e-4edd-8176-2d285bda13a7_base_resized.jpg", "BoothDownloaderOut/5542201/35c9b800-0b15-4627-8eca-dee05cb79c34_base_resized.jpg", "BoothDownloaderOut/5542201/5b4ae9fb-8cbb-4e42-88d5-8f1e590189a5_base_resized.jpg"]'
-        data-bytes="1953467" data-img-bytes="1953467" data-files='[{"name": "Image (1).jpg", "path": "BoothDownloaderOut/5542201/Binary/Image%20%281%29.jpg", "size": "205.8KB"}, {"name": "Image (10).jpg", "path": "BoothDownloaderOut/5542201/Binary/Image%20%2810%29.jpg", "size": "137.5KB"}, {"name": "Image (2).jpg", "path": "BoothDownloaderOut/5542201/Binary/Image%20%282%29.jpg", "size": "171.2KB"}, {"name": "Image (3).jpg", "path": "BoothDownloaderOut/5542201/Binary/Image%20%283%29.jpg", "size": "186.4KB"}, {"name": "Image (4).jpg", "path": "BoothDownloaderOut/5542201/Binary/Image%20%284%29.jpg", "size": "209.0KB"}, {"name": "Image (5).jpg", "path": "BoothDownloaderOut/5542201/Binary/Image%20%285%29.jpg", "size": "183.5KB"}, {"name": "Image (6).jpg", "path": "BoothDownloaderOut/5542201/Binary/Image%20%286%29.jpg", "size": "192.8KB"}, {"name": "Image (7).jpg", "path": "BoothDownloaderOut/5542201/Binary/Image%20%287%29.jpg", "size": "319.0KB"}, {"name": "Image (8).jpg", "path": "BoothDownloaderOut/5542201/Binary/Image%20%288%29.jpg", "size": "174.4KB"}, {"name": "Image (9).jpg", "path": "BoothDownloaderOut/5542201/Binary/Image%20%289%29.jpg", "size": "128.0KB"}]'
-        data-tags='["Swim wear", "\u30d3\u30ad\u30cb", "\u8863\u88c5", "\u840c", "\u30f4\u30a7\u30fc\u30eb", "VRChat", "VRChat\u53ef", "VRC\u60f3\u5b9a\u30e2\u30c7\u30eb", "vrchat\u5411\u3051", "\u30c1\u30aa", "veil", "wet", "seethrough", "Thio", "see-through", "moe\u7528", "moe\u3061\u3083\u3093", "Velle3D", "velle3d", "Velle3d", "Fanatail", "velle3D"]' data-adult="false" 
-        data-search='5542201 「stranded」のビーチウェア「3アバター対応」 "stranded" beachwear "compatible with 3 avatars" buddyworks  swim wear ビキニ 衣装 萌 ヴェール vrchat vrchat可 vrc想定モデル vrchat向け チオ veil wet seethrough thio see-through moe用 moeちゃん velle3d velle3d velle3d fanatail velle3d' data-folder="BoothDownloaderOut/5542201/Binary" data-booth-url="https://buddyworks.booth.pm/items/5542201"
-        data-filecount="10" data-wish="101" data-time="1766760657"
-        data-price-value="400.0" data-price-currency="JPY" data-limited="false"
-        data-desc-orig="
-▶未知の島に立ち往生し、生存のために戦っています。信頼できる服は、損傷を受けながらもなお耐えています。
-
-▶これが私の初めてのアウトフィットセットです。ご覧いただきありがとうございます。
-
-▶対応するアバター：
-Moe - v1.02.1 - https://booth.pm/en/items/4667400
-Thio - v1.4.1 - https://booth.pm/ja/items/3445873
-Velle - v1.3 - https://booth.pm/en/items/4951792
-
-▶アバターは含まれません！服のみです。変わった胸のサイズで問題が発生する場合がありますので、ご注意ください。
-
-▶サポートされているインストール方法：
-Modular Avatar - https://modular-avatar.nadena.dev/
-VRCFury - https://vrcfury.com/
-
-▶Poiyomi Toon Shader を使用しています
-https://github.com/poiyomi/PoiyomiToonShader
-
-▶このアウトフィットは個人使用のみとし、再配布および転売は禁止されています！露出度の高い性質のため、利用規約に従って慎重に行動してください。
-
-#BUDDYWORKSVRC
-
-▶Stranded on an unknown island, you fight for your survival. Your trusty clothing, while damaged, still holding on.
-
-▶This is my first outfit set, thank you for checking it out.
-
-▶Supported Avatars:
-Moe - v1.02.1 - https://booth.pm/en/items/4667400
-Thio - v1.4.1 - https://booth.pm/ja/items/3445873
-Velle - v1.3 - https://booth.pm/en/items/4951792
-
-▶Only Outfit, Avatars not included! Please note that issues might occur at unusual breast sizes.
-
-▶Supported installation methods:
-Modular Avatar - https://modular-avatar.nadena.dev/
-VRCFury - https://vrcfury.com/
-
-▶Using Poiyomi Toon Shader: https://github.com/poiyomi/PoiyomiToonShader
-
-▶This outfit is only for personal use, redistribution and reselling is prohibited!
-Due to the skimpy nature of this outfit, please be careful and behave according to terms of service.
-
-#BUDDYWORKSVRC
-" data-desc-trans="▶ Stuck on an unknown island and fighting for survival. Reliable clothing endures damage and still endures.
-
-▶This is my first outfit set. Thank you for visiting.
-
-▶Corresponding avatar:
-Moe - v1.02.1 - https://booth.pm/en/items/4667400
-Thio - v1.4.1 - https://booth.pm/ja/items/3445873
-Velle - v1.3 - https://booth.pm/en/items/4951792
-
-▶Avatar not included! Only clothes. Please note that unusual breast sizes may cause problems.
-
-▶Supported installation methods:
-Modular Avatar - https://modular-avatar.nadena.dev/
-VRCFury - https://vrcfury.com/
-
-▶Using Poiyomi Toon Shader
-https://github.com/poiyomi/PoiyomiToonShader
-
-▶This outfit is for personal use only, redistribution and resale is prohibited! Due to the revealing nature, please proceed with caution and abide by the Terms of Use.
-
-#BUDDYWORKSVRC
-
-▶Stranded on an unknown island, you fight for your survival. Your trusty clothing, while damaged, still holding on.
-
-▶This is my first outfit set, thank you for checking it out.
-
-▶Supported Avatars:
-Moe - v1.02.1 - https://booth.pm/en/items/4667400
-Thio - v1.4.1 - https://booth.pm/ja/items/3445873
-Velle - v1.3 - https://booth.pm/en/items/4951792
-
-▶Only Outfit, Avatars not included! Please note that issues might occur at unusual breast sizes.
-
-▶Supported installation methods:
-Modular Avatar - https://modular-avatar.nadena.dev/
-VRCFury - https://vrcfury.com/
-
-▶Using Poiyomi Toon Shader: https://github.com/poiyomi/PoiyomiToonShader
-
-▶This outfit is only for personal use, redistribution and reselling is prohibited!
-Due to the skimpy nature of this outfit, please be careful and behave according to terms of service.
-
-#BUDDYWORKSVRC" data-vrc-avatar-link="" data-vrc-world-link=""
-        data-is-avatar="false" data-links='[]'>
-        <div class="skeleton-shimmer"></div>
-        <div class="image-container"><div class="asset-id-tag">#5542201</div><img class="image-thumbnail" loading="lazy"></div>
-        <img class="image-backglow"><div class="content">
-            <div class="name"><span class="name-primary">「Stranded」のビーチウェア「3アバター対応」</span></div>
-            <div class="author-label">by <b class="author-primary">BUDDYWORKS</b></div>
-            <div class="stats"><span>1.9MB</span><span class='file-label-dynamic'></span></div>
-            <div class="tag-row"><span class="tag-pill">Swim wear</span><span class="tag-pill">ビキニ</span><span class="tag-pill">衣装</span><span class="tag-pill">萌</span><span class="tag-pill">ヴェール</span><span class="tag-pill">VRChat</span><span class="tag-pill">VRChat可</span><span class="tag-pill">VRC想定モデル</span><span class="tag-pill">vrchat向け</span><span class="tag-pill">チオ</span><span class="tag-pill">veil</span><span class="tag-pill">wet</span></div>
-        </div>
-    </li>
-    
-
-    <li class="asset" onclick="openDetails('6066920')" 
-        data-id="6066920" data-name-orig="[Free] BUDDYWORKS ポーズシステム" data-name-trans="[Free] BUDDYWORKS Pose System" 
-        data-author-orig="BUDDYWORKS" data-author-trans="" data-img="web_data/img/6066920_thumb.webp" 
-        data-all-images='["BoothDownloaderOut/6066920/a3ff984a-95d5-4686-a994-48aef8db3cab_base_resized.jpg", "BoothDownloaderOut/6066920/4b79a203-c429-44ac-9f02-24bf568a403f_base_resized.jpg", "BoothDownloaderOut/6066920/17929172-57ed-4e35-b583-ed5947585c60_base_resized.jpg", "BoothDownloaderOut/6066920/7da5abdf-f072-462a-9bbc-793c00875c02_base_resized.jpg", "BoothDownloaderOut/6066920/072346cf-4eca-4e35-8626-fd1281960cf3_base_resized.jpg", "BoothDownloaderOut/6066920/fde2ad14-bfa6-44b2-8613-8392f0a937b5_base_resized.jpg", "BoothDownloaderOut/6066920/db31760e-d2db-45e2-9d11-37646aa0ecab_base_resized.jpg", "BoothDownloaderOut/6066920/c3858959-3e5f-4740-87a0-e498c2579ec4_base_resized.jpg", "BoothDownloaderOut/6066920/2580fde4-9ece-45ee-bb52-d3209b6a71e7_base_resized.jpg", "BoothDownloaderOut/6066920/e11d2fd6-a3f4-4b21-9fb0-b64638fa3253_base_resized.jpg"]'
-        data-bytes="0" data-img-bytes="1910307" data-files='[]'
-        data-tags='["\u30a2\u30cb\u30e1\u30fc\u30b7\u30e7\u30f3", "\u840c", "VRChat\u53ef", "VRC\u60f3\u5b9a\u30e2\u30c7\u30eb", "vrchat\u5411\u3051", "poses", "moe\u7528", "moe\u3061\u3083\u3093", "buddyworks"]' data-adult="false" 
-        data-search='6066920 [free] buddyworks ポーズシステム [free] buddyworks pose system buddyworks  アニメーション 萌 vrchat可 vrc想定モデル vrchat向け poses moe用 moeちゃん buddyworks' data-folder="BoothDownloaderOut/6066920/Binary" data-booth-url="https://buddyworks.booth.pm/items/6066920"
-        data-filecount="0" data-wish="41" data-time="1766762334"
-        data-price-value="200.0" data-price-currency="JPY" data-limited="false"
-        data-desc-orig="VRChatアバター用のロコモーションに依存しないポーズシステム。写真撮影用に設計されています。
-
-デスクトップモードでも、あなたのアバターの美しい写真を撮りましょう！
-
-たくさんのポーズがすでに含まれています!" data-desc-trans="A locomotion-independent pose system for VRChat avatars. Designed for photography.
-
-Take beautiful photos of your avatar even in desktop mode!
-
-Many poses are already included!" data-vrc-avatar-link="" data-vrc-world-link=""
-        data-is-avatar="false" data-links='[]'>
-        <div class="skeleton-shimmer"></div>
-        <div class="image-container"><div class="asset-id-tag">#6066920</div><img class="image-thumbnail" loading="lazy"></div>
-        <img class="image-backglow"><div class="content">
-            <div class="name"><span class="name-primary">[Free] BUDDYWORKS ポーズシステム</span></div>
-            <div class="author-label">by <b class="author-primary">BUDDYWORKS</b></div>
-            <div class="stats"></div>
-            <div class="tag-row"><span class="tag-pill">アニメーション</span><span class="tag-pill">萌</span><span class="tag-pill">VRChat可</span><span class="tag-pill">VRC想定モデル</span><span class="tag-pill">vrchat向け</span><span class="tag-pill">poses</span><span class="tag-pill">moe用</span><span class="tag-pill">moeちゃん</span><span class="tag-pill">buddyworks</span></div>
-        </div>
-    </li>
-    
-
-    <li class="asset" onclick="openDetails('6089367')" 
-        data-id="6089367" data-name-orig="「Folklore」Swimsuit 「5体のアバターに対応」" data-name-trans="&quot;Folklore&quot; Swimsuit &quot;Supports 5 avatars&quot;" 
-        data-author-orig="BUDDYWORKS" data-author-trans="" data-img="web_data/img/6089367_thumb.webp" 
-        data-all-images='["BoothDownloaderOut/6089367/fbc21f22-0d39-4f6d-b026-b3355a87835a_base_resized.jpg", "BoothDownloaderOut/6089367/18162810-bf22-46ff-931f-53f1e095952a_base_resized.jpg", "BoothDownloaderOut/6089367/4fd06e47-fd09-4ff0-91b0-d8fd7f4a6967_base_resized.jpg", "BoothDownloaderOut/6089367/eac4d9e6-2f93-4d14-9704-dfad1148b288_base_resized.jpg", "BoothDownloaderOut/6089367/cc5d95e7-b036-46dc-aa3b-9c32921a18d8_base_resized.jpg", "BoothDownloaderOut/6089367/3b067242-6536-48e0-afa0-675dc0a83413_base_resized.jpg", "BoothDownloaderOut/6089367/caadff11-0e1e-453a-b6bf-ddc49902790a_base_resized.jpg", "BoothDownloaderOut/6089367/08e5a8ae-dc72-49bc-a4e0-5330e64b8bab_base_resized.jpg", "BoothDownloaderOut/6089367/91c24b91-6870-45b0-b1b9-12341b211da9_base_resized.jpg", "BoothDownloaderOut/6089367/e69a1136-0385-4c10-b5ca-07e2139887fd_base_resized.jpg", "BoothDownloaderOut/6089367/6c316501-6d97-42b4-8050-ca08102804f0_base_resized.jpg", "BoothDownloaderOut/6089367/3553aae0-fefa-41d9-9a36-0a9bb608fd4d_base_resized.jpg", "BoothDownloaderOut/6089367/d9d8959f-ec77-4a2e-a03f-ef0c73093955_base_resized.jpg", "BoothDownloaderOut/6089367/98a1e9d5-8ec9-40dd-b78c-5a38c1c26a27_base_resized.jpg", "BoothDownloaderOut/6089367/c8ef8ebe-ea98-4db4-824e-8f30931b2be8_base_resized.jpg", "BoothDownloaderOut/6089367/a5909946-071c-4453-af25-bd8076e3ab63_base_resized.jpg", "BoothDownloaderOut/6089367/4d18f1db-771c-4f2c-b3c3-c262a06fe716_base_resized.jpg", "BoothDownloaderOut/6089367/2cbf50a4-8871-41b4-82e0-e933346658a6_base_resized.jpg", "BoothDownloaderOut/6089367/fbb02b41-e100-4ff2-aa0f-6aec6b565a01_base_resized.jpg", "BoothDownloaderOut/6089367/203c0c2b-3ba3-4354-9a4c-c66076464d9e_base_resized.jpg"]'
-        data-bytes="2038658" data-img-bytes="4325687" data-files='[{"name": "Image (1).jpg", "path": "BoothDownloaderOut/6089367/Binary/Image%20%281%29.jpg", "size": "291.8KB"}, {"name": "Image (10).jpg", "path": "BoothDownloaderOut/6089367/Binary/Image%20%2810%29.jpg", "size": "195.2KB"}, {"name": "Image (12).jpg", "path": "BoothDownloaderOut/6089367/Binary/Image%20%2812%29.jpg", "size": "326.3KB"}, {"name": "Image (15).jpg", "path": "BoothDownloaderOut/6089367/Binary/Image%20%2815%29.jpg", "size": "190.1KB"}, {"name": "Image (16).jpg", "path": "BoothDownloaderOut/6089367/Binary/Image%20%2816%29.jpg", "size": "201.7KB"}, {"name": "Image (19).jpg", "path": "BoothDownloaderOut/6089367/Binary/Image%20%2819%29.jpg", "size": "215.7KB"}, {"name": "Image (3).jpg", "path": "BoothDownloaderOut/6089367/Binary/Image%20%283%29.jpg", "size": "151.8KB"}, {"name": "Image (5).jpg", "path": "BoothDownloaderOut/6089367/Binary/Image%20%285%29.jpg", "size": "221.5KB"}, {"name": "Image (7).jpg", "path": "BoothDownloaderOut/6089367/Binary/Image%20%287%29.jpg", "size": "196.8KB"}]'
-        data-tags='["Swim wear", "\u30d3\u30ad\u30cb", "\u8863\u88c5", "\u3057\u306a\u306e", "\u840c", "\u30f4\u30a7\u30fc\u30eb", "VRChat", "VRChat\u53ef", "VRC\u60f3\u5b9a\u30e2\u30c7\u30eb", "Veil", "poiyomi", "liltoon", "Thio", "bikini set", "Moe\u7528", "Moe\u5bfe\u5fdc", "Moe\u3061\u3083\u3093", "vrcfury", "Velle3D", "\u30de\u30cc\u30ab", "Manuka\u7528", "Manuka\u5bfe\u5fdc", "modularavatar", "Velle3d", "Fanatail", "BUDDYWORKS"]' data-adult="false" 
-        data-search='6089367 「folklore」swimsuit 「5体のアバターに対応」 "folklore" swimsuit "supports 5 avatars" buddyworks  swim wear ビキニ 衣装 しなの 萌 ヴェール vrchat vrchat可 vrc想定モデル veil poiyomi liltoon thio bikini set moe用 moe対応 moeちゃん vrcfury velle3d マヌカ manuka用 manuka対応 modularavatar velle3d fanatail buddyworks' data-folder="BoothDownloaderOut/6089367/Binary" data-booth-url="https://buddyworks.booth.pm/items/6089367"
-        data-filecount="9" data-wish="75" data-time="1766760682"
-        data-price-value="650.0" data-price-currency="JPY" data-limited="false"
-        data-desc-orig="あなたは自分のクランに属し、常に行動の準備ができています！
-焼き芋が食べたくなるかもしれません。" data-desc-trans="You belong to your own clan and are always ready for action!
-You might want to eat roasted sweet potatoes." data-vrc-avatar-link="" data-vrc-world-link=""
-        data-is-avatar="false" data-links='[]'>
-        <div class="skeleton-shimmer"></div>
-        <div class="image-container"><div class="asset-id-tag">#6089367</div><img class="image-thumbnail" loading="lazy"></div>
-        <img class="image-backglow"><div class="content">
-            <div class="name"><span class="name-primary">「Folklore」Swimsuit 「5体のアバターに対応」</span></div>
-            <div class="author-label">by <b class="author-primary">BUDDYWORKS</b></div>
-            <div class="stats"><span>1.9MB</span><span class='file-label-dynamic'></span></div>
-            <div class="tag-row"><span class="tag-pill">Swim wear</span><span class="tag-pill">ビキニ</span><span class="tag-pill">衣装</span><span class="tag-pill">しなの</span><span class="tag-pill">萌</span><span class="tag-pill">ヴェール</span><span class="tag-pill">VRChat</span><span class="tag-pill">VRChat可</span><span class="tag-pill">VRC想定モデル</span><span class="tag-pill">Veil</span><span class="tag-pill">poiyomi</span><span class="tag-pill">liltoon</span></div>
-        </div>
-    </li>
-    <li id="filterNotice"></li></ul></div>
+        <div class="container"><ul id="assetList"></ul><div id="filterNotice"></div></div>
     </div>
     <div id="detailModal" class="modal" onclick="closeModal()">
         <div class="modal-card" onclick="event.stopPropagation()">
@@ -318,13 +85,11 @@ You might want to eat roasted sweet potatoes." data-vrc-avatar-link="" data-vrc-
                     <div id="modalSubtitle" class="modal-subtitle"></div>
                     <div id="delistedWarn" class="delisted-warning" data-i18n-html="warnDelisted"></div>
                 </div>
-
                 <div class="modal-tabs">
                     <button id="tab-details" class="tab-btn active" onclick="switchTab('details')" data-i18n="btnDetails">Details</button>
                     <button id="tab-files" class="tab-btn" onclick="switchTab('files')" data-i18n="labelBinary">Files</button>
                     <button id="tab-description" class="tab-btn" onclick="switchTab('description')" data-i18n="btnDesc">Description</button>
                 </div>
-                
                 <div class="tab-content-container">
                     <div id="pane-details" class="tab-pane active">
                         <span class="modal-section-title">Pricing & Meta</span>
@@ -344,7 +109,6 @@ You might want to eat roasted sweet potatoes." data-vrc-avatar-link="" data-vrc-
                         <div id="modalDesc" class="desc-content"></div>
                     </div>
                 </div>
-
                 <div class="modal-footer">
                     <div id="modalIdDisp" class="modal-id-display"></div>
                     <div class="modal-actions">
@@ -357,21 +121,19 @@ You might want to eat roasted sweet potatoes." data-vrc-avatar-link="" data-vrc-
             </div>
         </div>
     </div>
+    <!-- Load local database script -->
+    <script src="web_data/database.js"></script>
     <script>
         const l18n = {"languages": {"en": "English", "ja": "日本語", "ko": "한국어", "zh-Hans": "简体中文", "zh-Hant": "繁體中文", "de": "Deutsch", "nl": "Nederlands", "fr": "Français", "es": "Español", "pt": "Português"}, "translations": {"en": {"btnDetails": "Details", "labelComp": "Compatible Assets", "labelDesigned": "Designed For", "labelViewRel": "View All", "warnDelisted": "<b>⚠️ Delisted Item</b> This asset may no longer be available on Booth.", "navTitle": "Booth Asset Library", "optionsBtn": "Options ⚙", "labelLanguage": "Language", "labelSort": "Sort Order", "optId": "Folder ID", "optNew": "Recently Added", "optName": "A-Z Name", "optRel": "Popularity", "optSize": "Storage Size", "labelAdult": "Content Filter", "optAll": "Show Everything", "optHide": "Hide Adult", "optOnly": "Adult Only", "labelWidth": "Card Width", "optBlur": "Disable Blur", "optHideIds": "Hide Asset IDs", "optTranslate": "Show English Titles", "labelBinary": "Local Files", "footBooth": "🛒 View on Booth", "footFolder": "📂 Open Folder", "footVrcAvatar": "👤 Public Avatar", "footVrcWorld": "🌐 Public World", "searchPre": "Searching ", "searchSuf": " assets...", "fileSingular": "file", "filePlural": "files", "moreTags": "+ {n} others", "hiddenResults": " ({n} items hidden by filter)", "statItems": "Total Assets", "statSize": "Library Size", "statImgSize": "Graphics Size", "statSpent": "Estimated Investment", "statUpdated": "Last Refreshed", "labelTopTags": "Frequent Tags", "btnDesc": "Description", "matchSingular": "match", "matchPlural": "matches", "labelType": "Item Type", "optTypeAll": "All Items", "optTypeAvatar": "Avatars", "optTypeAsset": "Assets"}, "ja": {"btnDetails": "詳細", "labelComp": "対応アセット", "labelDesigned": "対応モデル", "labelViewRel": "すべて見る", "warnDelisted": "<b>⚠️ 公開停止</b> このアイテムは現在Boothで公開されていない可能性があります。", "navTitle": "Boothアセットライブラリ", "optionsBtn": "設定 ⚙", "labelLanguage": "表示言語", "labelSort": "並び替え", "optId": "ID順", "optNew": "追加日順", "optName": "名前順", "optRel": "人気順", "optSize": "サイズ順", "labelAdult": "成人向けフィルター", "optAll": "すべて表示", "optHide": "成人向けを隠す", "optOnly": "成人向けのみ", "labelWidth": "カードの幅", "optBlur": "ぼかしを無効化", "optHideIds": "IDを非表示", "optTranslate": "翻訳された名前を表示", "labelBinary": "構成ファイル", "footBooth": "🛒 Boothで見る", "footFolder": "📂 フォルダを開く", "footVrcAvatar": "👤 パブリックアバター", "footVrcWorld": "🌐 パブリックワールド", "searchPre": "検索中: ", "searchSuf": " 件", "fileSingular": "ファイル", "filePlural": "ファイル", "moreTags": "他 {n} 件", "hiddenResults": " ({n} 件が非表示)", "statItems": "総アイテム数", "statSize": "ライブラリ容量", "statImgSize": "グラフィックス容量", "statSpent": "推定支出合計", "statUpdated": "最終更新", "labelTopTags": "人気のタグ", "btnDesc": "商品説明", "matchSingular": "一致", "matchPlural": "一致", "labelType": "アイテムの種類", "optTypeAll": "すべて表示", "optTypeAvatar": "アバターのみ", "optTypeAsset": "アセットのみ"}, "ko": {"btnDetails": "상세 정보", "labelComp": "호환 에셋", "labelDesigned": "호환 모델", "labelViewRel": "모두 보기", "warnDelisted": "<b>⚠️ 판매 중지됨</b> 이 에셋은 현재 Booth에서 제공되지 않을 수 있습니다.", "navTitle": "Booth 에셋 라이브러리", "optionsBtn": "설정 ⚙", "labelLanguage": "언어 선택", "labelSort": "정렬 기준", "optId": "폴더 ID", "optNew": "최근 추가됨", "optName": "이름순", "optRel": "인기순", "optSize": "용량순", "labelAdult": "성인 콘텐츠 필터", "optAll": "모두 보기", "optHide": "성인 콘텐츠 숨기기", "optOnly": "성인 콘텐츠만", "labelWidth": "카드 너비", "optBlur": "블러 효과 끄기", "optHideIds": "항목 ID 숨기기", "optTranslate": "번역된 제목 사용", "labelBinary": "로컬 파일", "footBooth": "🛒 Booth에서 보기", "footFolder": "📂 폴더 열기", "footVrcAvatar": "👤 퍼블릭 아바타", "footVrcWorld": "🌐 퍼블릭 월드", "searchPre": "검색 결과: ", "searchSuf": "개", "fileSingular": "파일", "filePlural": "파일", "moreTags": "+ {n}개 더보기", "hiddenResults": " ({n}개 필터링됨)", "statItems": "총 에셋 수", "statSize": "전체 용량", "statImgSize": "그래픽 용량", "statSpent": "예상 총 지출", "statUpdated": "마지막 업데이트", "labelTopTags": "가장 많이 쓰인 태그", "btnDesc": "설명", "matchSingular": "매치", "matchPlural": "매치", "labelType": "아이템 타입", "optTypeAll": "모든 아이템", "optTypeAvatar": "아바타", "optTypeAsset": "에셋"}, "zh-Hans": {"btnDetails": "详细信息", "labelComp": "兼容资源", "labelDesigned": "设计用于", "labelViewRel": "查看全部", "warnDelisted": "<b>⚠️ 已下架内容</b> 此资源可能已在 Booth 停止售卖。", "navTitle": "Booth 资源库", "optionsBtn": "选项 ⚙", "labelLanguage": "语言设置", "labelSort": "排序方式", "optId": "文件夹 ID", "optNew": "最近添加", "optName": "名称排序", "optRel": "人气相关", "optSize": "占用空间", "labelAdult": "成人内容过滤", "optAll": "显示全部内容", "optHide": "隐藏成人内容", "optOnly": "仅成人内容", "labelWidth": "卡片显示宽度", "optBlur": "禁用模糊效果", "optHideIds": "隐藏资源 ID", "optTranslate": "显示翻译名称", "labelBinary": "本地文件", "footBooth": "🛒 在 Booth 打开", "footFolder": "📂 打开本地目录", "footVrcAvatar": "👤 公开化身", "footVrcWorld": "🌐 公开世界", "searchPre": "正在搜索 ", "searchSuf": " 个资源...", "fileSingular": "文件", "filePlural": "文件", "moreTags": "+ {n} 个其他", "hiddenResults": " ({n} 个已被过滤)", "statItems": "资源总数", "statSize": "库总大小", "statImgSize": "图片大小", "statSpent": "预计总支出", "statUpdated": "最後更新时间", "labelTopTags": "高频标签", "btnDesc": "资源描述", "matchSingular": "匹配", "matchPlural": "匹配", "labelType": "项目类型", "optTypeAll": "全部项目", "optTypeAvatar": "仅化身", "optTypeAsset": "仅资源"}, "zh-Hant": {"btnDetails": "詳細資訊", "labelComp": "相容資源", "labelDesigned": "設計用於", "labelViewRel": "查看全部", "warnDelisted": "<b>⚠️ 已下架內容</b> 此資源可能已在 Booth 販售。", "navTitle": "Booth 資源庫", "optionsBtn": "選項 ⚙", "labelLanguage": "語言設置", "labelSort": "排序方式", "optId": "資料夾 ID", "optNew": "最近添加", "optName": "名稱排序", "optRel": "人氣相關", "optSize": "占用空間", "labelAdult": "成人內容過濾", "optAll": "顯示全部內容", "optHide": "隱藏成人內容", "optOnly": "僅限成人內容", "labelWidth": "卡片顯示寬度", "optBlur": "禁用模糊效果", "optHideIds": "隱藏資源 ID", "optTranslate": "顯示翻譯名稱", "labelBinary": "本地檔案", "footBooth": "🛒 在 Booth 打開", "footFolder": "📂 打開資料夾", "footVrcAvatar": "👤 公開化身", "footVrcWorld": "🌐 公開世界", "searchPre": "正在搜尋 ", "searchSuf": " 個資源...", "fileSingular": "檔案", "filePlural": "檔案", "moreTags": "+ {n} 個其他", "hiddenResults": " ({n} 個已被過濾)", "statItems": "資源總數", "statSize": "庫總大小", "statImgSize": "圖片大小", "statSpent": "預計總支出", "statUpdated": "最後更新時間", "labelTopTags": "高頻標籤", "btnDesc": "詳細描述", "matchSingular": "匹配", "matchPlural": "匹配", "labelType": "項目類型", "optTypeAll": "全部項目", "optTypeAvatar": "僅限化身", "optTypeAsset": "僅限資源"}, "de": {"btnDetails": "Details", "labelComp": "Passendes Zubehör", "labelDesigned": "Entwickelt für", "labelViewRel": "Alle zeigen", "warnDelisted": "<b>⚠️ Nicht mehr gelistet</b> Dieses Asset ist möglicherweise nicht mehr verfügbar.", "navTitle": "Booth Bibliothek", "optionsBtn": "Optionen ⚙", "labelLanguage": "Sprache", "labelSort": "Sortierung", "optId": "Ordner ID", "optNew": "Zuletzt hinzugefügt", "optName": "Name (A-Z)", "optRel": "Beliebtheit", "optSize": "Dateigröße", "labelAdult": "Filter", "optAll": "Alles zeigen", "optHide": "Nicht jugendfrei ausblenden", "optOnly": "Nur 18+", "labelWidth": "Kartenbreite", "optBlur": "Kein Fokus", "optHideIds": "IDs verbergen", "optTranslate": "Übersetzte Titel", "labelBinary": "Dateien", "footBooth": "🛒 Auf Booth ansehen", "footFolder": "📂 Ordner öffnen", "footVrcAvatar": "👤 Avatar-Link", "footVrcWorld": "🌐 Welt-Link", "searchPre": "Suche ", "searchSuf": " Artikel...", "fileSingular": "Datei", "filePlural": "Dateien", "moreTags": "+ {n} weitere", "hiddenResults": " ({n} durch Filter versteckt)", "statItems": "Gesamtanzahl", "statSize": "Binärgröße", "statImgSize": "Grafikgröße", "statSpent": "Voraussichtliche Kosten", "statUpdated": "Aktualisiert", "labelTopTags": "Häufige Tags", "btnDesc": "Beschreibung", "matchSingular": "Treffer", "matchPlural": "Treffer", "labelType": "Objekttyp", "optTypeAll": "Alle Objekte", "optTypeAvatar": "Avatare", "optTypeAsset": "Assets"}, "nl": {"btnDetails": "Details", "labelComp": "Compatibele Assets", "labelDesigned": "Ontworpen voor", "labelViewRel": "Toon alles", "warnDelisted": "<b>⚠️ Verwijderde Inhoud</b> Dit item is mogelijk nicht langer beschikbaar.", "navTitle": "Booth Bibliotheek", "optionsBtn": "Opties ⚙", "labelLanguage": "Taal", "labelSort": "Sorteren", "optId": "ID", "optNew": "Nieuwste eerst", "optName": "Naam", "optRel": "Relevantie", "optSize": "Grootte", "labelAdult": "Filter", "optAll": "Alles tonen", "optHide": "Verberg 18+", "optOnly": "Alleen 18+", "labelWidth": "Breedte", "optBlur": "Geen vervaging", "optHideIds": "ID's verbergen", "optTranslate": "Vertaalde titels", "labelBinary": "Bestanden", "footBooth": "🛒 Bekijk op Booth", "footFolder": "📂 Map openen", "footVrcAvatar": "👤 Openbare Avatar", "footVrcWorld": "🌐 Openbare Wereld", "searchPre": "Zoek in ", "searchSuf": " items...", "fileSingular": "bestand", "filePlural": "bestanden", "moreTags": "+ {n} meer", "hiddenResults": " ({n} items verborgen)", "statItems": "Totaal items", "statSize": "Binairgrootte", "statImgSize": "Grafische grootte", "statSpent": "Geschatte investering", "statUpdated": "Laatst vernieuwd", "labelTopTags": "Populaire tags", "btnDesc": "Beschrijving", "matchSingular": "match", "matchPlural": "matches", "labelType": "Itemtype", "optTypeAll": "Alle items", "optTypeAvatar": "Avatars", "optTypeAsset": "Assets"}, "fr": {"btnDetails": "Détails", "labelComp": "Assets Compatibles", "labelDesigned": "Conçu pour", "labelViewRel": "Tout voir", "warnDelisted": "<b>⚠️ Contenu non listé</b> Cet asset n'est probablement plus disponible.", "navTitle": "Bibliothèque Booth", "optionsBtn": "Options ⚙", "labelLanguage": "Langue", "labelSort": "Trier par", "optId": "ID du dossier", "optNew": "Ajoutés récemment", "optName": "Nom (A-Z)", "optRel": "Popularité", "optSize": "Taille totale", "labelAdult": "Filtre de contenu", "optAll": "Tout afficher", "optHide": "Masquer Adulte", "optOnly": "Adulte uniquement", "labelWidth": "Largeur des cartes", "optBlur": "Désactiver le flou", "optHideIds": "Masquer les IDs", "optTranslate": "Titres traduits", "labelBinary": "Fichiers locaux", "footBooth": "🛒 Voir sur Booth", "footFolder": "📂 Ouvrir le dossier", "footVrcAvatar": "👤 Avatar Public", "footVrcWorld": "🌐 Monde Public", "searchPre": "Recherche de ", "searchSuf": " items...", "fileSingular": "fichier", "filePlural": "fichiers", "moreTags": "+ {n} de plus", "hiddenResults": " ({n} masqués par filtre)", "statItems": "Total des assets", "statSize": "Taille binaire", "statImgSize": "Taille images", "statSpent": "Investissement estimé", "statUpdated": "Mis à jour le", "labelTopTags": "Tags fréquents", "btnDesc": "Description", "matchSingular": "correspondance", "matchPlural": "correspondances", "labelType": "Type d'objet", "optTypeAll": "Tous les objets", "optTypeAvatar": "Avatars", "optTypeAsset": "Assets"}, "es": {"btnDetails": "Details", "labelComp": "Activos Compatibles", "labelDesigned": "Diseñado para", "labelViewRel": "Ver todo", "warnDelisted": "<b>⚠️ Item no disponible</b> Es probable que este conteúdo ya no esté.", "navTitle": "Biblioteca Booth", "optionsBtn": "Opciones ⚙", "labelLanguage": "Idioma", "labelSort": "Ordenar por", "optId": "ID de carpeta", "optNew": "Añadidos recentemente", "optName": "Nombre (A-Z)", "optRel": "Relevancia", "optSize": "Tamaño", "labelAdult": "Filtro de conteúdo", "optAll": "Mostrar todo", "optHide": "Ocultar adultos", "optOnly": "Solo adultos", "labelWidth": "Ancho de tarjeta", "optBlur": "Quitar desenfoque", "optHideIds": "Ocultar IDs", "optTranslate": "Títulos traducidos", "labelBinary": "Archivos locales", "footBooth": "🛒 Ver en Booth", "footFolder": "📂 Abrir carpeta", "footVrcAvatar": "👤 Avatar Público", "footVrcWorld": "🌐 Mundo Público", "searchPre": "Buscando ", "searchSuf": " activos...", "fileSingular": "archivo", "filePlural": "archivos", "moreTags": "+ {n} otros", "hiddenResults": " ({n} ocultos)", "statItems": "Activos totales", "statSize": "Tamaño binario", "statImgSize": "Tamaño imágenes", "statSpent": "Inversión estimada", "statUpdated": "Última actualización", "labelTopTags": "Etiquetas comunes", "btnDesc": "Descripción", "matchSingular": "coincidencia", "matchPlural": "coincidencias", "labelType": "Tipo de artículo", "optTypeAll": "Todos los artículos", "optTypeAvatar": "Avatares", "optTypeAsset": "Activos"}, "pt": {"btnDetails": "Detalhes", "labelComp": "Assets Compatíveis", "labelDesigned": "Projetado para", "labelViewRel": "Ver todos", "warnDelisted": "<b>⚠️ Conteúdo removido</b> Este asset pode não estar mais disponible.", "navTitle": "Biblioteca Booth", "optionsBtn": "Opções ⚙", "labelLanguage": "Idioma", "labelSort": "Ordenar por", "optId": "ID da pasta", "optNew": "Adicionados recentemente", "optName": "Nombre (A-Z)", "optRel": "Popularidade", "optSize": "Tamanho total", "labelAdult": "Filtre de conteúdo", "optAll": "Mostrar tudo", "optHide": "Ocultar 18+", "optOnly": "Apenas 18+", "labelWidth": "Largura dos cards", "optBlur": "Sem desfoque", "optHideIds": "Ocultar IDs", "optTranslate": "Títulos traducidos", "labelBinary": "Arquivos locais", "footBooth": "🛒 Ver no Booth", "footFolder": "📂 Abrir pasta", "footVrcAvatar": "👤 Avatar Público", "footVrcWorld": "🌐 Mundo Público", "searchPre": "Pesquisando ", "searchSuf": " itens...", "fileSingular": "arquivo", "filePlural": "arquivos", "moreTags": "+ {n} outros", "hiddenResults": " ({n} itens ocultos)", "statItems": "Total de itens", "statSize": "Tamanho binário", "statImgSize": "Tamanho images", "statSpent": "Investimento estimado", "statUpdated": "Última actualización", "labelTopTags": "Tags frequentes", "btnDesc": "Descrição", "matchSingular": "correspondência", "matchPlural": "correspondências", "labelType": "Tipo de item", "optTypeAll": "Todos os itens", "optTypeAvatar": "Avatares", "optTypeAsset": "Assets"}}};
         const translations = l18n.translations;
+        // window.BOOTH_DATABASE is populated by the script above
+        const database = window.BOOTH_DATABASE || [];
         
         let currentCarouselIndex = 0, currentImages = [];
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
         const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
         
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB', 'TB'], i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
         const observerOptions = { root: null, rootMargin: '1000px', threshold: 0.01 };
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -388,72 +150,76 @@ You might want to eat roasted sweet potatoes." data-vrc-avatar-link="" data-vrc-
         }, observerOptions);
 
         function init() {
-            // Build Language Select Dropdown
+            renderLibrary();
+            
             const langSel = document.getElementById('langSelect');
             langSel.innerHTML = "";
-            if (l18n.languages) {
-                Object.entries(l18n.languages).forEach(([code, name]) => {
-                    const opt = document.createElement('option');
-                    opt.value = code; opt.innerText = name;
-                    langSel.appendChild(opt);
-                });
-            }
+            Object.entries(l18n.languages).forEach(([code, name]) => {
+                const opt = document.createElement('option');
+                opt.value = code; opt.innerText = name;
+                langSel.appendChild(opt);
+            });
 
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
-                    document.getElementById('gridRange').value = state.gridSize; document.getElementById('blurToggle').checked = state.disableBlur; document.getElementById('sortOrder').value = state.sortOrder;
-                    document.getElementById('adultFilter').value = state.adultFilter; document.getElementById('typeFilter').value = state.typeFilter; document.getElementById('hideIdToggle').checked = state.hideIds; document.getElementById('translateToggle').checked = state.showTrans;
-                    
-                    const items = document.getElementsByClassName('asset');
-                    let totalBinaryBytes = 0, totalImageBytes = 0;
-                    const tagCounts = {}, spent = {};
+            updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
+            document.getElementById('gridRange').value = state.gridSize; document.getElementById('blurToggle').checked = state.disableBlur; document.getElementById('sortOrder').value = state.sortOrder;
+            document.getElementById('adultFilter').value = state.adultFilter; document.getElementById('typeFilter').value = state.typeFilter; document.getElementById('hideIdToggle').checked = state.hideIds; document.getElementById('translateToggle').checked = state.showTrans;
+            
+            calculateStats();
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryParam = urlParams.get('q');
+            if (queryParam) document.getElementById("searchInput").value = queryParam;
 
-                    for(let item of items) { 
-                        totalBinaryBytes += parseInt(item.dataset.bytes || 0); 
-                        totalImageBytes += parseInt(item.dataset.imgBytes || 0); 
-                        const tags = JSON.parse(item.dataset.tags || "[]");
-                        tags.forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1);
-                        const pVal = parseFloat(item.dataset.priceValue || 0), pCur = item.dataset.priceCurrency || "";
-                        if (pVal > 0 && pCur) spent[pCur] = (spent[pCur] || 0) + pVal;
-                        observer.observe(item);
-                    }
+            handleSearchInput(); sortAssets();
+            const targetId = urlParams.get('id');
+            if (targetId) openDetails(targetId, true);
+            setTimeout(() => { document.body.classList.add('loaded'); }, 50);
+        }
 
-                    const topTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
-                    document.getElementById('commonTags').innerHTML = topTags.map(([tag]) => `<span class="tag-pill clickable" onclick="tagSearch('${tag.replace(/'/g, "\\'")}')">${tag}</span>`).join('');
+        function calculateStats() {
+            let totalBinaryBytes = 0, totalImageBytes = 0;
+            const tagCounts = {}, spent = {};
+            database.forEach(item => {
+                totalBinaryBytes += item.bytes;
+                totalImageBytes += item.imgBytes;
+                item.tags.forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1);
+                if (item.priceValue > 0 && item.priceCurrency) spent[item.priceCurrency] = (spent[item.priceCurrency] || 0) + item.priceValue;
+            });
+            const topTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            document.getElementById('commonTags').innerHTML = topTags.map(([tag]) => `<span class="tag-pill clickable" onclick="tagSearch('${tag.replace(/'/g, "\\'")}')">${tag}</span>`).join('');
+            document.getElementById('statCount').innerText = database.length;
+            document.getElementById('statSize').innerText = formatBytes(totalBinaryBytes);
+            document.getElementById('statImgSize').innerText = formatBytes(totalImageBytes);
+            document.getElementById('statSpent').innerText = Object.entries(spent).map(([cur, val]) => val.toLocaleString() + " " + cur).join(" / ") || "0";
+            document.getElementById('statDate').innerText = new Date().toLocaleDateString();
+        }
 
-                    document.getElementById('statCount').innerText = items.length;
-                    document.getElementById('statSize').innerText = formatBytes(totalBinaryBytes);
-                    document.getElementById('statImgSize').innerText = formatBytes(totalImageBytes);
-                    document.getElementById('statSpent').innerText = Object.entries(spent).map(([cur, val]) => val.toLocaleString() + " " + cur).join(" / ") || "0";
-                    document.getElementById('statDate').innerText = new Date().toLocaleDateString();
-
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const queryParam = urlParams.get('q');
-                    if (queryParam) {
-                        document.getElementById("searchInput").value = queryParam;
-                    }
-
-                    handleSearchInput(); sortAssets();
-                    const targetId = urlParams.get('id');
-                    if (targetId) openDetails(targetId, true);
-                    setTimeout(() => { document.body.classList.add('loaded'); }, 50);
-                });
+        function renderLibrary() {
+            const list = document.getElementById('assetList');
+            list.innerHTML = database.map(item => {
+                const isAdult = item.adult ? 'adult-content' : '';
+                return `<li class="asset" id="asset-${item.id}" onclick="openDetails('${item.id}')" data-id="${item.id}">
+                    <div class="skeleton-shimmer"></div>
+                    <div class="image-container"><div class="asset-id-tag">#${item.id}</div><img class="image-thumbnail ${isAdult}" loading="lazy"></div>
+                    <img class="image-backglow"><div class="content">
+                        <div class="name"><span class="name-primary"></span></div>
+                        <div class="author-label">by <b class="author-primary"></b></div>
+                        <div class="stats"></div>
+                        <div class="tag-row"></div>
+                    </div>
+                </li>`;
+            }).join('');
+            database.forEach(item => {
+                const el = document.getElementById('asset-' + item.id);
+                el.dataset.img = item.gridThumb;
+                observer.observe(el);
             });
         }
 
-        window.onpopstate = (e) => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetId = urlParams.get('id');
-            const targetQuery = urlParams.get('q') || "";
-            
-            if (document.getElementById("searchInput").value !== targetQuery) {
-                document.getElementById("searchInput").value = targetQuery;
-                applyFilters();
-            }
-
-            if (targetId) openDetails(targetId, true); else closeModal(true);
-        };
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB', 'TB'], i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
 
         function updateLanguage(lang) { 
             state.lang = lang; localStorage.setItem('lang', lang); 
@@ -464,36 +230,41 @@ You might want to eat roasted sweet potatoes." data-vrc-avatar-link="" data-vrc-
             document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t[el.dataset.i18nHtml]; });
             applyFilters(); 
         }
+
         function toggleMenu(e, forceClose = false) { if(e) e.stopPropagation(); const menu = document.getElementById('flyoutMenu'), btn = document.getElementById('toggleBtn'), perim = document.getElementById('menuPerimeter'); const open = !forceClose && !menu.classList.contains('open'); menu.classList.toggle('open', open); btn.classList.toggle('active', open); perim.style.display = open ? 'block' : 'none'; }
         function updateGrid(v) { document.documentElement.style.setProperty('--grid-size', v + 'px'); localStorage.setItem('gridSize', v); }
         function updateBlur(v) { document.body.classList.toggle('no-blur', v); localStorage.setItem('disableBlur', v); }
         function updateIdVisibility(v) { document.body.classList.toggle('hide-ids', v); localStorage.setItem('hideIds', v); }
-        
+
+        function updateTranslationVisibility(v) { 
+            state.showTrans = v; localStorage.setItem('showTrans', v);
+            const t = translations[state.lang] || translations['en'];
+            database.forEach(item => {
+                const el = document.getElementById('asset-' + item.id);
+                if (!el) return;
+                el.querySelector('.name-primary').innerText = (v && item.nameTrans) ? item.nameTrans : item.nameOrig;
+                el.querySelector('.author-primary').innerText = (v && item.authorTrans) ? item.authorTrans : item.authorOrig;
+                el.querySelector('.tag-row').innerHTML = item.tags.slice(0, 12).map(tg => `<span class="tag-pill">${tg}</span>`).join('');
+                
+                let statsHtml = item.bytes > 0 ? `<span>${formatBytes(item.bytes)}</span>` : "";
+                if (item.fileCount > 0) statsHtml += `<span>${item.fileCount} ${item.fileCount === 1 ? t.fileSingular : t.filePlural}</span>`;
+                if (item.links.length > 0) statsHtml += `<span>${item.links.length} ${item.links.length === 1 ? t.matchSingular : t.matchPlural}</span>`;
+                el.querySelector('.stats').innerHTML = statsHtml;
+            });
+            const modal = document.getElementById('detailModal');
+            if (modal.classList.contains('active')) {
+                const id = new URLSearchParams(window.location.search).get('id');
+                const item = database.find(d => d.id === id);
+                if (item) document.getElementById('modalDesc').innerHTML = formatDescription((v && item.descTrans) ? item.descTrans : item.descOrig);
+            }
+        }
+
         function formatDescription(text) {
             if (!text) return "";
             const urlRegex = /(https?:\/\/[^\s\n]+)/g;
             return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" onclick="event.stopPropagation()">${url}</a>`);
         }
 
-        function updateTranslationVisibility(v) { 
-            state.showTrans = v; localStorage.setItem('showTrans', v); 
-            const items = document.getElementsByClassName('asset'); 
-            for(let item of items) { 
-                const primaryName = item.querySelector('.name-primary'); 
-                primaryName.innerText = (v && item.dataset.nameTrans) ? item.dataset.nameTrans : item.dataset.nameOrig;
-                const authorPrimary = item.querySelector('.author-primary');
-                authorPrimary.innerText = (v && item.dataset.authorTrans) ? item.dataset.authorTrans : item.dataset.authorOrig;
-            } 
-            const modal = document.getElementById('detailModal');
-            if (modal.classList.contains('active')) {
-                const id = new URLSearchParams(window.location.search).get('id');
-                const el = document.querySelector(`.asset[data-id="${id}"]`);
-                if (el) {
-                    const raw = (v && el.dataset.descTrans) ? el.dataset.descTrans : el.dataset.descOrig;
-                    document.getElementById('modalDesc').innerHTML = formatDescription(raw);
-                }
-            }
-        }
         function handleSearchInput() { 
             const query = document.getElementById("searchInput").value.toLowerCase();
             const newUrl = new URL(window.location);
@@ -501,17 +272,15 @@ You might want to eat roasted sweet potatoes." data-vrc-avatar-link="" data-vrc-
             window.history.replaceState({}, '', newUrl);
             applyFilters(); 
         }
+
         function clearSearch() { const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(); i.focus(); }
-        
+
         function tagSearch(query, isAuthor = false) {
             const s = document.getElementById("searchInput");
-            const finalQuery = (query.startsWith('rel:') || isAuthor) ? (isAuthor ? `author:${query}` : query) : query;
-            s.value = finalQuery;
-            
+            s.value = isAuthor ? `author:${query}` : query;
             const newUrl = new URL(window.location);
-            newUrl.searchParams.set('q', finalQuery);
+            newUrl.searchParams.set('q', s.value);
             window.history.pushState({}, '', newUrl);
-            
             closeModal();
             handleSearchInput();
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -521,199 +290,122 @@ You might want to eat roasted sweet potatoes." data-vrc-avatar-link="" data-vrc-
             let query = document.getElementById("searchInput").value.toLowerCase();
             const mode = document.getElementById("adultFilter").value;
             const typeMode = document.getElementById("typeFilter").value;
-            const items = document.getElementsByClassName("asset"), t = translations[state.lang] || translations['en'];
-            let count = 0, totalMatchesButHidden = 0;
-            if(save) { 
-                state.adultFilter = mode; 
-                state.typeFilter = typeMode;
-                localStorage.setItem('adultFilter', mode); 
-                localStorage.setItem('typeFilter', typeMode);
-            }
+            const t = translations[state.lang] || translations['en'];
+            if(save) { state.adultFilter = mode; state.typeFilter = typeMode; localStorage.setItem('adultFilter', mode); localStorage.setItem('typeFilter', typeMode); }
 
-            const isAuthorSearch = query.startsWith('author:');
-            const isRelSearch = query.startsWith('rel:');
-            const isTypeSearch = query.startsWith('type:');
-            
+            let count = 0, hiddenCount = 0;
+            const isAuthorSearch = query.startsWith('author:'), isRelSearch = query.startsWith('rel:'), isTypeSearch = query.startsWith('type:');
             const authorQuery = isAuthorSearch ? query.replace('author:', '').trim() : '';
             const relQuery = isRelSearch ? query.replace('rel:', '').trim() : '';
             const typeSearchVal = isTypeSearch ? query.replace('type:', '').trim() : '';
 
-            for (let item of items) {
-                const isAdult = item.dataset.adult === 'true';
-                const itemIsAvatar = item.dataset.isAvatar === 'true';
-                
-                const adultFilterMatch = (mode === 'all') || (mode === 'hide' && !isAdult) || (mode === 'only' && isAdult);
-                const typeFilterMatch = (typeMode === 'all') || (typeMode === 'avatar' && itemIsAvatar) || (typeMode === 'asset' && !itemIsAvatar);
+            database.forEach(item => {
+                const el = document.getElementById('asset-' + item.id);
+                const adultMatch = (mode === 'all') || (mode === 'hide' && !item.adult) || (mode === 'only' && item.adult);
+                const typeMatch = (typeMode === 'all') || (typeMode === 'avatar' && item.isAvatar) || (typeMode === 'asset' && !item.isAvatar);
                 
                 let searchMatch = false;
-                if (isRelSearch) {
-                    const links = JSON.parse(item.dataset.links || "[]");
-                    searchMatch = (item.dataset.id === relQuery) || links.includes(relQuery);
-                } else if (isAuthorSearch) {
-                    const authorO = item.dataset.authorOrig.toLowerCase();
-                    const authorT = item.dataset.authorTrans.toLowerCase();
-                    searchMatch = (authorO === authorQuery) || (authorT === authorQuery) || (authorO.includes(authorQuery)) || (authorT.includes(authorQuery));
-                } else if (isTypeSearch) {
-                    if (typeSearchVal === 'avatar') searchMatch = itemIsAvatar;
-                    else if (typeSearchVal === 'asset') searchMatch = !itemIsAvatar;
-                } else {
-                    searchMatch = item.dataset.search.includes(query);
-                }
+                if (isRelSearch) searchMatch = (item.id === relQuery) || item.links.includes(relQuery);
+                else if (isAuthorSearch) searchMatch = item.authorOrig.toLowerCase().includes(authorQuery) || item.authorTrans.toLowerCase().includes(authorQuery);
+                else if (isTypeSearch) searchMatch = (typeSearchVal === 'avatar' ? item.isAvatar : !item.isAvatar);
+                else searchMatch = item.searchBlob.includes(query);
 
-                const visible = searchMatch && adultFilterMatch && typeFilterMatch;
-                if (searchMatch && !(adultFilterMatch && typeFilterMatch)) totalMatchesButHidden++;
-                
-                if (visible) { count++; item.style.display = ""; observer.observe(item); } else { item.style.display = "none"; }
-                
-                const fc = parseInt(item.dataset.filecount);
-                const flabel = item.querySelector('.file-label-dynamic');
-                if (flabel) flabel.innerText = fc + " " + (fc === 1 ? t.fileSingular : t.filePlural);
-                
-                const matches = JSON.parse(item.dataset.links || "[]").length;
-                const mlabel = item.querySelector('.match-label-dynamic');
-                if (mlabel) mlabel.innerText = matches + " " + (matches === 1 ? t.matchSingular : t.matchPlural);
-            }
+                if (searchMatch && adultMatch && typeMatch) { el.style.display = ""; count++; }
+                else { el.style.display = "none"; if (searchMatch) hiddenCount++; }
+            });
+
             document.getElementById("searchInput").placeholder = t.searchPre + count + t.searchSuf;
             const notice = document.getElementById("filterNotice");
-            if (totalMatchesButHidden > 0) { notice.innerText = t.hiddenResults.replace('{n}', totalMatchesButHidden).trim(); notice.style.display = "flex"; } else { notice.style.display = "none"; }
+            if (hiddenCount > 0) { notice.innerText = t.hiddenResults.replace('{n}', hiddenCount).trim(); notice.style.display = "flex"; } else { notice.style.display = "none"; }
         }
 
         function sortAssets(save = false) {
             const list = document.getElementById('assetList'), order = document.getElementById('sortOrder').value;
             if(save) localStorage.setItem('sortOrder', order);
-            const items = Array.from(list.children).filter(el => el.classList.contains('asset'));
-            items.sort((a, b) => {
-                if (order === 'id') return parseInt(a.dataset.id) - parseInt(b.dataset.id);
-                if (order === 'new') return parseInt(b.dataset.time) - parseInt(a.dataset.time);
-                if (order === 'rel') return parseInt(b.dataset.wish) - parseInt(a.dataset.wish);
-                if (order === 'name') {
-                    const nA = (state.showTrans && a.dataset.nameTrans) ? a.dataset.nameTrans : a.dataset.nameOrig;
-                    const nB = (state.showTrans && b.dataset.nameTrans) ? b.dataset.nameTrans : b.dataset.nameOrig;
-                    return nA.toLowerCase().localeCompare(nB.toLowerCase());
-                }
-                return parseInt(b.dataset.bytes) - parseInt(a.dataset.bytes);
+            const sorted = [...database].sort((a, b) => {
+                if (order === 'id') return parseInt(a.id) - parseInt(b.id);
+                if (order === 'new') return b.timestamp - a.timestamp;
+                if (order === 'rel') return b.wishCount - a.wishCount;
+                if (order === 'size') return b.bytes - a.bytes;
+                const nA = (state.showTrans && a.nameTrans) ? a.nameTrans : a.nameOrig;
+                const nB = (state.showTrans && b.nameTrans) ? b.nameTrans : b.nameOrig;
+                return nA.toLowerCase().localeCompare(nB.toLowerCase());
             });
-            const notice = document.getElementById('filterNotice');
-            list.innerHTML = ""; items.forEach(i => list.appendChild(i));
-            list.appendChild(notice); applyFilters();
+            sorted.forEach(item => list.appendChild(document.getElementById('asset-' + item.id)));
         }
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            const pane = document.getElementById('pane-' + tabId);
-            if (pane) pane.classList.add('active');
-            const tab = document.getElementById('tab-' + tabId);
-            if (tab) tab.classList.add('active');
-        }
-        
         function openDetails(id, skipHistory = false) {
-            const el = document.querySelector(`.asset[data-id="${id}"]`), t = translations[state.lang] || translations['en'];
-            if(!el) return;
-            
+            const item = database.find(d => d.id === id), t = translations[state.lang] || translations['en'];
+            if(!item) return;
             switchTab('details');
-            document.getElementById("modalImg").src = ""; 
-            document.getElementById("modalBlurBg").src = "";
-            currentImages = JSON.parse(el.dataset.allImages); 
-            currentCarouselIndex = 0; 
-            updateCarousel();
-
-            const displayTitle = (state.showTrans && el.dataset.nameTrans) ? el.dataset.nameTrans : el.dataset.nameOrig;
-            const authorOrig = el.dataset.authorOrig;
-            const authorTrans = (state.showTrans && el.dataset.authorTrans) ? el.dataset.authorTrans : authorOrig;
+            currentImages = item.allImages; currentCarouselIndex = 0; updateCarousel();
+            
+            const displayTitle = (state.showTrans && item.nameTrans) ? item.nameTrans : item.nameOrig;
+            const authorDisp = (state.showTrans && item.authorTrans) ? item.authorTrans : item.authorOrig;
             
             document.getElementById("modalName").innerText = displayTitle;
-            document.getElementById("modalSubtitle").innerHTML = `by <a class="modal-author-link" onclick="tagSearch('${authorOrig.replace(/'/g, "\\'")}', true)"><b class="author-primary">${authorTrans}</b></a>`;
+            document.getElementById("modalSubtitle").innerHTML = `by <a class="modal-author-link" onclick="tagSearch('${item.authorOrig.replace(/'/g, "\\'")}', true)"><b>${authorDisp}</b></a>`;
             
-            const meta = [];
-            if (el.dataset.nameTrans && state.showTrans) meta.push(`<div class="meta-pill">${el.dataset.nameOrig}</div>`);
-            meta.push(`<div class="meta-pill">${el.dataset.priceCurrency} ${parseFloat(el.dataset.priceValue).toLocaleString()}</div>`);
-            document.getElementById("modalMeta").innerHTML = meta.join('');
+            let metaHtml = (item.nameTrans && state.showTrans) ? `<div class="meta-pill">${item.nameOrig}</div>` : "";
+            metaHtml += `<div class="meta-pill">${item.priceCurrency} ${item.priceValue.toLocaleString()}</div>`;
+            document.getElementById("modalMeta").innerHTML = metaHtml;
+            document.getElementById("modalIdDisp").innerText = "#" + item.id;
+            document.getElementById("openFolderLink").href = item.folder;
+            document.getElementById("openBoothLink").href = item.boothUrl;
+            document.getElementById("delistedWarn").style.display = item.limited ? 'block' : 'none';
+            document.getElementById("openVrcAvatarLink").style.display = item.vrcAvatarLink ? "block" : "none";
+            document.getElementById("openVrcAvatarLink").href = item.vrcAvatarLink || "";
+            document.getElementById("openVrcWorldLink").style.display = item.vrcWorldLink ? "block" : "none";
+            document.getElementById("openVrcWorldLink").href = item.vrcWorldLink || "";
 
-            document.getElementById("modalIdDisp").innerText = "#" + id;
-            document.getElementById("openFolderLink").href = el.dataset.folder;
-            document.getElementById("openBoothLink").href = el.dataset.boothUrl;
-            document.getElementById("delistedWarn").style.display = (el.dataset.limited === 'true') ? 'block' : 'none';
-            
-            const vrcA = el.dataset.vrcAvatarLink, vrcW = el.dataset.vrcWorldLink;
-            document.getElementById("openVrcAvatarLink").style.display = vrcA ? "block" : "none";
-            document.getElementById("openVrcAvatarLink").href = vrcA || "";
-            document.getElementById("openVrcWorldLink").style.display = vrcW ? "block" : "none";
-            document.getElementById("openVrcWorldLink").href = vrcW || "";
+            document.getElementById("modalTags").innerHTML = item.tags.map(tg => `<span class="tag-pill clickable" onclick="tagSearch('${tg.replace(/'/g, "\\'")}')">${tg}</span>`).join('');
+            document.getElementById("modalDesc").innerHTML = formatDescription((state.showTrans && item.descTrans) ? item.descTrans : item.descOrig);
+            document.getElementById("tab-description").style.display = (item.descOrig) ? "block" : "none";
 
-            const tags = JSON.parse(el.dataset.tags), tagContainer = document.getElementById("modalTags");
-            tagContainer.innerHTML = tags.map(tg => `<span class="tag-pill clickable" onclick="tagSearch('${tg.replace(/'/g, "\\'")}')">${tg}</span>`).join('');
-
-            const transDesc = (state.showTrans && el.dataset.descTrans) ? el.dataset.descTrans : el.dataset.descOrig;
-            const raw = (state.showTrans && el.dataset.descTrans) ? el.dataset.descTrans : el.dataset.descOrig;
-            document.getElementById("modalDesc").innerHTML = formatDescription(raw);
-            document.getElementById("tab-description").style.display = (transDesc && transDesc.trim()) ? "block" : "none";
-
-            const itemIsAvatar = el.dataset.isAvatar === 'true';
-            const links = JSON.parse(el.dataset.links || "[]");
             const relSection = document.getElementById("relSection");
-            if (links.length > 0) {
+            if (item.links.length > 0) {
                 relSection.style.display = "block";
-                document.getElementById("relTitle").innerText = itemIsAvatar ? t.labelComp : t.labelDesigned;
-
-                let relationshipHtml = links.map(linkId => {
-                    const target = document.querySelector(`.asset[data-id="${linkId}"]`);
+                document.getElementById("relTitle").innerText = item.isAvatar ? t.labelComp : t.labelDesigned;
+                let relHtml = item.links.map(linkId => {
+                    const target = database.find(d => d.id === linkId);
                     if (!target) return "";
-                    
-                    const isTargetAdult = target.dataset.adult === 'true';
-                    const mode = state.adultFilter;
-                    const filterMatch = (mode === 'all') || (mode === 'hide' && !isTargetAdult) || (mode === 'only' && isTargetAdult);
-                    if (!filterMatch) return "";
-
-                    const n = (state.showTrans && target.dataset.nameTrans) ? target.dataset.nameTrans : target.dataset.nameOrig;
+                    const n = (state.showTrans && target.nameTrans) ? target.nameTrans : target.nameOrig;
                     return `<a href="#" class="asset-link-item" onclick="event.preventDefault(); openDetails('${linkId}')">
-                        <img class="asset-link-thumb" src="${target.dataset.img}">
+                        <img class="asset-link-thumb" src="${target.gridThumb}">
                         <span class="asset-link-name">${n}</span>
                     </a>`;
-                }).join('');
-                
-                if (relationshipHtml.trim()) {
-                    relationshipHtml += `<a href="#" class="asset-link-view-all" onclick="event.preventDefault(); tagSearch('rel:${id}')"><span>${t.labelViewRel}</span></a>`;
-                }
+                }).join('') + `<a href="#" class="asset-link-view-all" onclick="event.preventDefault(); tagSearch('rel:${item.id}')"><span>${t.labelViewRel}</span></a>`;
+                document.getElementById("relationshipContainer").innerHTML = relHtml;
+            } else relSection.style.display = "none";
 
-                document.getElementById("relationshipContainer").innerHTML = relationshipHtml;
-                if (!relationshipHtml.trim()) relSection.style.display = "none";
-            } else { relSection.style.display = "none"; }
+            document.getElementById("fileList").innerHTML = item.files.sort((a,b) => b.name.localeCompare(a.name, undefined, {numeric:true})).map(f => `
+                <li class="file-item"><a class="file-link" href="${f.path}" target="_blank">${f.name}</a><span style="color:#666; font-size:0.7rem;">${f.size}</span></li>`).join('');
 
-            const fileData = JSON.parse(el.dataset.files);
-            fileData.sort((a, b) => b.name.toLowerCase().localeCompare(a.name.toLowerCase(), undefined, { numeric: true, sensitivity: 'base' }));
-            document.getElementById("fileList").innerHTML = fileData.map(f => `
-                <li class="file-item">
-                    <a class="file-link" href="${f.path}" target="_blank">${f.name}</a>
-                    <span style="color:#666; font-size:0.7rem;">${f.size}</span>
-                </li>`).join('');
-
-            const m = document.getElementById("detailModal"); 
-            m.classList.add('visible'); 
-            setTimeout(() => m.classList.add('active'), 10);
-            
-            const contentContainer = document.querySelector('.tab-content-container');
-            if (contentContainer) contentContainer.scrollTop = 0;
-
+            const m = document.getElementById("detailModal"); m.classList.add('visible'); setTimeout(() => m.classList.add('active'), 10);
             document.title = baseTitle + " - #" + id;
             if (!skipHistory) { const newUrl = new URL(window.location); newUrl.searchParams.set('id', id); window.history.pushState({id: id}, '', newUrl); }
         }
 
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-pane, .tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('pane-' + tabId).classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
         function carouselNext(dir) { if (currentImages.length <= 1) return; currentCarouselIndex = (currentCarouselIndex + dir + currentImages.length) % currentImages.length; updateCarousel(); }
         function updateCarousel() {
-            if (!currentImages.length) return;
-            const imgUrl = currentImages[currentCarouselIndex], modalImg = document.getElementById("modalImg"), modalBlurBg = document.getElementById("modalBlurBg");
-            modalImg.src = imgUrl; modalBlurBg.src = imgUrl;
-            const dots = document.getElementById("carouselDots");
-            if (currentImages.length > 1) { dots.style.display = "flex"; dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join(''); document.getElementById("carouselPrev").style.display = "block"; document.getElementById("carouselNext").style.display = "block"; } else { dots.style.display = "none"; document.getElementById("carouselPrev").style.display = "none"; document.getElementById("carouselNext").style.display = "none"; }
+            const imgUrl = currentImages[currentCarouselIndex], mI = document.getElementById("modalImg"), mB = document.getElementById("modalBlurBg"), dots = document.getElementById("carouselDots");
+            mI.src = imgUrl; mB.src = imgUrl;
+            if (currentImages.length > 1) { dots.style.display = "flex"; dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join(''); }
+            else dots.style.display = "none";
         }
         function closeModal(skipHistory = false) { 
             const m = document.getElementById("detailModal"); m.classList.remove('active'); setTimeout(() => { if(!m.classList.contains('active')) m.classList.remove('visible'); }, 300);
-            document.title = baseTitle;
-            if (!skipHistory) { const newUrl = new URL(window.location); newUrl.searchParams.delete('id'); window.history.pushState({}, '', newUrl); }
+            document.title = baseTitle; if (!skipHistory) { const newUrl = new URL(window.location); newUrl.searchParams.delete('id'); window.history.pushState({}, '', newUrl); }
         }
-        window.onclick = e => { const menu = document.getElementById('flyoutMenu'), btn = document.getElementById('toggleBtn'); if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn) toggleMenu(null, true); };
+        window.onpopstate = () => { const p = new URLSearchParams(window.location.search); if (p.get('id')) openDetails(p.get('id'), true); else closeModal(true); };
         document.addEventListener('keydown', e => { if(e.key === "Escape") { closeModal(); toggleMenu(null, true); } if(e.key === "ArrowRight") carouselNext(1); if(e.key === "ArrowLeft") carouselNext(-1); });
+        
+        // Final init
         init();
     </script>
 </body>
