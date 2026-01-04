@@ -1,0 +1,11 @@
+{
+  "name": "Custom Item Example",
+  "author": "BUDDYWORKS",
+  "description": "Custom Items that are not related to booth assets can be defined using the custom item descriptor system.\nYou can find this example inside the demo folder under BoothDownloaderOut/wtf.buddyworks.example.\nCustom items are defined with their own json format and behave similiarly to other items.\nRelations to other items must be manually defined by ID.\nhttps://github.com/JustBuddy/BoothDownloader-web",
+  "tags": ["Demo", "Example", "Test"],
+  "price": "0 JPY",
+  "wish_count": 0,
+  "is_adult": false,
+  "is_avatar": true,
+  "related_booth_ids": ["6089367", "6066920", "5542201", "5541093"]
+}

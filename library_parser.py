@@ -12,7 +12,6 @@ from PIL import Image
 # Configuration
 ROOT_FOLDER = "BoothDownloaderOut"
 OUTPUT_FILE = "asset_library.html"
-# Changed to .js to act as a local database script
 DATABASE_JS_FILE = "web_data/database.js"
 CACHE_FILE = "web_data/cache/translation_cache.json"
 DESC_CACHE_FILE = "web_data/cache/descriptions_cache.json"
@@ -285,7 +284,6 @@ HTML_TEMPLATE = """<!doctype html>
     <script>
         const l18n = __L18N_INJECT_POINT__;
         const translations = l18n.translations;
-        // window.BOOTH_DATABASE is populated by the script above
         const database = window.BOOTH_DATABASE || [];
         
         let currentCarouselIndex = 0, currentImages = [];
@@ -482,7 +480,7 @@ HTML_TEMPLATE = """<!doctype html>
             const list = document.getElementById('assetList'), order = document.getElementById('sortOrder').value;
             if(save) localStorage.setItem('sortOrder', order);
             const sorted = [...database].sort((a, b) => {
-                if (order === 'id') return parseInt(a.id) - parseInt(b.id);
+                if (order === 'id') return isNaN(a.id) || isNaN(b.id) ? a.id.localeCompare(b.id) : parseInt(a.id) - parseInt(b.id);
                 if (order === 'new') return b.timestamp - a.timestamp;
                 if (order === 'rel') return b.wishCount - a.wishCount;
                 if (order === 'size') return b.bytes - a.bytes;
@@ -510,6 +508,7 @@ HTML_TEMPLATE = """<!doctype html>
             document.getElementById("modalMeta").innerHTML = metaHtml;
             document.getElementById("modalIdDisp").innerText = "#" + item.id;
             document.getElementById("openFolderLink").href = item.folder;
+            document.getElementById("openBoothLink").style.display = item.boothUrl ? "block" : "none";
             document.getElementById("openBoothLink").href = item.boothUrl;
             document.getElementById("delistedWarn").style.display = item.limited ? 'block' : 'none';
             document.getElementById("openVrcAvatarLink").style.display = item.vrcAvatarLink ? "block" : "none";
@@ -564,7 +563,6 @@ HTML_TEMPLATE = """<!doctype html>
         window.onpopstate = () => { const p = new URLSearchParams(window.location.search); if (p.get('id')) openDetails(p.get('id'), true); else closeModal(true); };
         document.addEventListener('keydown', e => { if(e.key === "Escape") { closeModal(); toggleMenu(null, true); } if(e.key === "ArrowRight") carouselNext(1); if(e.key === "ArrowLeft") carouselNext(-1); });
         
-        // Final init
         init();
     </script>
 </body>
@@ -599,7 +597,8 @@ def get_image_folder_size(folder_path):
 def is_adult_content(text):
     return bool(re.search("|".join(ADULT_KEYWORDS), str(text), re.IGNORECASE))
 
-def get_all_local_images(folder_path, web_urls):
+def get_all_local_images(folder_path, web_urls=None):
+    if web_urls is None: web_urls = []
     local_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))]
     ordered_images = []
     for url in web_urls:
@@ -621,10 +620,15 @@ def get_all_local_images(folder_path, web_urls):
     return ordered_images
 
 def parse_price(price_str):
-    if not price_str or "free" in price_str.lower(): return 0.0, "FREE"
-    clean = price_str.replace(',', '').replace('¥', '')
-    match = re.search(r'([\d.]+)\s*([A-Z]+)', clean)
-    return (float(match.group(1)), match.group(2)) if match else (0.0, "JPY")
+    if not price_str or "free" in str(price_str).lower(): return 0.0, "FREE"
+    if isinstance(price_str, (int, float)): return float(price_str), "JPY"
+    clean = str(price_str).replace(',', '').replace('¥', '')
+    match = re.search(r'([\d.]+)\s*([A-Z]*)', clean)
+    if match:
+        val = float(match.group(1))
+        cur = match.group(2) if match.group(2) else "JPY"
+        return val, cur
+    return 0.0, "JPY"
 
 def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, folder_path, tags, is_adult, wish_count, price_str, limited=False, description="", is_avatar=False, related_links=None):
     if limited and "⚙Unlisted" not in tags: tags.append("⚙Unlisted")
@@ -709,6 +713,20 @@ avatar_profiles = {}
 for folder in sorted(os.listdir(ROOT_FOLDER)):
     path = os.path.join(ROOT_FOLDER, folder)
     if not os.path.isdir(path): continue
+    
+    manual_json = os.path.join(path, "item_descriptor.json")
+    if os.path.exists(manual_json):
+        with open(manual_json, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            name, author, desc = data.get('name', 'N/A'), data.get('author', 'N/A'), data.get('description', '')
+            tags = data.get('tags', [])
+            short_strings_to_translate.extend([name, author] + tags)
+            is_avatar = data.get('is_avatar', False)
+            asset_data_list.append(('custom', folder, (name, author, data, desc), path, data.get('wish_count', 0), is_avatar))
+            if not SKIP_TRANSLATION and desc and folder not in description_cache and contains_japanese(desc):
+                desc_tasks[folder] = desc
+        continue
+
     jsons = glob.glob(os.path.join(path, "_BoothPage.json")) or glob.glob(os.path.join(path, "_BoothInnerHtmlList.json"))
     if not jsons: continue
     with open(jsons[0], 'r', encoding='utf-8') as f:
@@ -738,22 +756,52 @@ print("[Relate] Mapping Avatars...")
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if is_avatar:
         name, trans_name = data[0], translation_cache.get(data[0].strip(), "")
-        tags = [t.get('name', '') for t in data[2].get('tags', [])] if atype == 'json' else []
+        if atype == 'json':
+            tags = [t.get('name', '') for t in data[2].get('tags', [])]
+        elif atype == 'custom':
+            tags = data[2].get('tags', [])
+        else: tags = []
         avatar_profiles[folder] = get_avatar_search_profile(name, trans_name, tags)
 
 assets_to_avatar = {}
+avatar_to_assets = {}
+
+# Pass 1: Handle manual relationships from Custom Items
+for atype, folder, data, path, wish, is_avatar in asset_data_list:
+    if atype == 'custom' and 'related_booth_ids' in data[2]:
+        manual_ids = [str(x) for x in data[2]['related_booth_ids']]
+        for target_id in manual_ids:
+            if is_avatar:
+                # Custom item is Avatar, manual_ids are Assets
+                avatar_to_assets.setdefault(folder, []).append(target_id)
+                assets_to_avatar.setdefault(target_id, []).append(folder)
+            else:
+                # Custom item is Asset, manual_ids are Avatars
+                assets_to_avatar.setdefault(folder, []).append(target_id)
+                avatar_to_assets.setdefault(target_id, []).append(folder)
+
+# Pass 2: Handle automatic English-name matching logic
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if is_avatar: continue
+    
     t_name = translation_cache.get(data[0].strip(), "").lower()
-    t_tags = [translation_cache.get(t.get('name', ''), '').lower() for t in data[2].get('tags', [])] if atype == 'json' else []
-    t_vars = [translation_cache.get(v.get('name', ''), '').lower() for v in data[2].get('variations', []) if v.get('name')] if atype == 'json' else []
+    if atype == 'json':
+        t_tags = [translation_cache.get(t.get('name', ''), '').lower() for t in data[2].get('tags', [])]
+        t_vars = [translation_cache.get(v.get('name', ''), '').lower() for v in data[2].get('variations', []) if v.get('name')]
+    elif atype == 'custom':
+        t_tags = [translation_cache.get(t.strip(), '').lower() for t in data[2].get('tags', []) if t]
+        t_vars = []
+    else:
+        t_tags, t_vars = [], []
+    
     for av_id, profile in avatar_profiles.items():
         if check_english_match((t_name, t_tags, t_vars), profile):
             assets_to_avatar.setdefault(folder, []).append(av_id)
+            avatar_to_assets.setdefault(av_id, []).append(folder)
 
-avatar_to_assets = {}
-for asset_id, av_list in assets_to_avatar.items():
-    for av_id in av_list: avatar_to_assets.setdefault(av_id, []).append(asset_id)
+# Final Unique Sort
+for d in [assets_to_avatar, avatar_to_assets]:
+    for key in d: d[key] = sorted(list(set(d[key])))
 
 if desc_tasks:
     total_descs = len(desc_tasks)
@@ -776,11 +824,12 @@ for atype, folder, data, path, wish, is_avatar in asset_data_list:
         web_imgs = [img.get('original', '') for img in content.get('images', [])]
         tags = [t.get('name', '') for t in content.get('tags', [])]
         database_output.append(create_asset_data(folder, name, author, web_imgs, content.get('url', ''), path, tags, content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', ''), description=desc, is_avatar=is_avatar, related_links=rel))
+    elif atype == 'custom':
+        database_output.append(create_asset_data(folder, name, author, [], "", path, content.get('tags', []), content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', 0), description=desc, is_avatar=is_avatar, related_links=rel))
     else:
         i_m, u_m = re.search(r'src=\"([^\"]+)\"', content), re.search(r'href=\"([^\"]+)\"', content)
         database_output.append(create_asset_data(folder, name, author, [i_m.group(1) if i_m else ""], u_m.group(1) if u_m else "", path, [], is_adult_content(name), 0, "", limited=True, related_links=rel))
 
-# Write to a JS file instead of JSON to bypass local file CORS
 with open(DATABASE_JS_FILE, 'w', encoding='utf-8') as f:
     f.write("window.BOOTH_DATABASE = ")
     json.dump(database_output, f, ensure_ascii=False)
