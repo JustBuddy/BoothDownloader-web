@@ -26,7 +26,7 @@ THUMBNAIL_SIZE = (256, 256)
 IMG_OUT_DIR = "web_data/img"
 
 # Shared Body Groups (Case-insensitive)
-BODY_GROUPS = ["MameFriends", "MaruBody", "+Head", "Plushead"]
+BODY_GROUPS = ["MameFriends", "MaruBody", "+Head", "Plushead", "Bodyset2"]
 
 # Keywords that should NEVER be considered an avatar name
 FORBIDDEN_NAMES = {
@@ -35,7 +35,7 @@ FORBIDDEN_NAMES = {
     "unlisted", "adult", "preview", "cloth", "clothing", "accessory", "hair",
     "eye", "texture", "physbone", "blendshape", "blender",
     "mobile", "compatible", "version", "support", "sdk3", "prefab", "physbones",
-    "fullset", "edition", "sf", "3dcg", "vrm", "mmd"
+    "fullset", "edition", "sf", "3dcg", "vrm", "mmd", "body", "set"
 }
 
 print(f"--- Starting Library Generation ---")
@@ -694,17 +694,29 @@ def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, 
 def get_avatar_search_profile(orig_name, trans_name, tags):
     search_terms, groups = set(), set()
     all_context = (orig_name + " " + (trans_name or "") + " " + " ".join(tags)).lower()
+    
     for g in BODY_GROUPS:
-        if g.lower() in all_context: groups.add(g.lower())
-    for part in re.findall(r'[a-zA-Z0-9]{2,}', orig_name):
-        if part.lower() not in FORBIDDEN_NAMES: search_terms.add(part.lower())
+        if g.lower() in all_context: 
+            groups.add(g.lower())
+    
+    # Helper to filter and clean candidate name strings
+    def add_valid_candidate(cand):
+        cleaned = re.sub(r'Original 3D Model|3D Model|Avatar|Ver\..*|#\w+|chan|kun|vrc|quest|pc|compatible|set', '', cand, flags=re.IGNORECASE).strip()
+        if len(cleaned) > 2 and cleaned.lower() not in FORBIDDEN_NAMES:
+            search_terms.add(cleaned.lower())
+
+    # Extract alphanumeric words from Japanese translated/English name
     if trans_name:
-        for cand in re.findall(r"['\"\[](.*?)['\"\]]", trans_name):
-            cleaned = re.sub(r'Original 3D Model|3D Model|Avatar|Ver\..*', '', cand, flags=re.IGNORECASE).strip()
-            if cleaned.lower() not in FORBIDDEN_NAMES and len(cleaned) > 1: search_terms.add(cleaned.lower())
-        core = re.sub(r'Original 3D Model|3D Model|Avatar|Ver\..*|#\w+|chan|kun', '', trans_name, flags=re.IGNORECASE).strip()
-        for p in core.split():
-            if p.strip().lower() not in FORBIDDEN_NAMES: search_terms.add(p.strip().lower())
+        add_valid_candidate(trans_name)
+        # Check quoted parts
+        for q in re.findall(r"['\"\[「](.*?)['\"\]」]", trans_name):
+            add_valid_candidate(q)
+            
+    # Always include the raw original ASCII parts if they are substantial
+    for part in re.findall(r'[a-zA-Z0-9]{3,}', orig_name):
+        if part.lower() not in FORBIDDEN_NAMES:
+            search_terms.add(part.lower())
+            
     return {"names": list(search_terms), "groups": list(groups)}
 
 def check_english_match(asset_info, profile):
@@ -716,14 +728,15 @@ def check_english_match(asset_info, profile):
         if group in asset_context:
             return True
 
-    # 2. Check for Name-based Matching
-    relevant_tags = [t for t in tags if t not in FORBIDDEN_NAMES]
-    blob = re.sub(r'[^a-zA-Z0-9]', ' ', f"{title} {' '.join(relevant_tags)} {' '.join(vars)}").lower().replace('ou', 'o')
+    # 2. Check for Name-based Matching (Whole word only)
+    blob = re.sub(r'[^a-zA-Z0-9]', ' ', asset_context).lower().replace('ou', 'o')
     
     for term in profile.get("names", []):
         norm = re.sub(r'[^a-zA-Z0-9]', ' ', term).lower().replace('ou', 'o').strip()
-        if norm and norm not in FORBIDDEN_NAMES and len(norm) > 1:
-            if re.search(r'\b' + re.escape(norm) + r'\b', blob): return True
+        if norm and len(norm) > 2:
+            # Use regex word boundaries to prevent matching "Wolf" inside "Werewolf"
+            if re.search(r'\b' + re.escape(norm) + r'\b', blob): 
+                return True
     return False
 
 # Execution logic
