@@ -642,8 +642,10 @@ def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, 
     if limited and "⚙Unlisted" not in tags: tags.append("⚙Unlisted")
     if is_adult and "⚙Adult" not in tags: tags.append("⚙Adult")
     
+    # Updated regex to catch both standard home links and launch links
     vrc_av = re.search(r'(https://vrchat\.com/home/avatar/avtr_[a-f0-9-]+)', description)
-    vrc_wr = re.search(r'(https://vrchat\.com/home/world/wrld_[a-f0-9-]+)', description)
+    vrc_wr = re.search(r'(https://vrchat\.com/home/(?:world/|launch\?worldId=)wrld_[a-f0-9-]+)', description)
+    
     if (vrc_av or vrc_wr) and "⚙Preview" not in tags: tags.append("⚙Preview")
     
     binary_folder = os.path.join(folder_path, 'Binary')
