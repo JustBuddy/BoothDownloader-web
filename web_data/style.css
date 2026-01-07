@@ -512,24 +512,49 @@ body.no-blur .adult-content {
   overflow: hidden;
 }
 
-.carousel-blur-bg {
-  position: absolute;
-  top: -10%;
-  left: -10%;
-  width: 120%;
-  height: 120%;
-  object-fit: cover;
-  filter: blur(40px) brightness(0.5);
-  opacity: 0.8;
-  z-index: 1;
+/* CAROUSEL TRACKS */
+.carousel-track, .carousel-blur-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  will-change: transform;
 }
 
-.carousel-main-img {
+.carousel-track {
+  z-index: 2;
+}
+
+.carousel-blur-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  filter: blur(40px) brightness(0.5);
+  opacity: 0.8;
+}
+
+.carousel-slide, .carousel-blur-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.carousel-slide img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  position: relative;
-  z-index: 2;
+}
+
+.carousel-blur-slide img {
+  width: 120%;
+  height: 120%;
+  object-fit: cover;
+  transform: scale(1.1);
 }
 
 .carousel-btn {

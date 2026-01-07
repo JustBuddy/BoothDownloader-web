@@ -229,8 +229,8 @@ HTML_TEMPLATE = """<!doctype html>
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-carousel" id="modalCarouselContainer">
                 <button id="carouselPrev" class="carousel-btn btn-prev" onclick="carouselNext(-1)">❮</button>
-                <img id="modalBlurBg" class="carousel-blur-bg" src="">
-                <img id="modalImg" class="carousel-main-img" src="">
+                <div id="carouselBlurTrack" class="carousel-blur-track"></div>
+                <div id="carouselTrack" class="carousel-track"></div>
                 <button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button>
                 <div id="carouselDots" class="carousel-dots"></div>
             </div>
@@ -495,8 +495,28 @@ HTML_TEMPLATE = """<!doctype html>
         function openDetails(id, skipHistory = false) {
             const item = database.find(d => d.id === id), t = translations[state.lang] || translations['en'];
             if(!item) return;
+
+            // Immediately clear content to prevent ghosting
+            const track = document.getElementById("carouselTrack");
+            const blurTrack = document.getElementById("carouselBlurTrack");
+            track.style.transition = 'none';
+            blurTrack.style.transition = 'none';
+            track.style.transform = 'translateX(0)';
+            blurTrack.style.transform = 'translateX(0)';
+            track.innerHTML = "";
+            blurTrack.innerHTML = "";
+            
             switchTab('details');
-            currentImages = item.allImages; currentCarouselIndex = 0; updateCarousel();
+            currentCarouselIndex = 0;
+            currentImages = item.allImages; 
+            
+            // Build slides
+            const mainSlides = currentImages.map(img => `<div class="carousel-slide"><img src="${img}"></div>`).join('');
+            const blurSlides = currentImages.map(img => `<div class="carousel-blur-slide"><img src="${img}"></div>`).join('');
+            track.innerHTML = mainSlides;
+            blurTrack.innerHTML = blurSlides;
+
+            updateCarousel(true);
             
             const displayTitle = (state.showTrans && item.nameTrans) ? item.nameTrans : item.nameOrig;
             const authorDisp = (state.showTrans && item.authorTrans) ? item.authorTrans : item.authorOrig;
@@ -551,9 +571,19 @@ HTML_TEMPLATE = """<!doctype html>
             document.getElementById('tab-' + tabId).classList.add('active');
         }
         function carouselNext(dir) { if (currentImages.length <= 1) return; currentCarouselIndex = (currentCarouselIndex + dir + currentImages.length) % currentImages.length; updateCarousel(); }
-        function updateCarousel() {
-            const imgUrl = currentImages[currentCarouselIndex], mI = document.getElementById("modalImg"), mB = document.getElementById("modalBlurBg"), dots = document.getElementById("carouselDots");
-            mI.src = imgUrl; mB.src = imgUrl;
+        
+        function updateCarousel(instant = false) {
+            const track = document.getElementById("carouselTrack");
+            const blurTrack = document.getElementById("carouselBlurTrack");
+            const dots = document.getElementById("carouselDots");
+            
+            const trans = instant ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            track.style.transition = trans;
+            blurTrack.style.transition = trans;
+
+            const offset = `translateX(-${currentCarouselIndex * 100}%)`;
+            track.style.transform = offset;
+            blurTrack.style.transform = offset;
             
             const showUI = currentImages.length > 1;
             document.getElementById("carouselPrev").style.display = showUI ? "block" : "none";
@@ -564,6 +594,7 @@ HTML_TEMPLATE = """<!doctype html>
                 dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join('');
             }
         }
+
         function closeModal(skipHistory = false) { 
             const m = document.getElementById("detailModal"); m.classList.remove('active'); setTimeout(() => { if(!m.classList.contains('active')) m.classList.remove('visible'); }, 300);
             document.title = baseTitle; if (!skipHistory) { const newUrl = new URL(window.location); newUrl.searchParams.delete('id'); window.history.pushState({}, '', newUrl); }
