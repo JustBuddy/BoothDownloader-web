@@ -4,6 +4,7 @@ import glob
 import re
 import time
 import sys
+import binascii
 from urllib.parse import quote, unquote
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from deep_translator import GoogleTranslator
@@ -15,6 +16,7 @@ OUTPUT_FILE = "asset_library.html"
 DATABASE_JS_FILE = "web_data/database.js"
 CACHE_FILE = "web_data/cache/translation_cache.json"
 DESC_CACHE_FILE = "web_data/cache/descriptions_cache.json"
+THUMB_META_FILE = "web_data/cache/thumbnail_meta.json"
 FILTER_FILE = "web_data/filters.json"
 L18N_FILE = "web_data/l18n.json"
 SKIP_TRANSLATION = False
@@ -40,14 +42,9 @@ FORBIDDEN_NAMES = {
 
 print(f"--- Starting Library Generation ---")
 
-if not os.path.exists("web_data"):
-    os.makedirs("web_data")
-
-if not os.path.exists("web_data/cache"):
-    os.makedirs("web_data/cache")
-
-if OPTIMIZE_THUMBNAILS and not os.path.exists(IMG_OUT_DIR):
-    os.makedirs(IMG_OUT_DIR)
+if not os.path.exists("web_data"): os.makedirs("web_data")
+if not os.path.exists("web_data/cache"): os.makedirs("web_data/cache")
+if OPTIMIZE_THUMBNAILS and not os.path.exists(IMG_OUT_DIR): os.makedirs(IMG_OUT_DIR)
 
 # Load External Filters
 ADULT_KEYWORDS = []
@@ -72,25 +69,25 @@ if os.path.exists(DESC_CACHE_FILE):
         with open(DESC_CACHE_FILE, 'r', encoding='utf-8') as f: description_cache = json.load(f)
     except: pass
 
+thumb_meta = {}
+if os.path.exists(THUMB_META_FILE):
+    try:
+        with open(THUMB_META_FILE, 'r', encoding='utf-8') as f: thumb_meta = json.load(f)
+    except: pass
+
 # Load L18N Data
 l18n_data = {"languages": {"en": "English"}, "translations": {"en": {}}}
 if os.path.exists(L18N_FILE):
     try:
-        with open(L18N_FILE, 'r', encoding='utf-8') as f:
-            l18n_data = json.load(f)
-    except Exception as e:
-        print(f"[Error] Could not load l18n.json: {e}")
+        with open(L18N_FILE, 'r', encoding='utf-8') as f: l18n_data = json.load(f)
+    except Exception as e: print(f"[Error] Could not load l18n.json: {e}")
 
-def contains_japanese(text):
-    return bool(re.search(r'[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]', str(text)))
+def contains_japanese(text): return bool(re.search(r'[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]', str(text)))
 
 def translate_single_text(text):
-    if not text or not contains_japanese(text) or SKIP_TRANSLATION:
-        return text
-    try:
-        return GoogleTranslator(source='auto', target='en').translate(text)
-    except:
-        return text
+    if not text or not contains_japanese(text) or SKIP_TRANSLATION: return text
+    try: return GoogleTranslator(source='auto', target='en').translate(text)
+    except: return text
 
 def print_progress(current, total, label="Progress"):
     percent = (current / total) * 100
@@ -98,59 +95,52 @@ def print_progress(current, total, label="Progress"):
         bar_length = 30
         done = int(bar_length * current / total)
         bar = "█" * done + "░" * (bar_length - done)
-        sys.stdout.write(f"\r[Translate] {label}: |{bar}| {percent:.1f}% ({current}/{total}) ")
+        sys.stdout.write(f"\r[{label}] |{bar}| {percent:.1f}% ({current}/{total}) ")
         sys.stdout.flush()
-        if current == total:
-            sys.stdout.write("\n")
+        if current == total: sys.stdout.write("\n")
     else:
         if current == 1 or current == total or current % max(1, (total // 20)) == 0:
-            print(f"[Translate] {label}: {percent:.1f}% ({current}/{total})")
+            print(f"[{label}] {percent:.1f}% ({current}/{total})")
 
 def bulk_translate_short_terms(text_list):
     if SKIP_TRANSLATION: return
     japanese_strings = list(set(str(t).strip() for t in text_list if t and contains_japanese(t) and len(str(t)) < 500))
     new_strings = [t for t in japanese_strings if t not in translation_cache]
     if not new_strings: return
-
     total = len(new_strings)
     print(f"[Translate] Queuing {total} short terms...")
-
     def translate_task(item):
-        try:
-            res = GoogleTranslator(source='auto', target='en').translate(item)
-            return item, res
-        except:
-            return item, None
-
+        try: return item, GoogleTranslator(source='auto', target='en').translate(item)
+        except: return item, None
     completed = 0
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_term = {executor.submit(translate_task, term): term for term in new_strings}
         for future in as_completed(future_to_term):
             original, translated = future.result()
-            if translated:
-                translation_cache[original] = translated
+            if translated: translation_cache[original] = translated
             completed += 1
-            print_progress(completed, total, "Short Terms")
+            print_progress(completed, total, "Translate")
+    with open(CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(translation_cache, f, ensure_ascii=False, indent=2)
 
-    with open(CACHE_FILE, 'w', encoding='utf-8') as f:
-        json.dump(translation_cache, f, ensure_ascii=False, indent=2)
+def calculate_crc32(filepath):
+    buf = open(filepath, 'rb').read()
+    return "%08X" % (binascii.crc32(buf) & 0xFFFFFFFF)
 
-def get_optimized_thumb(asset_id, original_path):
+def get_optimized_thumb(asset_id, original_path, crc):
     if not original_path or not os.path.exists(original_path): return ""
-    if not original_path.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
-        return quote(original_path.replace('\\', '/'))
+    if not original_path.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')): return quote(original_path.replace('\\', '/'))
     thumb_name = f"{asset_id}_thumb.webp"
     thumb_path = os.path.join(IMG_OUT_DIR, thumb_name)
-    if not os.path.exists(thumb_path):
-        try:
-            with Image.open(original_path) as img:
-                width, height = img.size
-                if width != height:
-                    min_dim = min(width, height)
-                    img = img.crop(((width-min_dim)/2, (height-min_dim)/2, (width+min_dim)/2, (height+min_dim)/2))
-                img.thumbnail(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
-                img.save(thumb_path, "WEBP", optimize=True, quality=80)
-        except: return quote(original_path.replace('\\', '/'))
+    try:
+        with Image.open(original_path) as img:
+            width, height = img.size
+            if width != height:
+                min_dim = min(width, height)
+                img = img.crop(((width-min_dim)/2, (height-min_dim)/2, (width+min_dim)/2, (height+min_dim)/2))
+            img.thumbnail(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
+            img.save(thumb_path, "WEBP", optimize=True, quality=80)
+            thumb_meta[asset_id] = crc
+    except: return quote(original_path.replace('\\', '/'))
     return quote(thumb_path.replace('\\', '/'))
 
 HTML_TEMPLATE = """<!doctype html>
@@ -282,12 +272,10 @@ HTML_TEMPLATE = """<!doctype html>
         const l18n = __L18N_INJECT_POINT__;
         const translations = l18n.translations;
         const database = window.BOOTH_DATABASE || [];
-        
         let currentCarouselIndex = 0, currentImages = [];
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
         const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
-        
         const observerOptions = { root: null, rootMargin: '1000px', threshold: 0.01 };
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -302,10 +290,8 @@ HTML_TEMPLATE = """<!doctype html>
                 }
             });
         }, observerOptions);
-
         function init() {
             renderLibrary();
-            
             const langSel = document.getElementById('langSelect');
             langSel.innerHTML = "";
             Object.entries(l18n.languages).forEach(([code, name]) => {
@@ -313,22 +299,18 @@ HTML_TEMPLATE = """<!doctype html>
                 opt.value = code; opt.innerText = name;
                 langSel.appendChild(opt);
             });
-
             updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
             document.getElementById('gridRange').value = state.gridSize; document.getElementById('blurToggle').checked = state.disableBlur; document.getElementById('sortOrder').value = state.sortOrder;
             document.getElementById('adultFilter').value = state.adultFilter; document.getElementById('typeFilter').value = state.typeFilter; document.getElementById('hideIdToggle').checked = state.hideIds; document.getElementById('translateToggle').checked = state.showTrans;
-            
             calculateStats();
             const urlParams = new URLSearchParams(window.location.search);
             const queryParam = urlParams.get('q');
             if (queryParam) document.getElementById("searchInput").value = queryParam;
-
             handleSearchInput(); sortAssets();
             const targetId = urlParams.get('id');
             if (targetId) openDetails(targetId, true);
             setTimeout(() => { document.body.classList.add('loaded'); }, 50);
         }
-
         function calculateStats() {
             let totalBinaryBytes = 0, totalImageBytes = 0;
             const tagCounts = {}, spent = {};
@@ -346,7 +328,6 @@ HTML_TEMPLATE = """<!doctype html>
             document.getElementById('statSpent').innerText = Object.entries(spent).map(([cur, val]) => val.toLocaleString() + " " + cur).join(" / ") || "0";
             document.getElementById('statDate').innerText = new Date().toLocaleDateString();
         }
-
         function renderLibrary() {
             const list = document.getElementById('assetList');
             list.innerHTML = database.map(item => {
@@ -372,13 +353,11 @@ HTML_TEMPLATE = """<!doctype html>
                 observer.observe(el);
             });
         }
-
         function formatBytes(bytes) {
             if (bytes === 0) return '0 B';
             const k = 1024, sizes = ['B', 'KB', 'MB', 'GB', 'TB'], i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
-
         function updateLanguage(lang) { 
             state.lang = lang; localStorage.setItem('lang', lang); 
             document.getElementById('langSelect').value = lang; 
@@ -388,12 +367,10 @@ HTML_TEMPLATE = """<!doctype html>
             document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t[el.dataset.i18nHtml]; });
             applyFilters(); 
         }
-
         function toggleMenu(e, forceClose = false) { if(e) e.stopPropagation(); const menu = document.getElementById('flyoutMenu'), btn = document.getElementById('toggleBtn'), perim = document.getElementById('menuPerimeter'); const open = !forceClose && !menu.classList.contains('open'); menu.classList.toggle('open', open); btn.classList.toggle('active', open); perim.style.display = open ? 'block' : 'none'; }
         function updateGrid(v) { document.documentElement.style.setProperty('--grid-size', v + 'px'); localStorage.setItem('gridSize', v); }
         function updateBlur(v) { document.body.classList.toggle('no-blur', v); localStorage.setItem('disableBlur', v); }
         function updateIdVisibility(v) { document.body.classList.toggle('hide-ids', v); localStorage.setItem('hideIds', v); }
-
         function updateTranslationVisibility(v) { 
             state.showTrans = v; localStorage.setItem('showTrans', v);
             const t = translations[state.lang] || translations['en'];
@@ -403,7 +380,6 @@ HTML_TEMPLATE = """<!doctype html>
                 el.querySelector('.name-primary').innerText = (v && item.nameTrans) ? item.nameTrans : item.nameOrig;
                 el.querySelector('.author-primary').innerText = (v && item.authorTrans) ? item.authorTrans : item.authorOrig;
                 el.querySelector('.tag-row').innerHTML = item.tags.slice(0, 12).map(tg => `<span class="tag-pill">${tg}</span>`).join('');
-                
                 let statsHtml = item.bytes > 0 ? `<span>${formatBytes(item.bytes)}</span>` : "";
                 if (item.fileCount > 0) statsHtml += `<span>${item.fileCount} ${item.fileCount === 1 ? t.fileSingular : t.filePlural}</span>`;
                 if (item.links.length > 0) statsHtml += `<span>${item.links.length} ${item.links.length === 1 ? t.matchSingular : t.matchPlural}</span>`;
@@ -416,13 +392,11 @@ HTML_TEMPLATE = """<!doctype html>
                 if (item) document.getElementById('modalDesc').innerHTML = formatDescription((v && item.descTrans) ? item.descTrans : item.descOrig);
             }
         }
-
         function formatDescription(text) {
             if (!text) return "";
             const urlRegex = /(https?:\\/\\/[^\\s\\n]+)/g;
             return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" onclick="event.stopPropagation()">${url}</a>`);
         }
-
         function handleSearchInput() { 
             const query = document.getElementById("searchInput").value.toLowerCase();
             const newUrl = new URL(window.location);
@@ -430,9 +404,7 @@ HTML_TEMPLATE = """<!doctype html>
             window.history.replaceState({}, '', newUrl);
             applyFilters(); 
         }
-
         function clearSearch() { const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(); i.focus(); }
-
         function tagSearch(query, isAuthor = false) {
             const s = document.getElementById("searchInput");
             s.value = isAuthor ? `author:${query}` : query;
@@ -443,40 +415,33 @@ HTML_TEMPLATE = """<!doctype html>
             handleSearchInput();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
         function applyFilters(save = false) {
             let query = document.getElementById("searchInput").value.toLowerCase();
             const mode = document.getElementById("adultFilter").value;
             const typeMode = document.getElementById("typeFilter").value;
             const t = translations[state.lang] || translations['en'];
             if(save) { state.adultFilter = mode; state.typeFilter = typeMode; localStorage.setItem('adultFilter', mode); localStorage.setItem('typeFilter', typeMode); }
-
             let count = 0, hiddenCount = 0;
             const isAuthorSearch = query.startsWith('author:'), isRelSearch = query.startsWith('rel:'), isTypeSearch = query.startsWith('type:');
             const authorQuery = isAuthorSearch ? query.replace('author:', '').trim() : '';
             const relQuery = isRelSearch ? query.replace('rel:', '').trim() : '';
             const typeSearchVal = isTypeSearch ? query.replace('type:', '').trim() : '';
-
             database.forEach(item => {
                 const el = document.getElementById('asset-' + item.id);
                 const adultMatch = (mode === 'all') || (mode === 'hide' && !item.adult) || (mode === 'only' && item.adult);
                 const typeMatch = (typeMode === 'all') || (typeMode === 'avatar' && item.isAvatar) || (typeMode === 'asset' && !item.isAvatar);
-                
                 let searchMatch = false;
                 if (isRelSearch) searchMatch = (item.id === relQuery) || item.links.includes(relQuery);
                 else if (isAuthorSearch) searchMatch = item.authorOrig.toLowerCase().includes(authorQuery) || item.authorTrans.toLowerCase().includes(authorQuery);
                 else if (isTypeSearch) searchMatch = (typeSearchVal === 'avatar' ? item.isAvatar : !item.isAvatar);
                 else searchMatch = item.searchBlob.includes(query);
-
                 if (searchMatch && adultMatch && typeMatch) { el.style.display = ""; count++; }
                 else { el.style.display = "none"; if (searchMatch) hiddenCount++; }
             });
-
             document.getElementById("searchInput").placeholder = t.searchPre + count + t.searchSuf;
             const notice = document.getElementById("filterNotice");
             if (hiddenCount > 0) { notice.innerText = t.hiddenResults.replace('{n}', hiddenCount).trim(); notice.style.display = "flex"; } else { notice.style.display = "none"; }
         }
-
         function sortAssets(save = false) {
             const list = document.getElementById('assetList'), order = document.getElementById('sortOrder').value;
             if(save) localStorage.setItem('sortOrder', order);
@@ -491,39 +456,22 @@ HTML_TEMPLATE = """<!doctype html>
             });
             sorted.forEach(item => list.appendChild(document.getElementById('asset-' + item.id)));
         }
-
         function openDetails(id, skipHistory = false) {
             const item = database.find(d => d.id === id), t = translations[state.lang] || translations['en'];
             if(!item) return;
-
-            // Immediately clear content to prevent ghosting
-            const track = document.getElementById("carouselTrack");
-            const blurTrack = document.getElementById("carouselBlurTrack");
-            track.style.transition = 'none';
-            blurTrack.style.transition = 'none';
-            track.style.transform = 'translateX(0)';
-            blurTrack.style.transform = 'translateX(0)';
-            track.innerHTML = "";
-            blurTrack.innerHTML = "";
-            
-            switchTab('details');
-            currentCarouselIndex = 0;
-            currentImages = item.allImages; 
-            
-            // Build slides
+            const track = document.getElementById("carouselTrack"), blurTrack = document.getElementById("carouselBlurTrack");
+            track.style.transition = 'none'; blurTrack.style.transition = 'none';
+            track.style.transform = 'translateX(0)'; blurTrack.style.transform = 'translateX(0)';
+            track.innerHTML = ""; blurTrack.innerHTML = "";
+            switchTab('details'); currentCarouselIndex = 0; currentImages = item.allImages; 
             const mainSlides = currentImages.map(img => `<div class="carousel-slide"><img src="${img}"></div>`).join('');
             const blurSlides = currentImages.map(img => `<div class="carousel-blur-slide"><img src="${img}"></div>`).join('');
-            track.innerHTML = mainSlides;
-            blurTrack.innerHTML = blurSlides;
-
+            track.innerHTML = mainSlides; blurTrack.innerHTML = blurSlides;
             updateCarousel(true);
-            
             const displayTitle = (state.showTrans && item.nameTrans) ? item.nameTrans : item.nameOrig;
             const authorDisp = (state.showTrans && item.authorTrans) ? item.authorTrans : item.authorOrig;
-            
             document.getElementById("modalName").innerText = displayTitle;
             document.getElementById("modalSubtitle").innerHTML = `by <a class="modal-author-link" onclick="tagSearch('${item.authorOrig.replace(/'/g, "\\\\'")}', true)"><b>${authorDisp}</b></a>`;
-            
             let metaHtml = (item.nameTrans && state.showTrans) ? `<div class="meta-pill">${item.nameOrig}</div>` : "";
             metaHtml += `<div class="meta-pill">${item.priceCurrency} ${item.priceValue.toLocaleString()}</div>`;
             document.getElementById("modalMeta").innerHTML = metaHtml;
@@ -536,11 +484,9 @@ HTML_TEMPLATE = """<!doctype html>
             document.getElementById("openVrcAvatarLink").href = item.vrcAvatarLink || "";
             document.getElementById("openVrcWorldLink").style.display = item.vrcWorldLink ? "block" : "none";
             document.getElementById("openVrcWorldLink").href = item.vrcWorldLink || "";
-
             document.getElementById("modalTags").innerHTML = item.tags.map(tg => `<span class="tag-pill clickable" onclick="tagSearch('${tg.replace(/'/g, "\\\\'")}')">${tg}</span>`).join('');
             document.getElementById("modalDesc").innerHTML = formatDescription((state.showTrans && item.descTrans) ? item.descTrans : item.descOrig);
             document.getElementById("tab-description").style.display = (item.descOrig) ? "block" : "none";
-
             const relSection = document.getElementById("relSection");
             if (item.links.length > 0) {
                 relSection.style.display = "block";
@@ -556,52 +502,36 @@ HTML_TEMPLATE = """<!doctype html>
                 }).join('') + `<a href="#" class="asset-link-view-all" onclick="event.preventDefault(); tagSearch('rel:${item.id}')"><span>${t.labelViewRel}</span></a>`;
                 document.getElementById("relationshipContainer").innerHTML = relHtml;
             } else relSection.style.display = "none";
-
             document.getElementById("fileList").innerHTML = item.files.sort((a,b) => b.name.localeCompare(a.name, undefined, {numeric:true})).map(f => `
                 <li class="file-item"><a class="file-link" href="${f.path}" target="_blank">${f.name}</a><span style="color:#666; font-size:0.7rem;">${f.size}</span></li>`).join('');
-
             const m = document.getElementById("detailModal"); m.classList.add('visible'); setTimeout(() => m.classList.add('active'), 10);
             document.title = baseTitle + " - #" + id;
             if (!skipHistory) { const newUrl = new URL(window.location); newUrl.searchParams.set('id', id); window.history.pushState({id: id}, '', newUrl); }
         }
-
         function switchTab(tabId) {
             document.querySelectorAll('.tab-pane, .tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById('pane-' + tabId).classList.add('active');
             document.getElementById('tab-' + tabId).classList.add('active');
         }
         function carouselNext(dir) { if (currentImages.length <= 1) return; currentCarouselIndex = (currentCarouselIndex + dir + currentImages.length) % currentImages.length; updateCarousel(); }
-        
         function updateCarousel(instant = false) {
-            const track = document.getElementById("carouselTrack");
-            const blurTrack = document.getElementById("carouselBlurTrack");
-            const dots = document.getElementById("carouselDots");
-            
+            const track = document.getElementById("carouselTrack"), blurTrack = document.getElementById("carouselBlurTrack"), dots = document.getElementById("carouselDots");
             const trans = instant ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-            track.style.transition = trans;
-            blurTrack.style.transition = trans;
-
+            track.style.transition = trans; blurTrack.style.transition = trans;
             const offset = `translateX(-${currentCarouselIndex * 100}%)`;
-            track.style.transform = offset;
-            blurTrack.style.transform = offset;
-            
+            track.style.transform = offset; blurTrack.style.transform = offset;
             const showUI = currentImages.length > 1;
             document.getElementById("carouselPrev").style.display = showUI ? "block" : "none";
             document.getElementById("carouselNext").style.display = showUI ? "block" : "none";
             dots.style.display = showUI ? "flex" : "none";
-            
-            if (showUI) {
-                dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join('');
-            }
+            if (showUI) { dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join(''); }
         }
-
         function closeModal(skipHistory = false) { 
             const m = document.getElementById("detailModal"); m.classList.remove('active'); setTimeout(() => { if(!m.classList.contains('active')) m.classList.remove('visible'); }, 300);
             document.title = baseTitle; if (!skipHistory) { const newUrl = new URL(window.location); newUrl.searchParams.delete('id'); window.history.pushState({}, '', newUrl); }
         }
         window.onpopstate = () => { const p = new URLSearchParams(window.location.search); if (p.get('id')) openDetails(p.get('id'), true); else closeModal(true); };
         document.addEventListener('keydown', e => { if(e.key === "Escape") { closeModal(); toggleMenu(null, true); } if(e.key === "ArrowRight") carouselNext(1); if(e.key === "ArrowLeft") carouselNext(-1); });
-        
         init();
     </script>
 </body>
@@ -629,12 +559,10 @@ def get_dir_data(binary_folder):
 def get_image_folder_size(folder_path):
     total_size = 0
     for f in os.listdir(folder_path):
-        if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')):
-            total_size += os.path.getsize(os.path.join(folder_path, f))
+        if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')): total_size += os.path.getsize(os.path.join(folder_path, f))
     return total_size
 
-def is_adult_content(text):
-    return bool(re.search("|".join(ADULT_KEYWORDS), str(text), re.IGNORECASE))
+def is_adult_content(text): return bool(re.search("|".join(ADULT_KEYWORDS), str(text), re.IGNORECASE))
 
 def get_all_local_images(folder_path, web_urls=None):
     if web_urls is None: web_urls = []
@@ -647,10 +575,7 @@ def get_all_local_images(folder_path, web_urls=None):
             for f in local_files:
                 if token in f:
                     path = quote(os.path.join(folder_path, f).replace('\\', '/'))
-                    if path not in ordered_images:
-                        ordered_images.append(path)
-                        found = True
-                        break
+                    if path not in ordered_images: ordered_images.append(path); found = True; break
             if found: break
         if not found and url: ordered_images.append(url)
     for f in local_files:
@@ -663,135 +588,67 @@ def parse_price(price_str):
     if isinstance(price_str, (int, float)): return float(price_str), "JPY"
     clean = str(price_str).replace(',', '').replace('¥', '')
     match = re.search(r'([\d.]+)\s*([A-Z]*)', clean)
-    if match:
-        val = float(match.group(1))
-        cur = match.group(2) if match.group(2) else "JPY"
-        return val, cur
+    if match: return float(match.group(1)), (match.group(2) or "JPY")
     return 0.0, "JPY"
 
 def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, folder_path, tags, is_adult, wish_count, price_str, limited=False, description="", is_avatar=False, related_links=None):
     if limited and "⚙Unlisted" not in tags: tags.append("⚙Unlisted")
     if is_adult and "⚙Adult" not in tags: tags.append("⚙Adult")
-    
-    # Updated regex to catch both standard home links and launch links
     vrc_av = re.search(r'(https://vrchat\.com/home/avatar/avtr_[a-f0-9-]+)', description)
     vrc_wr = re.search(r'(https://vrchat\.com/home/(?:world/|launch\?worldId=)wrld_[a-f0-9-]+)', description)
-    
     if (vrc_av or vrc_wr) and "⚙Preview" not in tags: tags.append("⚙Preview")
-    
     binary_folder = os.path.join(folder_path, 'Binary')
     files, total_bytes = get_dir_data(binary_folder)
     img_bytes, all_imgs = get_image_folder_size(folder_path), get_all_local_images(folder_path, web_images)
     primary_img = all_imgs[0] if all_imgs else ""
-    grid_thumb = get_optimized_thumb(asset_id, unquote(primary_img).replace('/', os.sep)) if (OPTIMIZE_THUMBNAILS and primary_img) else primary_img
-    
-    name_trans = translation_cache.get(asset_name.strip(), "")
-    author_trans = translation_cache.get(author_name.strip(), "")
+    name_trans, author_trans = translation_cache.get(asset_name.strip(), ""), translation_cache.get(author_name.strip(), "")
     desc_trans = description_cache.get(asset_id, "")
     price_val, price_cur = parse_price(price_str)
-    
     search_blob = f"{asset_id} {asset_name} {name_trans} {author_name} {author_trans} {' '.join(tags)}".lower()
-    
-    return {
-        "id": asset_id,
-        "nameOrig": asset_name,
-        "nameTrans": name_trans,
-        "authorOrig": author_name,
-        "authorTrans": author_trans,
-        "gridThumb": grid_thumb,
-        "allImages": all_imgs,
-        "bytes": total_bytes,
-        "imgBytes": img_bytes,
-        "fileCount": len(files),
-        "files": files,
-        "tags": tags,
-        "adult": is_adult,
-        "searchBlob": search_blob,
-        "folder": quote(os.path.relpath(binary_folder, start=os.getcwd()).replace('\\', '/')),
-        "boothUrl": booth_url,
-        "wishCount": wish_count,
-        "timestamp": int(os.path.getctime(folder_path)),
-        "priceValue": price_val,
-        "priceCurrency": price_cur,
-        "limited": limited,
-        "descOrig": description,
-        "descTrans": desc_trans,
-        "vrcAvatarLink": vrc_av.group(1) if vrc_av else "",
-        "vrcWorldLink": vrc_wr.group(1) if vrc_wr else "",
-        "isAvatar": is_avatar,
-        "links": related_links or []
-    }
+    return { "id": asset_id, "nameOrig": asset_name, "nameTrans": name_trans, "authorOrig": author_name, "authorTrans": author_trans, "gridThumb": primary_img, "allImages": all_imgs, "bytes": total_bytes, "imgBytes": img_bytes, "fileCount": len(files), "files": files, "tags": tags, "adult": is_adult, "searchBlob": search_blob, "folder": quote(os.path.relpath(binary_folder, start=os.getcwd()).replace('\\', '/')), "boothUrl": booth_url, "wishCount": wish_count, "timestamp": int(os.path.getctime(folder_path)), "priceValue": price_val, "priceCurrency": price_cur, "limited": limited, "descOrig": description, "descTrans": desc_trans, "vrcAvatarLink": vrc_av.group(1) if vrc_av else "", "vrcWorldLink": vrc_wr.group(1) if vrc_wr else "", "isAvatar": is_avatar, "links": related_links or [] }
 
 def get_avatar_search_profile(orig_name, trans_name, tags):
     search_terms, groups = set(), set()
     all_context = (orig_name + " " + (trans_name or "") + " " + " ".join(tags)).lower()
-    
     for g in BODY_GROUPS:
-        if g.lower() in all_context: 
-            groups.add(g.lower())
-    
-    # Helper to filter and clean candidate name strings
+        if g.lower() in all_context: groups.add(g.lower())
     def add_valid_candidate(cand):
         cleaned = re.sub(r'Original 3D Model|3D Model|Avatar|Ver\..*|#\w+|chan|kun|vrc|quest|pc|compatible|set', '', cand, flags=re.IGNORECASE).strip()
-        if len(cleaned) > 2 and cleaned.lower() not in FORBIDDEN_NAMES:
-            search_terms.add(cleaned.lower())
-
-    # Extract alphanumeric words from Japanese translated/English name
+        if len(cleaned) > 2 and cleaned.lower() not in FORBIDDEN_NAMES: search_terms.add(cleaned.lower())
     if trans_name:
         add_valid_candidate(trans_name)
-        # Check quoted parts
-        for q in re.findall(r"['\"\[「](.*?)['\"\]」]", trans_name):
-            add_valid_candidate(q)
-            
-    # Always include the raw original ASCII parts if they are substantial
+        for q in re.findall(r"['\"\[「](.*?)['\"\]」]", trans_name): add_valid_candidate(q)
     for part in re.findall(r'[a-zA-Z0-9]{3,}', orig_name):
-        if part.lower() not in FORBIDDEN_NAMES:
-            search_terms.add(part.lower())
-            
+        if part.lower() not in FORBIDDEN_NAMES: search_terms.add(part.lower())
     return {"names": list(search_terms), "groups": list(groups)}
 
 def check_english_match(asset_info, profile):
     title, tags, vars = asset_info
     asset_context = (title + " " + " ".join(tags) + " " + " ".join(vars)).lower()
-    
-    # 1. Check for Shared Body Groups
     for group in profile.get("groups", []):
-        if group in asset_context:
-            return True
-
-    # 2. Check for Name-based Matching (Whole word only)
+        if group in asset_context: return True
     blob = re.sub(r'[^a-zA-Z0-9]', ' ', asset_context).lower().replace('ou', 'o')
-    
     for term in profile.get("names", []):
         norm = re.sub(r'[^a-zA-Z0-9]', ' ', term).lower().replace('ou', 'o').strip()
-        if norm and len(norm) > 2:
-            # Use regex word boundaries to prevent matching "Wolf" inside "Werewolf"
-            if re.search(r'\b' + re.escape(norm) + r'\b', blob): 
-                return True
+        if norm and len(norm) > 2 and re.search(r'\b' + re.escape(norm) + r'\b', blob): return True
     return False
 
-# Execution logic
 asset_data_list, short_strings_to_translate = [], []
-desc_tasks = {}
-avatar_profiles = {}
+desc_tasks, avatar_profiles = {}, {}
 
 for folder in sorted(os.listdir(ROOT_FOLDER)):
     path = os.path.join(ROOT_FOLDER, folder)
     if not os.path.isdir(path): continue
-    
     manual_json = os.path.join(path, "item_descriptor.json")
     if os.path.exists(manual_json):
         with open(manual_json, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            name, author, desc = data.get('name', 'N/A'), data.get('author', 'N/A'), data.get('description', '')
-            tags = data.get('tags', [])
+            name, author, desc, tags = data.get('name', 'N/A'), data.get('author', 'N/A'), data.get('description', ''), data.get('tags', [])
             short_strings_to_translate.extend([name, author] + tags)
             is_avatar = data.get('is_avatar', False)
             asset_data_list.append(('custom', folder, (name, author, data, desc), path, data.get('wish_count', 0), is_avatar))
-            if not SKIP_TRANSLATION and desc and folder not in description_cache and contains_japanese(desc):
-                desc_tasks[folder] = desc
+            if not SKIP_TRANSLATION and desc and folder not in description_cache and contains_japanese(desc): desc_tasks[folder] = desc
         continue
-
     jsons = glob.glob(os.path.join(path, "_BoothPage.json")) or glob.glob(os.path.join(path, "_BoothInnerHtmlList.json"))
     if not jsons: continue
     with open(jsons[0], 'r', encoding='utf-8') as f:
@@ -803,14 +660,12 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
             cat = data.get('category', {})
             is_avatar = cat.get('id') == 208 or cat.get('name') in ["3D Characters", "3Dキャラクター", "3D캐릭터"]
             asset_data_list.append(('json', folder, (name, author, data, desc), path, data.get('wish_lists_count', 0), is_avatar))
-            if not SKIP_TRANSLATION and desc and folder not in description_cache and contains_japanese(desc):
-                desc_tasks[folder] = desc
+            if not SKIP_TRANSLATION and desc and folder not in description_cache and contains_japanese(desc): desc_tasks[folder] = desc
         else:
             data = json.load(f)
             item = data[0] if data else ""
             if item:
-                n_m = re.search(r'break-all\">(.*?)<\/div>', item) or re.search(r'>(.*?)<\/div>', item)
-                a_m = re.search(r'text-text-gray600 break-all\">(.*?)<\/div>', item)
+                n_m, a_m = (re.search(r'break-all\">(.*?)<\/div>', item) or re.search(r'>(.*?)<\/div>', item)), re.search(r'text-text-gray600 break-all\">(.*?)<\/div>', item)
                 name, author = n_m.group(1) if n_m else "N/A", a_m.group(1) if a_m else "N/A"
                 short_strings_to_translate.extend([name, author])
                 asset_data_list.append(('limited', folder, (name, author, item, ""), path, 0, False))
@@ -821,48 +676,24 @@ print("[Relate] Mapping Avatars...")
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if is_avatar:
         name, trans_name = data[0], translation_cache.get(data[0].strip(), "")
-        if atype == 'json':
-            tags = [t.get('name', '') for t in data[2].get('tags', [])]
-        elif atype == 'custom':
-            tags = data[2].get('tags', [])
-        else: tags = []
+        tags = [t.get('name', '') for t in data[2].get('tags', [])] if atype == 'json' else (data[2].get('tags', []) if atype == 'custom' else [])
         avatar_profiles[folder] = get_avatar_search_profile(name, trans_name, tags)
 
-assets_to_avatar = {}
-avatar_to_assets = {}
-
-# Pass 1: Handle manual relationships from Custom Items
+assets_to_avatar, avatar_to_assets = {}, {}
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if atype == 'custom' and 'related_booth_ids' in data[2]:
-        manual_ids = [str(x) for x in data[2]['related_booth_ids']]
-        for target_id in manual_ids:
-            if is_avatar:
-                avatar_to_assets.setdefault(folder, []).append(target_id)
-                assets_to_avatar.setdefault(target_id, []).append(folder)
-            else:
-                assets_to_avatar.setdefault(folder, []).append(target_id)
-                avatar_to_assets.setdefault(target_id, []).append(folder)
+        for target_id in [str(x) for x in data[2]['related_booth_ids']]:
+            if is_avatar: avatar_to_assets.setdefault(folder, []).append(target_id); assets_to_avatar.setdefault(target_id, []).append(folder)
+            else: assets_to_avatar.setdefault(folder, []).append(target_id); avatar_to_assets.setdefault(target_id, []).append(folder)
 
-# Pass 2: Handle automatic English-name matching logic
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if is_avatar: continue
-    
     t_name = (translation_cache.get(data[0].strip(), "") or data[0]).lower()
-    if atype == 'json':
-        t_tags = [ (translation_cache.get(t.get('name', ''), '') or t.get('name', '')).lower() for t in data[2].get('tags', [])]
-        t_vars = [ (translation_cache.get(v.get('name', ''), '') or v.get('name', '')).lower() for v in data[2].get('variations', []) if v.get('name')]
-    elif atype == 'custom':
-        t_tags = [ (translation_cache.get(t.strip(), '') or t.strip()).lower() for t in data[2].get('tags', []) if t]
-        t_vars = []
-    else:
-        t_tags, t_vars = [], []
-    
+    t_tags = [(translation_cache.get(t.get('name', ''), '') or t.get('name', '')).lower() for t in data[2].get('tags', [])] if atype == 'json' else ([(translation_cache.get(t.strip(), '') or t.strip()).lower() for t in data[2].get('tags', []) if t] if atype == 'custom' else [])
+    t_vars = [(translation_cache.get(v.get('name', ''), '') or v.get('name', '')).lower() for v in data[2].get('variations', []) if v.get('name')] if atype == 'json' else []
     for av_id, profile in avatar_profiles.items():
-        if check_english_match((t_name, t_tags, t_vars), profile):
-            assets_to_avatar.setdefault(folder, []).append(av_id)
-            avatar_to_assets.setdefault(av_id, []).append(folder)
+        if check_english_match((t_name, t_tags, t_vars), profile): assets_to_avatar.setdefault(folder, []).append(av_id); avatar_to_assets.setdefault(av_id, []).append(folder)
 
-# Final Unique Sort
 for d in [assets_to_avatar, avatar_to_assets]:
     for key in d: d[key] = sorted(list(set(d[key])))
 
@@ -873,35 +704,47 @@ if desc_tasks:
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_folder = {executor.submit(translate_single_text, text): folder for folder, text in desc_tasks.items()}
         for future in as_completed(future_to_folder):
-            description_cache[future_to_folder[future]] = future.result()
-            completed_descs += 1
-            print_progress(completed_descs, total_descs, "Descriptions")
+            description_cache[future_to_folder[future]] = future.result(); completed_descs += 1; print_progress(completed_descs, total_descs, "Translate")
     with open(DESC_CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(description_cache, f, ensure_ascii=False, indent=2)
 
-print(f"[Build] Compiling Database Script...")
+print(f"[Build] Compiling Database...")
 database_output = []
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     name, author, content, desc = data
     rel = avatar_to_assets.get(folder, []) if is_avatar else assets_to_avatar.get(folder, [])
     if atype == 'json':
-        web_imgs = [img.get('original', '') for img in content.get('images', [])]
-        tags = [t.get('name', '') for t in content.get('tags', [])]
-        database_output.append(create_asset_data(folder, name, author, web_imgs, content.get('url', ''), path, tags, content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', ''), description=desc, is_avatar=is_avatar, related_links=rel))
+        database_output.append(create_asset_data(folder, name, author, [img.get('original', '') for img in content.get('images', [])], content.get('url', ''), path, [t.get('name', '') for t in content.get('tags', [])], content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', ''), description=desc, is_avatar=is_avatar, related_links=rel))
     elif atype == 'custom':
         database_output.append(create_asset_data(folder, name, author, [], "", path, content.get('tags', []), content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', 0), description=desc, is_avatar=is_avatar, related_links=rel))
     else:
         i_m, u_m = re.search(r'src=\"([^\"]+)\"', content), re.search(r'href=\"([^\"]+)\"', content)
         database_output.append(create_asset_data(folder, name, author, [i_m.group(1) if i_m else ""], u_m.group(1) if u_m else "", path, [], is_adult_content(name), 0, "", limited=True, related_links=rel))
 
+if OPTIMIZE_THUMBNAILS:
+    to_process = []
+    for item in database_output:
+        if not item['gridThumb'] or item['gridThumb'].startswith('http'): continue
+        orig_local_path = unquote(item['gridThumb']).replace('/', os.sep)
+        if not os.path.exists(orig_local_path): continue
+        t_path = os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp")
+        crc = calculate_crc32(orig_local_path)
+        if not os.path.exists(t_path) or thumb_meta.get(item['id']) != crc:
+            to_process.append((item, orig_local_path, crc))
+        else:
+            item['gridThumb'] = quote(t_path.replace('\\', '/'))
+    
+    if to_process:
+        print(f"[Optimize] Updating {len(to_process)} thumbnails...")
+        for i, (item, path, crc) in enumerate(to_process):
+            item['gridThumb'] = get_optimized_thumb(item['id'], path, crc)
+            print_progress(i + 1, len(to_process), "Optimize")
+        with open(THUMB_META_FILE, 'w', encoding='utf-8') as f: json.dump(thumb_meta, f)
+
 with open(DATABASE_JS_FILE, 'w', encoding='utf-8') as f:
     f.write("window.BOOTH_DATABASE = ")
     json.dump(database_output, f, ensure_ascii=False)
     f.write(";")
 
-l18n_json_string = json.dumps(l18n_data, ensure_ascii=False)
-final_html = HTML_TEMPLATE.replace("__L18N_INJECT_POINT__", l18n_json_string)
-
-with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-    f.write(final_html)
-
+final_html = HTML_TEMPLATE.replace("__L18N_INJECT_POINT__", json.dumps(l18n_data, ensure_ascii=False))
+with open(OUTPUT_FILE, 'w', encoding='utf-8') as f: f.write(final_html)
 print(f"--- Library Updated Successfully ({len(database_output)} items) ---")
