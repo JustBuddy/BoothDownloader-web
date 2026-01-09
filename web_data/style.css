@@ -592,6 +592,7 @@ body.no-blur .adult-content {
   transform: translateX(-50%);
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
   z-index: 10;
 }
