@@ -568,30 +568,35 @@ body.no-blur .adult-content {
 
 .carousel-btn {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0;
+  bottom: 0;
+  transform: none;
+  height: 100%;
+  width: 50px; /* Adjust width as needed for click area */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   z-index: 10;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  border: none;
   color: white;
-  padding: 15px 10px;
   cursor: pointer;
-  border-radius: 4px;
   font-size: 1.2rem;
-  transition: 0.2s;
+  transition: background 0.2s, color 0.2s;
+  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8));
 }
 
 .carousel-btn:hover {
-  background: var(--primary);
-  color: #000;
+  background: rgba(0, 0, 0, 0.1); /* Subtle hover tint */
+  color: var(--primary);
 }
 
 .btn-prev {
-  left: 15px;
+  left: 0;
 }
 
 .btn-next {
-  right: 15px;
+  right: 0;
 }
 
 .carousel-dots {
