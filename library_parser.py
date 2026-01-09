@@ -266,6 +266,9 @@ HTML_TEMPLATE = """<!doctype html>
             </div>
         </div>
     </div>
+    <div id="fullscreenImageViewer" class="fullscreen-viewer" onclick="closeFullscreenImage()">
+        <img id="fullscreenImage" src="" alt="Full size preview">
+    </div>
     <!-- Load local database script -->
     <script src="web_data/database.js"></script>
     <script>
@@ -464,7 +467,7 @@ HTML_TEMPLATE = """<!doctype html>
             track.style.transform = 'translateX(0)'; blurTrack.style.transform = 'translateX(0)';
             track.innerHTML = ""; blurTrack.innerHTML = "";
             switchTab('details'); currentCarouselIndex = 0; currentImages = item.allImages; 
-            const mainSlides = currentImages.map(img => `<div class="carousel-slide"><img src="${img}"></div>`).join('');
+            const mainSlides = currentImages.map(img => `<div class="carousel-slide" onclick="openFullscreenImage('${img}')"><img src="${img}"></div>`).join('');
             const blurSlides = currentImages.map(img => `<div class="carousel-blur-slide"><img src="${img}"></div>`).join('');
             track.innerHTML = mainSlides; blurTrack.innerHTML = blurSlides;
             updateCarousel(true);
@@ -526,12 +529,30 @@ HTML_TEMPLATE = """<!doctype html>
             dots.style.display = showUI ? "flex" : "none";
             if (showUI) { dots.innerHTML = currentImages.map((_, i) => `<div class="dot ${i === currentCarouselIndex ? 'active' : ''}" onclick="currentCarouselIndex=${i}; updateCarousel()"></div>`).join(''); }
         }
+        function openFullscreenImage(src) {
+            const viewer = document.getElementById('fullscreenImageViewer');
+            const img = document.getElementById('fullscreenImage');
+            img.src = src;
+            viewer.classList.add('visible');
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    viewer.classList.add('active');
+                });
+            });
+        }
+        function closeFullscreenImage() {
+            const viewer = document.getElementById('fullscreenImageViewer');
+            viewer.classList.remove('active');
+            setTimeout(() => {
+                if(!viewer.classList.contains('active')) viewer.classList.remove('visible');
+            }, 400);
+        }
         function closeModal(skipHistory = false) { 
             const m = document.getElementById("detailModal"); m.classList.remove('active'); setTimeout(() => { if(!m.classList.contains('active')) m.classList.remove('visible'); }, 300);
             document.title = baseTitle; if (!skipHistory) { const newUrl = new URL(window.location); newUrl.searchParams.delete('id'); window.history.pushState({}, '', newUrl); }
         }
         window.onpopstate = () => { const p = new URLSearchParams(window.location.search); if (p.get('id')) openDetails(p.get('id'), true); else closeModal(true); };
-        document.addEventListener('keydown', e => { if(e.key === "Escape") { closeModal(); toggleMenu(null, true); } if(e.key === "ArrowRight") carouselNext(1); if(e.key === "ArrowLeft") carouselNext(-1); });
+        document.addEventListener('keydown', e => { if(e.key === "Escape") { if(document.getElementById('fullscreenImageViewer').classList.contains('active')) closeFullscreenImage(); else { closeModal(); toggleMenu(null, true); } } if(e.key === "ArrowRight") carouselNext(1); if(e.key === "ArrowLeft") carouselNext(-1); });
         init();
     </script>
 </body>
