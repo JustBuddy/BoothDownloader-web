@@ -47,6 +47,13 @@ if not os.path.exists("web_data"): os.makedirs("web_data")
 if not os.path.exists("web_data/cache"): os.makedirs("web_data/cache")
 if OPTIMIZE_THUMBNAILS and not os.path.exists(IMG_OUT_DIR): os.makedirs(IMG_OUT_DIR)
 
+# Force re-translation if caches are missing
+FORCE_TRANSLATION = False
+if not SKIP_TRANSLATION:
+    if not os.path.exists(CACHE_FILE) or not os.path.exists(DESC_CACHE_FILE):
+        print("[System] Translation cache files missing. Forcing full re-translation.")
+        FORCE_TRANSLATION = True
+
 # Load External Filters
 ADULT_KEYWORDS = []
 if os.path.exists(FILTER_FILE):
@@ -686,7 +693,7 @@ for folder in current_folders:
     if not os.path.isdir(path): continue
     
     mtime = os.path.getmtime(path)
-    needs_update = folder not in global_meta or global_meta[folder] < mtime or folder not in existing_database
+    needs_update = FORCE_TRANSLATION or folder not in global_meta or global_meta[folder] < mtime or folder not in existing_database
     new_global_meta[folder] = mtime
 
     if not needs_update:
@@ -701,7 +708,7 @@ for folder in current_folders:
             short_strings_to_translate.extend([name, author] + tags)
             is_avatar = data.get('is_avatar', False)
             asset_data_list.append(('custom', folder, (name, author, data, desc), path, data.get('wish_count', 0), is_avatar))
-            if not SKIP_TRANSLATION and desc and folder not in description_cache and contains_japanese(desc): desc_tasks[folder] = desc
+            if not SKIP_TRANSLATION and desc and (FORCE_TRANSLATION or folder not in description_cache) and contains_japanese(desc): desc_tasks[folder] = desc
         continue
 
     jsons = glob.glob(os.path.join(path, "_BoothPage.json")) or glob.glob(os.path.join(path, "_BoothInnerHtmlList.json"))
@@ -715,7 +722,7 @@ for folder in current_folders:
             cat = data.get('category', {})
             is_avatar = cat.get('id') == 208 or cat.get('name') in ["3D Characters", "3Dキャラクター", "3D캐릭터"]
             asset_data_list.append(('json', folder, (name, author, data, desc), path, data.get('wish_lists_count', 0), is_avatar))
-            if not SKIP_TRANSLATION and desc and folder not in description_cache and contains_japanese(desc): desc_tasks[folder] = desc
+            if not SKIP_TRANSLATION and desc and (FORCE_TRANSLATION or folder not in description_cache) and contains_japanese(desc): desc_tasks[folder] = desc
         else:
             data = json.load(f)
             item = data[0] if data else ""
