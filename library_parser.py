@@ -17,6 +17,7 @@ DATABASE_JS_FILE = "web_data/database.js"
 CACHE_FILE = "web_data/cache/translation_cache.json"
 DESC_CACHE_FILE = "web_data/cache/descriptions_cache.json"
 THUMB_META_FILE = "web_data/cache/thumbnail_meta.json"
+GLOBAL_META_FILE = "web_data/cache/global_metadata.json"
 FILTER_FILE = "web_data/filters.json"
 L18N_FILE = "web_data/l18n.json"
 SKIP_TRANSLATION = False
@@ -73,6 +74,23 @@ thumb_meta = {}
 if os.path.exists(THUMB_META_FILE):
     try:
         with open(THUMB_META_FILE, 'r', encoding='utf-8') as f: thumb_meta = json.load(f)
+    except: pass
+
+global_meta = {}
+if os.path.exists(GLOBAL_META_FILE):
+    try:
+        with open(GLOBAL_META_FILE, 'r', encoding='utf-8') as f: global_meta = json.load(f)
+    except: pass
+
+# Load existing database for incremental updates
+existing_database = {}
+if os.path.exists(DATABASE_JS_FILE):
+    try:
+        with open(DATABASE_JS_FILE, 'r', encoding='utf-8') as f:
+            content = f.read()
+            json_str = content.replace("window.BOOTH_DATABASE = ", "").rstrip(";")
+            db_list = json.loads(json_str)
+            existing_database = {item['id']: item for item in db_list}
     except: pass
 
 # Load L18N Data
@@ -657,9 +675,24 @@ def check_english_match(asset_info, profile):
 asset_data_list, short_strings_to_translate = [], []
 desc_tasks, avatar_profiles = {}, {}
 
-for folder in sorted(os.listdir(ROOT_FOLDER)):
+# List all current folders to detect deletions
+current_folders = sorted(os.listdir(ROOT_FOLDER))
+new_global_meta = {}
+dirty_ids = set() # Track IDs that were actually re-processed
+
+print(f"[Build] Identifying new or changed items...")
+for folder in current_folders:
     path = os.path.join(ROOT_FOLDER, folder)
     if not os.path.isdir(path): continue
+    
+    mtime = os.path.getmtime(path)
+    needs_update = folder not in global_meta or global_meta[folder] < mtime or folder not in existing_database
+    new_global_meta[folder] = mtime
+
+    if not needs_update:
+        continue
+
+    dirty_ids.add(folder)
     manual_json = os.path.join(path, "item_descriptor.json")
     if os.path.exists(manual_json):
         with open(manual_json, 'r', encoding='utf-8') as f:
@@ -670,6 +703,7 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
             asset_data_list.append(('custom', folder, (name, author, data, desc), path, data.get('wish_count', 0), is_avatar))
             if not SKIP_TRANSLATION and desc and folder not in description_cache and contains_japanese(desc): desc_tasks[folder] = desc
         continue
+
     jsons = glob.glob(os.path.join(path, "_BoothPage.json")) or glob.glob(os.path.join(path, "_BoothInnerHtmlList.json"))
     if not jsons: continue
     with open(jsons[0], 'r', encoding='utf-8') as f:
@@ -691,6 +725,11 @@ for folder in sorted(os.listdir(ROOT_FOLDER)):
                 short_strings_to_translate.extend([name, author])
                 asset_data_list.append(('limited', folder, (name, author, item, ""), path, 0, False))
 
+if len(dirty_ids) > 0:
+    print(f"[Build] Found {len(dirty_ids)} new or updated items.")
+else:
+    print(f"[Build] No new or updated items found.")
+
 bulk_translate_short_terms(short_strings_to_translate)
 
 print("[Relate] Mapping Avatars...")
@@ -700,20 +739,24 @@ for atype, folder, data, path, wish, is_avatar in asset_data_list:
         tags = [t.get('name', '') for t in data[2].get('tags', [])] if atype == 'json' else (data[2].get('tags', []) if atype == 'custom' else [])
         avatar_profiles[folder] = get_avatar_search_profile(name, trans_name, tags)
 
+for item_id, item in existing_database.items():
+    if item['isAvatar'] and item_id not in avatar_profiles:
+        avatar_profiles[item_id] = get_avatar_search_profile(item['nameOrig'], item['nameTrans'], item['tags'])
+
 assets_to_avatar, avatar_to_assets = {}, {}
+
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if atype == 'custom' and 'related_booth_ids' in data[2]:
         for target_id in [str(x) for x in data[2]['related_booth_ids']]:
             if is_avatar: avatar_to_assets.setdefault(folder, []).append(target_id); assets_to_avatar.setdefault(target_id, []).append(folder)
             else: assets_to_avatar.setdefault(folder, []).append(target_id); avatar_to_assets.setdefault(target_id, []).append(folder)
 
-for atype, folder, data, path, wish, is_avatar in asset_data_list:
-    if is_avatar: continue
-    t_name = (translation_cache.get(data[0].strip(), "") or data[0]).lower()
-    t_tags = [(translation_cache.get(t.get('name', ''), '') or t.get('name', '')).lower() for t in data[2].get('tags', [])] if atype == 'json' else ([(translation_cache.get(t.strip(), '') or t.strip()).lower() for t in data[2].get('tags', []) if t] if atype == 'custom' else [])
-    t_vars = [(translation_cache.get(v.get('name', ''), '') or v.get('name', '')).lower() for v in data[2].get('variations', []) if v.get('name')] if atype == 'json' else []
-    for av_id, profile in avatar_profiles.items():
-        if check_english_match((t_name, t_tags, t_vars), profile): assets_to_avatar.setdefault(folder, []).append(av_id); avatar_to_assets.setdefault(av_id, []).append(folder)
+    if not is_avatar:
+        t_name = (translation_cache.get(data[0].strip(), "") or data[0]).lower()
+        t_tags = [(translation_cache.get(t.get('name', ''), '') or t.get('name', '')).lower() for t in data[2].get('tags', [])] if atype == 'json' else ([(translation_cache.get(t.strip(), '') or t.strip()).lower() for t in data[2].get('tags', []) if t] if atype == 'custom' else [])
+        t_vars = [(translation_cache.get(v.get('name', ''), '') or v.get('name', '')).lower() for v in data[2].get('variations', []) if v.get('name')] if atype == 'json' else []
+        for av_id, profile in avatar_profiles.items():
+            if check_english_match((t_name, t_tags, t_vars), profile): assets_to_avatar.setdefault(folder, []).append(av_id); avatar_to_assets.setdefault(av_id, []).append(folder)
 
 for d in [assets_to_avatar, avatar_to_assets]:
     for key in d: d[key] = sorted(list(set(d[key])))
@@ -729,31 +772,48 @@ if desc_tasks:
     with open(DESC_CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(description_cache, f, ensure_ascii=False, indent=2)
 
 print(f"[Build] Compiling Database...")
-database_output = []
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     name, author, content, desc = data
     rel = avatar_to_assets.get(folder, []) if is_avatar else assets_to_avatar.get(folder, [])
     if atype == 'json':
-        database_output.append(create_asset_data(folder, name, author, [img.get('original', '') for img in content.get('images', [])], content.get('url', ''), path, [t.get('name', '') for t in content.get('tags', [])], content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', ''), description=desc, is_avatar=is_avatar, related_links=rel))
+        existing_database[folder] = create_asset_data(folder, name, author, [img.get('original', '') for img in content.get('images', [])], content.get('url', ''), path, [t.get('name', '') for t in content.get('tags', [])], content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', ''), description=desc, is_avatar=is_avatar, related_links=rel)
     elif atype == 'custom':
-        database_output.append(create_asset_data(folder, name, author, [], "", path, content.get('tags', []), content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', 0), description=desc, is_avatar=is_avatar, related_links=rel))
+        existing_database[folder] = create_asset_data(folder, name, author, [], "", path, content.get('tags', []), content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', 0), description=desc, is_avatar=is_avatar, related_links=rel)
     else:
         i_m, u_m = re.search(r'src=\"([^\"]+)\"', content), re.search(r'href=\"([^\"]+)\"', content)
-        database_output.append(create_asset_data(folder, name, author, [i_m.group(1) if i_m else ""], u_m.group(1) if u_m else "", path, [], is_adult_content(name), 0, "", limited=True, related_links=rel))
+        existing_database[folder] = create_asset_data(folder, name, author, [i_m.group(1) if i_m else ""], u_m.group(1) if u_m else "", path, [], is_adult_content(name), 0, "", limited=True, related_links=rel)
+
+keys_to_remove = [k for k in existing_database if k not in new_global_meta]
+for k in keys_to_remove: del existing_database[k]
+
+database_output = list(existing_database.values())
 
 if OPTIMIZE_THUMBNAILS:
     to_process = []
-    for item in database_output:
-        if not item['gridThumb'] or item['gridThumb'].startswith('http'): continue
+    # Only evaluate items that are 'dirty' (new/changed)
+    for item_id in dirty_ids:
+        item = existing_database.get(item_id)
+        if not item or not item['gridThumb'] or item['gridThumb'].startswith('http'): continue
+        
         orig_local_path = unquote(item['gridThumb']).replace('/', os.sep)
         if not os.path.exists(orig_local_path): continue
+        
         t_path = os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp")
         crc = calculate_crc32(orig_local_path)
+        
+        # Optimize if thumbnail doesn't exist OR source file CRC changed
         if not os.path.exists(t_path) or thumb_meta.get(item['id']) != crc:
             to_process.append((item, orig_local_path, crc))
         else:
             item['gridThumb'] = quote(t_path.replace('\\', '/'))
     
+    # For clean items, just ensure their path is correctly pointed to the existing thumb
+    for item in database_output:
+        if item['id'] not in dirty_ids:
+            t_path = os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp")
+            if os.path.exists(t_path):
+                item['gridThumb'] = quote(t_path.replace('\\', '/'))
+
     if to_process:
         print(f"[Optimize] Updating {len(to_process)} thumbnails...")
         for i, (item, path, crc) in enumerate(to_process):
@@ -765,6 +825,9 @@ with open(DATABASE_JS_FILE, 'w', encoding='utf-8') as f:
     f.write("window.BOOTH_DATABASE = ")
     json.dump(database_output, f, ensure_ascii=False)
     f.write(";")
+
+with open(GLOBAL_META_FILE, 'w', encoding='utf-8') as f:
+    json.dump(new_global_meta, f)
 
 final_html = HTML_TEMPLATE.replace("__L18N_INJECT_POINT__", json.dumps(l18n_data, ensure_ascii=False))
 with open(OUTPUT_FILE, 'w', encoding='utf-8') as f: f.write(final_html)
