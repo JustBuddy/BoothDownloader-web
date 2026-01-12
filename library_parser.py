@@ -18,11 +18,12 @@ DESC_CACHE_FILE = "web_data/cache/descriptions_cache.json"
 THUMB_META_FILE = "web_data/cache/thumbnail_meta.json"
 FILTER_FILE = "web_data/filters.json"
 L18N_FILE = "web_data/l18n.json"
+ALIAS_FILE = "web_data/alias.json"
 SKIP_TRANSLATION = False
 MAX_WORKERS = 5
 
 # Database Cache Settings
-USE_STATIC_CACHE = False  # Doesn't behave well with the matching system on newly added avatars.
+USE_STATIC_CACHE = False  # A bit broken with the matcher, keep false for now.
 DATABASE_JS_FILE = "web_data/database.js"
 GLOBAL_META_FILE = "web_data/cache/global_metadata.json"
 
@@ -66,6 +67,15 @@ if os.path.exists(FILTER_FILE):
             if isinstance(ext_data, list): ADULT_KEYWORDS.extend(ext_data)
     except: pass
 ADULT_KEYWORDS = list(set(ADULT_KEYWORDS))
+
+# Load Aliases
+alias_data = {}
+if os.path.exists(ALIAS_FILE):
+    try:
+        with open(ALIAS_FILE, 'r', encoding='utf-8') as f:
+            alias_data = json.load(f)
+    except Exception as e:
+        print(f"[Error] Could not load alias.json: {e}")
 
 # Load Caches
 translation_cache = {}
@@ -115,7 +125,6 @@ if USE_STATIC_CACHE and os.path.exists(DATABASE_JS_FILE):
             json_str = content.replace("window.BOOTH_DATABASE = ", "").rstrip(";")
             db_list = json.loads(json_str)
             existing_database = {item['id']: item for item in db_list}
-            # Find folder IDs where name/author contains "Error 504" to force-dirty them
             for item in db_list:
                 if "Error 504" in str(item.get('nameTrans', '')) or "Error 504" in str(item.get('authorTrans', '')):
                     error_ids.add(item['id'])
@@ -674,11 +683,20 @@ def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, 
     search_blob = f"{asset_id} {asset_name} {name_trans} {author_name} {author_trans} {' '.join(tags)}".lower()
     return { "id": asset_id, "nameOrig": asset_name, "nameTrans": name_trans, "authorOrig": author_name, "authorTrans": author_trans, "gridThumb": primary_img, "allImages": all_imgs, "bytes": total_bytes, "imgBytes": img_bytes, "fileCount": len(files), "files": files, "tags": tags, "adult": is_adult, "searchBlob": search_blob, "folder": quote(os.path.relpath(binary_folder, start=os.getcwd()).replace('\\', '/')), "boothUrl": booth_url, "wishCount": wish_count, "timestamp": int(os.path.getctime(folder_path)), "priceValue": price_val, "priceCurrency": price_cur, "limited": limited, "descOrig": description, "descTrans": desc_trans, "vrcAvatarLink": vrc_av.group(1) if vrc_av else "", "vrcWorldLink": vrc_wr.group(1) if vrc_wr else "", "isAvatar": is_avatar, "links": related_links or [] }
 
-def get_avatar_search_profile(orig_name, trans_name, tags):
+def get_avatar_search_profile(asset_id, orig_name, trans_name, tags):
     search_terms, groups = set(), set()
     all_context = (orig_name + " " + (trans_name or "") + " " + " ".join(tags)).lower()
     for g in BODY_GROUPS:
         if g.lower() in all_context: groups.add(g.lower())
+    
+    # Handle Aliases (String or List)
+    alias = alias_data.get(str(asset_id))
+    if alias:
+        if isinstance(alias, list):
+            for a in alias: search_terms.add(str(a).lower())
+        else:
+            search_terms.add(str(alias).lower())
+
     def add_valid_candidate(cand):
         cleaned = re.sub(r'Original 3D Model|3D Model|Avatar|Ver\..*|#\w+|chan|kun|vrc|quest|pc|compatible|set', '', cand, flags=re.IGNORECASE).strip()
         if len(cleaned) > 2 and cleaned.lower() not in FORBIDDEN_NAMES: search_terms.add(cleaned.lower())
@@ -714,11 +732,9 @@ for folder in current_folders:
     if not os.path.isdir(path): continue
     
     mtime = os.path.getmtime(path)
-    # If static cache is disabled, we consider everything dirty
     if not USE_STATIC_CACHE:
         needs_update = True
     else:
-        # Forced if meta missing, folder changed, or it was flagged as a 504 error previously
         needs_update = FORCE_TRANSLATION or folder not in global_meta or global_meta[folder] < mtime or folder not in existing_database or folder in error_ids
     
     new_global_meta[folder] = mtime
@@ -771,13 +787,12 @@ for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if is_avatar:
         name, trans_name = data[0], translation_cache.get(data[0].strip(), "")
         tags = [t.get('name', '') for t in data[2].get('tags', [])] if atype == 'json' else (data[2].get('tags', []) if atype == 'custom' else [])
-        avatar_profiles[folder] = get_avatar_search_profile(name, trans_name, tags)
+        avatar_profiles[folder] = get_avatar_search_profile(folder, name, trans_name, tags)
 
-# Only add previous profiles if caching is enabled
 if USE_STATIC_CACHE:
     for item_id, item in existing_database.items():
         if item['isAvatar'] and item_id not in avatar_profiles:
-            avatar_profiles[item_id] = get_avatar_search_profile(item['nameOrig'], item['nameTrans'], item['tags'])
+            avatar_profiles[item_id] = get_avatar_search_profile(item_id, item['nameOrig'], item['nameTrans'], item['tags'])
 
 assets_to_avatar, avatar_to_assets = {}, {}
 
@@ -826,7 +841,6 @@ database_output = list(existing_database.values())
 
 if OPTIMIZE_THUMBNAILS:
     to_process = []
-    # If caching is disabled, we re-evaluate all items for thumb optimization
     target_ids = dirty_ids if USE_STATIC_CACHE else existing_database.keys()
     
     for item_id in target_ids:
