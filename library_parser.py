@@ -13,15 +13,18 @@ from PIL import Image
 # Configuration
 ROOT_FOLDER = "BoothDownloaderOut"
 OUTPUT_FILE = "asset_library.html"
-DATABASE_JS_FILE = "web_data/database.js"
 CACHE_FILE = "web_data/cache/translation_cache.json"
 DESC_CACHE_FILE = "web_data/cache/descriptions_cache.json"
 THUMB_META_FILE = "web_data/cache/thumbnail_meta.json"
-GLOBAL_META_FILE = "web_data/cache/global_metadata.json"
 FILTER_FILE = "web_data/filters.json"
 L18N_FILE = "web_data/l18n.json"
 SKIP_TRANSLATION = False
 MAX_WORKERS = 5
+
+# Database Cache Settings
+USE_STATIC_CACHE = False  # Doesn't behave well with the matching system on newly added avatars.
+DATABASE_JS_FILE = "web_data/database.js"
+GLOBAL_META_FILE = "web_data/cache/global_metadata.json"
 
 # Thumbnail Optimization
 OPTIMIZE_THUMBNAILS = True
@@ -77,6 +80,20 @@ if os.path.exists(DESC_CACHE_FILE):
         with open(DESC_CACHE_FILE, 'r', encoding='utf-8') as f: description_cache = json.load(f)
     except: pass
 
+# Clean Error 504 from caches
+error_ids = set()
+def cleanup_translation_errors():
+    global translation_cache, description_cache
+    to_delete_short = [k for k, v in translation_cache.items() if "Error 504" in str(v)]
+    for k in to_delete_short: del translation_cache[k]
+    
+    to_delete_desc = [k for k, v in description_cache.items() if "Error 504" in str(v)]
+    for k in to_delete_desc: 
+        del description_cache[k]
+        error_ids.add(k) # Flag these folder IDs to be treated as dirty
+
+cleanup_translation_errors()
+
 thumb_meta = {}
 if os.path.exists(THUMB_META_FILE):
     try:
@@ -84,20 +101,24 @@ if os.path.exists(THUMB_META_FILE):
     except: pass
 
 global_meta = {}
-if os.path.exists(GLOBAL_META_FILE):
+if USE_STATIC_CACHE and os.path.exists(GLOBAL_META_FILE):
     try:
         with open(GLOBAL_META_FILE, 'r', encoding='utf-8') as f: global_meta = json.load(f)
     except: pass
 
 # Load existing database for incremental updates
 existing_database = {}
-if os.path.exists(DATABASE_JS_FILE):
+if USE_STATIC_CACHE and os.path.exists(DATABASE_JS_FILE):
     try:
         with open(DATABASE_JS_FILE, 'r', encoding='utf-8') as f:
             content = f.read()
             json_str = content.replace("window.BOOTH_DATABASE = ", "").rstrip(";")
             db_list = json.loads(json_str)
             existing_database = {item['id']: item for item in db_list}
+            # Find folder IDs where name/author contains "Error 504" to force-dirty them
+            for item in db_list:
+                if "Error 504" in str(item.get('nameTrans', '')) or "Error 504" in str(item.get('authorTrans', '')):
+                    error_ids.add(item['id'])
     except: pass
 
 # Load L18N Data
@@ -623,7 +644,7 @@ def get_all_local_images(folder_path, web_urls=None):
                     path = quote(os.path.join(folder_path, f).replace('\\', '/'))
                     if path not in ordered_images: ordered_images.append(path); found = True; break
             if found: break
-        if not found and url: ordered_images.append(url)
+        if not found and url: ordered_images.append(path if 'path' in locals() else url)
     for f in local_files:
         path = quote(os.path.join(folder_path, f).replace('\\', '/'))
         if path not in ordered_images: ordered_images.append(path)
@@ -693,7 +714,13 @@ for folder in current_folders:
     if not os.path.isdir(path): continue
     
     mtime = os.path.getmtime(path)
-    needs_update = FORCE_TRANSLATION or folder not in global_meta or global_meta[folder] < mtime or folder not in existing_database
+    # If static cache is disabled, we consider everything dirty
+    if not USE_STATIC_CACHE:
+        needs_update = True
+    else:
+        # Forced if meta missing, folder changed, or it was flagged as a 504 error previously
+        needs_update = FORCE_TRANSLATION or folder not in global_meta or global_meta[folder] < mtime or folder not in existing_database or folder in error_ids
+    
     new_global_meta[folder] = mtime
 
     if not needs_update:
@@ -708,7 +735,7 @@ for folder in current_folders:
             short_strings_to_translate.extend([name, author] + tags)
             is_avatar = data.get('is_avatar', False)
             asset_data_list.append(('custom', folder, (name, author, data, desc), path, data.get('wish_count', 0), is_avatar))
-            if not SKIP_TRANSLATION and desc and (FORCE_TRANSLATION or folder not in description_cache) and contains_japanese(desc): desc_tasks[folder] = desc
+            if not SKIP_TRANSLATION and desc and (FORCE_TRANSLATION or folder not in description_cache or folder in error_ids) and contains_japanese(desc): desc_tasks[folder] = desc
         continue
 
     jsons = glob.glob(os.path.join(path, "_BoothPage.json")) or glob.glob(os.path.join(path, "_BoothInnerHtmlList.json"))
@@ -722,7 +749,7 @@ for folder in current_folders:
             cat = data.get('category', {})
             is_avatar = cat.get('id') == 208 or cat.get('name') in ["3D Characters", "3Dキャラクター", "3D캐릭터"]
             asset_data_list.append(('json', folder, (name, author, data, desc), path, data.get('wish_lists_count', 0), is_avatar))
-            if not SKIP_TRANSLATION and desc and (FORCE_TRANSLATION or folder not in description_cache) and contains_japanese(desc): desc_tasks[folder] = desc
+            if not SKIP_TRANSLATION and desc and (FORCE_TRANSLATION or folder not in description_cache or folder in error_ids) and contains_japanese(desc): desc_tasks[folder] = desc
         else:
             data = json.load(f)
             item = data[0] if data else ""
@@ -733,7 +760,7 @@ for folder in current_folders:
                 asset_data_list.append(('limited', folder, (name, author, item, ""), path, 0, False))
 
 if len(dirty_ids) > 0:
-    print(f"[Build] Found {len(dirty_ids)} new or updated items.")
+    print(f"[Build] Found {len(dirty_ids)} items to process.")
 else:
     print(f"[Build] No new or updated items found.")
 
@@ -746,9 +773,11 @@ for atype, folder, data, path, wish, is_avatar in asset_data_list:
         tags = [t.get('name', '') for t in data[2].get('tags', [])] if atype == 'json' else (data[2].get('tags', []) if atype == 'custom' else [])
         avatar_profiles[folder] = get_avatar_search_profile(name, trans_name, tags)
 
-for item_id, item in existing_database.items():
-    if item['isAvatar'] and item_id not in avatar_profiles:
-        avatar_profiles[item_id] = get_avatar_search_profile(item['nameOrig'], item['nameTrans'], item['tags'])
+# Only add previous profiles if caching is enabled
+if USE_STATIC_CACHE:
+    for item_id, item in existing_database.items():
+        if item['isAvatar'] and item_id not in avatar_profiles:
+            avatar_profiles[item_id] = get_avatar_search_profile(item['nameOrig'], item['nameTrans'], item['tags'])
 
 assets_to_avatar, avatar_to_assets = {}, {}
 
@@ -797,8 +826,10 @@ database_output = list(existing_database.values())
 
 if OPTIMIZE_THUMBNAILS:
     to_process = []
-    # Only evaluate items that are 'dirty' (new/changed)
-    for item_id in dirty_ids:
+    # If caching is disabled, we re-evaluate all items for thumb optimization
+    target_ids = dirty_ids if USE_STATIC_CACHE else existing_database.keys()
+    
+    for item_id in target_ids:
         item = existing_database.get(item_id)
         if not item or not item['gridThumb'] or item['gridThumb'].startswith('http'): continue
         
@@ -808,18 +839,17 @@ if OPTIMIZE_THUMBNAILS:
         t_path = os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp")
         crc = calculate_crc32(orig_local_path)
         
-        # Optimize if thumbnail doesn't exist OR source file CRC changed
         if not os.path.exists(t_path) or thumb_meta.get(item['id']) != crc:
             to_process.append((item, orig_local_path, crc))
         else:
             item['gridThumb'] = quote(t_path.replace('\\', '/'))
     
-    # For clean items, just ensure their path is correctly pointed to the existing thumb
-    for item in database_output:
-        if item['id'] not in dirty_ids:
-            t_path = os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp")
-            if os.path.exists(t_path):
-                item['gridThumb'] = quote(t_path.replace('\\', '/'))
+    if USE_STATIC_CACHE:
+        for item in database_output:
+            if item['id'] not in dirty_ids:
+                t_path = os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp")
+                if os.path.exists(t_path):
+                    item['gridThumb'] = quote(t_path.replace('\\', '/'))
 
     if to_process:
         print(f"[Optimize] Updating {len(to_process)} thumbnails...")
@@ -833,8 +863,9 @@ with open(DATABASE_JS_FILE, 'w', encoding='utf-8') as f:
     json.dump(database_output, f, ensure_ascii=False)
     f.write(";")
 
-with open(GLOBAL_META_FILE, 'w', encoding='utf-8') as f:
-    json.dump(new_global_meta, f)
+if USE_STATIC_CACHE:
+    with open(GLOBAL_META_FILE, 'w', encoding='utf-8') as f:
+        json.dump(new_global_meta, f)
 
 final_html = HTML_TEMPLATE.replace("__L18N_INJECT_POINT__", json.dumps(l18n_data, ensure_ascii=False))
 with open(OUTPUT_FILE, 'w', encoding='utf-8') as f: f.write(final_html)
