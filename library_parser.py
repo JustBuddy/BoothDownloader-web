@@ -246,6 +246,7 @@ HTML_TEMPLATE = """<!doctype html>
                 <select id="sortOrder" onchange="sortAssets(true)">
                     <option value="id" data-i18n="optId">Folder ID</option><option value="new" data-i18n="optNew">Recently Added</option><option value="name" data-i18n="optName">Alphabetical</option><option value="rel" data-i18n="optRel">Relevance</option><option value="size" data-i18n="optSize">Total Size</option>
                 </select>
+                <label style="display:flex; gap:10px; cursor:pointer; font-size:0.85rem; margin-top:8px; align-items:center;"><input type="checkbox" id="sortInvert" onchange="sortAssets(true)"> <span data-i18n="optInvert">Invert Order</span></label>
             </div>
             <div class="setting-group"><span class="setting-label" data-i18n="labelAdult">Adult Filter</span>
                 <select id="adultFilter" onchange="applyFilters(true)">
@@ -333,7 +334,7 @@ HTML_TEMPLATE = """<!doctype html>
         let currentCarouselIndex = 0, currentImages = [];
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
-        const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
+        const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), sortInvert: getLS('sortInvert', 'false') === 'true', adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
         const observerOptions = { root: null, rootMargin: '1000px', threshold: 0.01 };
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -358,7 +359,7 @@ HTML_TEMPLATE = """<!doctype html>
                 langSel.appendChild(opt);
             });
             updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
-            document.getElementById('gridRange').value = state.gridSize; document.getElementById('blurToggle').checked = state.disableBlur; document.getElementById('sortOrder').value = state.sortOrder;
+            document.getElementById('gridRange').value = state.gridSize; document.getElementById('blurToggle').checked = state.disableBlur; document.getElementById('sortOrder').value = state.sortOrder; document.getElementById('sortInvert').checked = state.sortInvert;
             document.getElementById('adultFilter').value = state.adultFilter; document.getElementById('typeFilter').value = state.typeFilter; document.getElementById('hideIdToggle').checked = state.hideIds; document.getElementById('translateToggle').checked = state.showTrans;
             calculateStats();
             const urlParams = new URLSearchParams(window.location.search);
@@ -501,16 +502,20 @@ HTML_TEMPLATE = """<!doctype html>
             if (hiddenCount > 0) { notice.innerText = t.hiddenResults.replace('{n}', hiddenCount).trim(); notice.style.display = "flex"; } else { notice.style.display = "none"; }
         }
         function sortAssets(save = false) {
-            const list = document.getElementById('assetList'), order = document.getElementById('sortOrder').value;
-            if(save) localStorage.setItem('sortOrder', order);
+            const list = document.getElementById('assetList'), order = document.getElementById('sortOrder').value, invert = document.getElementById('sortInvert').checked;
+            if(save) { localStorage.setItem('sortOrder', order); localStorage.setItem('sortInvert', invert); state.sortInvert = invert; }
             const sorted = [...database].sort((a, b) => {
-                if (order === 'id') return isNaN(a.id) || isNaN(b.id) ? a.id.localeCompare(b.id) : parseInt(a.id) - parseInt(b.id);
-                if (order === 'new') return b.timestamp - a.timestamp;
-                if (order === 'rel') return b.wishCount - a.wishCount;
-                if (order === 'size') return b.bytes - a.bytes;
-                const nA = (state.showTrans && a.nameTrans) ? a.nameTrans : a.nameOrig;
-                const nB = (state.showTrans && b.nameTrans) ? b.nameTrans : b.nameOrig;
-                return nA.toLowerCase().localeCompare(nB.toLowerCase());
+                let res = 0;
+                if (order === 'id') res = isNaN(a.id) || isNaN(b.id) ? a.id.localeCompare(b.id) : parseInt(a.id) - parseInt(b.id);
+                else if (order === 'new') res = b.timestamp - a.timestamp;
+                else if (order === 'rel') res = b.wishCount - a.wishCount;
+                else if (order === 'size') res = b.bytes - a.bytes;
+                else {
+                    const nA = (state.showTrans && a.nameTrans) ? a.nameTrans : a.nameOrig;
+                    const nB = (state.showTrans && b.nameTrans) ? b.nameTrans : b.nameOrig;
+                    res = nA.toLowerCase().localeCompare(nB.toLowerCase());
+                }
+                return invert ? res * -1 : res;
             });
             sorted.forEach(item => list.appendChild(document.getElementById('asset-' + item.id)));
         }
