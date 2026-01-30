@@ -45,6 +45,9 @@ FORBIDDEN_NAMES = {
     "fullset", "edition", "sf", "3dcg", "vrm", "mmd", "body", "set"
 }
 
+# Purely cosmetic: these strings will be stripped from the English UI display (AVATARS ONLY)
+STRINGS_TO_REMOVE = ["Original 3D Model", "Avatar", "3D Model", "[]", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", " /"]
+
 print(f"--- Starting Library Generation ---")
 
 if not os.path.exists("web_data"): os.makedirs("web_data")
@@ -198,7 +201,7 @@ def get_optimized_thumb(asset_id, original_path, crc):
     except: return quote(original_path.replace('\\', '/'))
     return quote(thumb_path.replace('\\', '/'))
 
-HTML_TEMPLATE = """<!doctype html>
+HTML_TEMPLATE = r"""<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -330,6 +333,7 @@ HTML_TEMPLATE = """<!doctype html>
     <script>
         const l18n = __L18N_INJECT_POINT__;
         const translations = l18n.translations;
+        const STRINGS_TO_REMOVE = __REMOVABLES_INJECT_POINT__;
         const database = window.BOOTH_DATABASE || [];
         let currentCarouselIndex = 0, currentImages = [];
         const baseTitle = "Booth Asset Library";
@@ -430,13 +434,23 @@ HTML_TEMPLATE = """<!doctype html>
         function updateGrid(v) { document.documentElement.style.setProperty('--grid-size', v + 'px'); localStorage.setItem('gridSize', v); }
         function updateBlur(v) { document.body.classList.toggle('no-blur', v); localStorage.setItem('disableBlur', v); }
         function updateIdVisibility(v) { document.body.classList.toggle('hide-ids', v); localStorage.setItem('hideIds', v); }
+        function cleanUIName(name, isAvatar) {
+            if (!name || !isAvatar) return name || "";
+            let cleaned = name;
+            STRINGS_TO_REMOVE.forEach(s => {
+                const escaped = s.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+                cleaned = cleaned.replace(new RegExp(escaped, 'gi'), '');
+            });
+            return cleaned.trim();
+        }
         function updateTranslationVisibility(v) { 
             state.showTrans = v; localStorage.setItem('showTrans', v);
             const t = translations[state.lang] || translations['en'];
             database.forEach(item => {
                 const el = document.getElementById('asset-' + item.id);
                 if (!el) return;
-                el.querySelector('.name-primary').innerText = (v && item.nameTrans) ? item.nameTrans : item.nameOrig;
+                const rawName = (v && item.nameTrans) ? item.nameTrans : item.nameOrig;
+                el.querySelector('.name-primary').innerText = v ? cleanUIName(rawName, item.isAvatar) : rawName;
                 el.querySelector('.author-primary').innerText = (v && item.authorTrans) ? item.authorTrans : item.authorOrig;
                 el.querySelector('.tag-row').innerHTML = item.tags.slice(0, 12).map(tg => `<span class="tag-pill">${tg}</span>`).join('');
                 let statsHtml = item.bytes > 0 ? `<span>${formatBytes(item.bytes)}</span>` : "";
@@ -448,12 +462,16 @@ HTML_TEMPLATE = """<!doctype html>
             if (modal.classList.contains('active')) {
                 const id = new URLSearchParams(window.location.search).get('id');
                 const item = database.find(d => d.id === id);
-                if (item) document.getElementById('modalDesc').innerHTML = formatDescription((v && item.descTrans) ? item.descTrans : item.descOrig);
+                if (item) {
+                    const rawModalName = (v && item.nameTrans) ? item.nameTrans : item.nameOrig;
+                    document.getElementById("modalName").innerText = v ? cleanUIName(rawModalName, item.isAvatar) : rawModalName;
+                    document.getElementById('modalDesc').innerHTML = formatDescription((v && item.descTrans) ? item.descTrans : item.descOrig);
+                }
             }
         }
         function formatDescription(text) {
             if (!text) return "";
-            const urlRegex = /(https?:\\/\\/[^\\s\\n]+)/g;
+            const urlRegex = /(https?:\/\/[^\s\n]+)/g;
             return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" onclick="event.stopPropagation()">${url}</a>`);
         }
         function handleSearchInput() { 
@@ -531,9 +549,9 @@ HTML_TEMPLATE = """<!doctype html>
             const blurSlides = currentImages.map(img => `<div class="carousel-blur-slide"><img src="${img}"></div>`).join('');
             track.innerHTML = mainSlides; blurTrack.innerHTML = blurSlides;
             updateCarousel(true);
-            const displayTitle = (state.showTrans && item.nameTrans) ? item.nameTrans : item.nameOrig;
+            const rawTitle = (state.showTrans && item.nameTrans) ? item.nameTrans : item.nameOrig;
             const authorDisp = (state.showTrans && item.authorTrans) ? item.authorTrans : item.authorOrig;
-            document.getElementById("modalName").innerText = displayTitle;
+            document.getElementById("modalName").innerText = state.showTrans ? cleanUIName(rawTitle, item.isAvatar) : rawTitle;
             document.getElementById("modalSubtitle").innerHTML = `by <a class="modal-author-link" onclick="tagSearch('${item.authorOrig.replace(/'/g, "\\\\'")}', true)"><b>${authorDisp}</b></a>`;
             let metaHtml = (item.nameTrans && state.showTrans) ? `<div class="meta-pill">${item.nameOrig}</div>` : "";
             metaHtml += `<div class="meta-pill">${item.priceCurrency} ${item.priceValue.toLocaleString()}</div>`;
@@ -557,7 +575,8 @@ HTML_TEMPLATE = """<!doctype html>
                 let relHtml = item.links.map(linkId => {
                     const target = database.find(d => d.id === linkId);
                     if (!target) return "";
-                    const n = (state.showTrans && target.nameTrans) ? target.nameTrans : target.nameOrig;
+                    const rawTargetName = (state.showTrans && target.nameTrans) ? target.nameTrans : target.nameOrig;
+                    const n = state.showTrans ? cleanUIName(rawTargetName, target.isAvatar) : rawTargetName;
                     return `<a href="#" class="asset-link-item" onclick="event.preventDefault(); openDetails('${linkId}')">
                         <img class="asset-link-thumb" src="${target.gridThumb}">
                         <span class="asset-link-name">${n}</span>
@@ -707,7 +726,7 @@ def get_avatar_search_profile(asset_id, orig_name, trans_name, tags):
         if len(cleaned) > 2 and cleaned.lower() not in FORBIDDEN_NAMES: search_terms.add(cleaned.lower())
     if trans_name:
         add_valid_candidate(trans_name)
-        for q in re.findall(r"['\"\[「](.*?)['\"\]」]", trans_name): add_valid_candidate(q)
+        for q in re.findall(r"['\"\[「](.*?)['\"\]\"「」]", trans_name): add_valid_candidate(q)
     for part in re.findall(r'[a-zA-Z0-9]{3,}', orig_name):
         if part.lower() not in FORBIDDEN_NAMES: search_terms.add(part.lower())
     return {"names": list(search_terms), "groups": list(groups)}
@@ -887,5 +906,7 @@ if USE_STATIC_CACHE:
         json.dump(new_global_meta, f)
 
 final_html = HTML_TEMPLATE.replace("__L18N_INJECT_POINT__", json.dumps(l18n_data, ensure_ascii=False))
+final_html = final_html.replace("__REMOVABLES_INJECT_POINT__", json.dumps(STRINGS_TO_REMOVE, ensure_ascii=False))
+
 with open(OUTPUT_FILE, 'w', encoding='utf-8') as f: f.write(final_html)
 print(f"--- Library Updated Successfully ({len(database_output)} items) ---")
