@@ -20,17 +20,20 @@ FILTER_FILE = "web_data/filters.json"
 L18N_FILE = "web_data/l18n.json"
 ALIAS_FILE = "web_data/alias.json"
 SKIP_TRANSLATION = False
-MAX_WORKERS = 5
+MAX_TRANSLATION_WORKERS = 5
+MAX_OPTIMIZATION_WORKERS = 16
 
 # Database Cache Settings
-USE_STATIC_CACHE = False  # A bit broken with the matcher, keep false for now.
-DATABASE_JS_FILE = "web_data/database.js"
+USE_STATIC_CACHE = True
+DATABASE_JS_FILE = "web_data/cache/database.js"
 GLOBAL_META_FILE = "web_data/cache/global_metadata.json"
 
 # Thumbnail Optimization
 OPTIMIZE_THUMBNAILS = True
+OPTIMIZE_GALLERY = False 
 THUMBNAIL_SIZE = (256, 256)
 IMG_OUT_DIR = "web_data/img"
+GALLERY_OUT_DIR = "web_data/img/gallery"
 
 # Shared Body Groups (Case-insensitive)
 BODY_GROUPS = ["MameFriends", "MaruBody", "+Head", "Plushead", "Bodyset2"]
@@ -53,6 +56,7 @@ print(f"--- Starting Library Generation ---")
 if not os.path.exists("web_data"): os.makedirs("web_data")
 if not os.path.exists("web_data/cache"): os.makedirs("web_data/cache")
 if OPTIMIZE_THUMBNAILS and not os.path.exists(IMG_OUT_DIR): os.makedirs(IMG_OUT_DIR)
+if OPTIMIZE_GALLERY and not os.path.exists(GALLERY_OUT_DIR): os.makedirs(GALLERY_OUT_DIR)
 
 # Force re-translation if caches are missing
 FORCE_TRANSLATION = False
@@ -103,7 +107,7 @@ def cleanup_translation_errors():
     to_delete_desc = [k for k, v in description_cache.items() if "Error 504" in str(v)]
     for k in to_delete_desc: 
         del description_cache[k]
-        error_ids.add(k) # Flag these folder IDs to be treated as dirty
+        error_ids.add(k) 
 
 cleanup_translation_errors()
 
@@ -114,14 +118,13 @@ if os.path.exists(THUMB_META_FILE):
     except: pass
 
 global_meta = {}
-if USE_STATIC_CACHE and os.path.exists(GLOBAL_META_FILE):
+if os.path.exists(GLOBAL_META_FILE):
     try:
         with open(GLOBAL_META_FILE, 'r', encoding='utf-8') as f: global_meta = json.load(f)
     except: pass
 
-# Load existing database for incremental updates
 existing_database = {}
-if USE_STATIC_CACHE and os.path.exists(DATABASE_JS_FILE):
+if os.path.exists(DATABASE_JS_FILE):
     try:
         with open(DATABASE_JS_FILE, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -133,7 +136,6 @@ if USE_STATIC_CACHE and os.path.exists(DATABASE_JS_FILE):
                     error_ids.add(item['id'])
     except: pass
 
-# Load L18N Data
 l18n_data = {"languages": {"en": "English"}, "translations": {"en": {}}}
 if os.path.exists(L18N_FILE):
     try:
@@ -160,33 +162,12 @@ def print_progress(current, total, label="Progress"):
         if current == 1 or current == total or current % max(1, (total // 20)) == 0:
             print(f"[{label}] {percent:.1f}% ({current}/{total})")
 
-def bulk_translate_short_terms(text_list):
-    if SKIP_TRANSLATION: return
-    japanese_strings = list(set(str(t).strip() for t in text_list if t and contains_japanese(t) and len(str(t)) < 500))
-    new_strings = [t for t in japanese_strings if t not in translation_cache]
-    if not new_strings: return
-    total = len(new_strings)
-    print(f"[Translate] Queuing {total} short terms...")
-    def translate_task(item):
-        try: return item, GoogleTranslator(source='auto', target='en').translate(item)
-        except: return item, None
-    completed = 0
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_to_term = {executor.submit(translate_task, term): term for term in new_strings}
-        for future in as_completed(future_to_term):
-            original, translated = future.result()
-            if translated: translation_cache[original] = translated
-            completed += 1
-            print_progress(completed, total, "Translate")
-    with open(CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(translation_cache, f, ensure_ascii=False, indent=2)
-
 def calculate_crc32(filepath):
     buf = open(filepath, 'rb').read()
     return "%08X" % (binascii.crc32(buf) & 0xFFFFFFFF)
 
 def get_optimized_thumb(asset_id, original_path, crc):
     if not original_path or not os.path.exists(original_path): return ""
-    if not original_path.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')): return quote(original_path.replace('\\', '/'))
     thumb_name = f"{asset_id}_thumb.webp"
     thumb_path = os.path.join(IMG_OUT_DIR, thumb_name)
     try:
@@ -197,9 +178,20 @@ def get_optimized_thumb(asset_id, original_path, crc):
                 img = img.crop(((width-min_dim)/2, (height-min_dim)/2, (width+min_dim)/2, (height+min_dim)/2))
             img.thumbnail(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
             img.save(thumb_path, "WEBP", optimize=True, quality=80)
-            thumb_meta[asset_id] = crc
+            return quote(thumb_path.replace('\\', '/')), crc
+    except: return quote(original_path.replace('\\', '/')), None
+
+def get_optimized_gallery_img(asset_id, original_path, crc):
+    if not original_path or not os.path.exists(original_path): return ""
+    file_name = os.path.basename(original_path)
+    opt_name = f"{asset_id}_{crc}_{os.path.splitext(file_name)[0]}.webp"
+    opt_path = os.path.join(GALLERY_OUT_DIR, opt_name)
+    if os.path.exists(opt_path): return quote(opt_path.replace('\\', '/'))
+    try:
+        with Image.open(original_path) as img:
+            img.save(opt_path, "WEBP", optimize=True, quality=85)
+            return quote(opt_path.replace('\\', '/'))
     except: return quote(original_path.replace('\\', '/'))
-    return quote(thumb_path.replace('\\', '/'))
 
 HTML_TEMPLATE = r"""<!doctype html>
 <html lang="en">
@@ -328,7 +320,6 @@ HTML_TEMPLATE = r"""<!doctype html>
     <div id="fullscreenImageViewer" class="fullscreen-viewer" onclick="closeFullscreenImage()">
         <img id="fullscreenImage" src="" alt="Full size preview">
     </div>
-    <!-- Load local database script -->
     <script src="web_data/database.js"></script>
     <script>
         const l18n = __L18N_INJECT_POINT__;
@@ -649,12 +640,20 @@ def get_dir_data(binary_folder):
     if os.path.exists(binary_folder):
         for root, _, filenames in os.walk(binary_folder):
             for f in filenames:
-                fp = os.path.join(root, f)
-                size = os.path.getsize(fp)
-                total_size += size
+                fp = os.path.join(root, f); size = os.path.getsize(fp); total_size += size
                 rel = os.path.relpath(fp, start=os.getcwd()).replace('\\', '/')
                 files.append({"name": f, "path": quote(rel), "size": get_readable_size(size)})
     return files, total_size
+
+def get_dir_fingerprint(binary_folder):
+    """Generates a fast fingerprint of folder contents to detect file changes."""
+    if not os.path.exists(binary_folder): return ""
+    fingerprint = []
+    for root, _, filenames in os.walk(binary_folder):
+        for f in filenames:
+            fp = os.path.join(root, f)
+            fingerprint.append(f"{f}:{os.path.getsize(fp)}")
+    return "|".join(sorted(fingerprint))
 
 def get_image_folder_size(folder_path):
     total_size = 0
@@ -664,23 +663,21 @@ def get_image_folder_size(folder_path):
 
 def is_adult_content(text): return bool(re.search("|".join(ADULT_KEYWORDS), str(text), re.IGNORECASE))
 
-def get_all_local_images(folder_path, web_urls=None):
+def get_all_local_images(asset_id, folder_path, web_urls=None):
     if web_urls is None: web_urls = []
-    local_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))]
-    ordered_images = []
+    local_files = sorted([f for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))])
+    ordered_images = []; used_files = set()
     for url in web_urls:
+        if not url: continue
         tokens = re.findall(r'([a-fA-Z0-9-]{15,})', url)
         found = False
         for token in tokens:
             for f in local_files:
-                if token in f:
-                    path = quote(os.path.join(folder_path, f).replace('\\', '/'))
-                    if path not in ordered_images: ordered_images.append(path); found = True; break
+                if token in f: ordered_images.append(quote(os.path.join(folder_path, f).replace('\\', '/'))); used_files.add(f); found = True; break
             if found: break
-        if not found and url: ordered_images.append(path if 'path' in locals() else url)
+        if not found: ordered_images.append(url)
     for f in local_files:
-        path = quote(os.path.join(folder_path, f).replace('\\', '/'))
-        if path not in ordered_images: ordered_images.append(path)
+        if f not in used_files: ordered_images.append(quote(os.path.join(folder_path, f).replace('\\', '/')))
     return ordered_images
 
 def parse_price(price_str):
@@ -688,8 +685,7 @@ def parse_price(price_str):
     if isinstance(price_str, (int, float)): return float(price_str), "JPY"
     clean = str(price_str).replace(',', '').replace('¥', '')
     match = re.search(r'([\d.]+)\s*([A-Z]*)', clean)
-    if match: return float(match.group(1)), (match.group(2) or "JPY")
-    return 0.0, "JPY"
+    return (float(match.group(1)), (match.group(2) or "JPY")) if match else (0.0, "JPY")
 
 def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, folder_path, tags, is_adult, wish_count, price_str, limited=False, description="", is_avatar=False, related_links=None):
     if limited and "⚙Unlisted" not in tags: tags.append("⚙Unlisted")
@@ -697,139 +693,141 @@ def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, 
     vrc_av = re.search(r'(https://vrchat\.com/home/avatar/avtr_[a-f0-9-]+)', description)
     vrc_wr = re.search(r'(https://vrchat\.com/home/(?:world/|launch\?worldId=)wrld_[a-f0-9-]+)', description)
     if (vrc_av or vrc_wr) and "⚙Preview" not in tags: tags.append("⚙Preview")
-    binary_folder = os.path.join(folder_path, 'Binary')
-    files, total_bytes = get_dir_data(binary_folder)
-    img_bytes, all_imgs = get_image_folder_size(folder_path), get_all_local_images(folder_path, web_images)
-    primary_img = all_imgs[0] if all_imgs else ""
+    binary_folder = os.path.join(folder_path, 'Binary'); files, total_bytes = get_dir_data(binary_folder)
+    img_bytes, all_imgs = get_image_folder_size(folder_path), get_all_local_images(asset_id, folder_path, web_images)
     name_trans, author_trans = translation_cache.get(asset_name.strip(), ""), translation_cache.get(author_name.strip(), "")
-    desc_trans = description_cache.get(asset_id, "")
     price_val, price_cur = parse_price(price_str)
     search_blob = f"{asset_id} {asset_name} {name_trans} {author_name} {author_trans} {' '.join(tags)}".lower()
-    return { "id": asset_id, "nameOrig": asset_name, "nameTrans": name_trans, "authorOrig": author_name, "authorTrans": author_trans, "gridThumb": primary_img, "allImages": all_imgs, "bytes": total_bytes, "imgBytes": img_bytes, "fileCount": len(files), "files": files, "tags": tags, "adult": is_adult, "searchBlob": search_blob, "folder": quote(os.path.relpath(binary_folder, start=os.getcwd()).replace('\\', '/')), "boothUrl": booth_url, "wishCount": wish_count, "timestamp": int(os.path.getctime(folder_path)), "priceValue": price_val, "priceCurrency": price_cur, "limited": limited, "descOrig": description, "descTrans": desc_trans, "vrcAvatarLink": vrc_av.group(1) if vrc_av else "", "vrcWorldLink": vrc_wr.group(1) if vrc_wr else "", "isAvatar": is_avatar, "links": related_links or [] }
+    return { "id": asset_id, "nameOrig": asset_name, "nameTrans": name_trans, "authorOrig": author_name, "authorTrans": author_trans, "gridThumb": all_imgs[0] if all_imgs else "", "allImages": all_imgs, "bytes": total_bytes, "imgBytes": img_bytes, "fileCount": len(files), "files": files, "tags": tags, "adult": is_adult, "searchBlob": search_blob, "folder": quote(os.path.relpath(binary_folder, start=os.getcwd()).replace('\\', '/')), "boothUrl": booth_url, "wishCount": wish_count, "timestamp": int(os.path.getctime(folder_path)), "priceValue": price_val, "priceCurrency": price_cur, "limited": limited, "descOrig": description, "descTrans": description_cache.get(asset_id, ""), "vrcAvatarLink": vrc_av.group(1) if vrc_av else "", "vrcWorldLink": vrc_wr.group(1) if vrc_wr else "", "isAvatar": is_avatar, "links": related_links or [] }
 
 def get_avatar_search_profile(asset_id, orig_name, trans_name, tags):
-    search_terms, groups = set(), set()
-    all_context = (orig_name + " " + (trans_name or "") + " " + " ".join(tags)).lower()
+    search_terms, groups = set(), set(); all_ctx = (orig_name + " " + (trans_name or "") + " " + " ".join(tags)).lower()
     for g in BODY_GROUPS:
-        if g.lower() in all_context: groups.add(g.lower())
-    
-    # Handle Aliases (String or List)
+        if g.lower() in all_ctx: groups.add(g.lower())
     alias = alias_data.get(str(asset_id))
     if alias:
-        if isinstance(alias, list):
-            for a in alias: search_terms.add(str(a).lower())
-        else:
-            search_terms.add(str(alias).lower())
-
-    def add_valid_candidate(cand):
+        for a in (alias if isinstance(alias, list) else [alias]): search_terms.add(str(a).lower())
+    def add_val(cand):
         cleaned = re.sub(r'Original 3D Model|3D Model|Avatar|Ver\..*|#\w+|chan|kun|vrc|quest|pc|compatible|set', '', cand, flags=re.IGNORECASE).strip()
         if len(cleaned) > 2 and cleaned.lower() not in FORBIDDEN_NAMES: search_terms.add(cleaned.lower())
     if trans_name:
-        add_valid_candidate(trans_name)
-        for q in re.findall(r"['\"\[「](.*?)['\"\]\"「」]", trans_name): add_valid_candidate(q)
+        add_val(trans_name)
+        for q in re.findall(r"['\"\[「](.*?)['\"\]\"「」]", trans_name): add_val(q)
     for part in re.findall(r'[a-zA-Z0-9]{3,}', orig_name):
         if part.lower() not in FORBIDDEN_NAMES: search_terms.add(part.lower())
     return {"names": list(search_terms), "groups": list(groups)}
 
 def check_english_match(asset_info, profile):
-    title, tags, vars = asset_info
-    asset_context = (title + " " + " ".join(tags) + " " + " ".join(vars)).lower()
+    title, tags, vars = asset_info; ctx = (title + " " + " ".join(tags) + " " + " ".join(vars)).lower()
     for group in profile.get("groups", []):
-        if group in asset_context: return True
-    blob = re.sub(r'[^a-zA-Z0-9]', ' ', asset_context).lower().replace('ou', 'o')
+        if group in ctx: return True
+    blob = re.sub(r'[^a-zA-Z0-9]', ' ', ctx).lower().replace('ou', 'o')
     for term in profile.get("names", []):
         norm = re.sub(r'[^a-zA-Z0-9]', ' ', term).lower().replace('ou', 'o').strip()
         if norm and len(norm) > 2 and re.search(r'\b' + re.escape(norm) + r'\b', blob): return True
     return False
 
-asset_data_list, short_strings_to_translate = [], []
-desc_tasks, avatar_profiles = {}, {}
+asset_data_list, short_strings_to_translate, desc_tasks, avatar_profiles = [], [], {}, {}
+current_folders = sorted(os.listdir(ROOT_FOLDER)); new_global_meta = {}; dirty_ids = set()
 
-# List all current folders to detect deletions
-current_folders = sorted(os.listdir(ROOT_FOLDER))
-new_global_meta = {}
-dirty_ids = set() # Track IDs that were actually re-processed
+deleted_ids = [k for k in global_meta if k not in current_folders]
+if deleted_ids:
+    print(f"[Cleanup] Removing {len(deleted_ids)} items...")
+    for d_id in deleted_ids:
+        existing_database.pop(d_id, None); description_cache.pop(d_id, None); thumb_meta.pop(d_id, None)
+        t_path = os.path.join(IMG_OUT_DIR, f"{d_id}_thumb.webp")
+        if os.path.exists(t_path): os.remove(t_path)
+        for f in glob.glob(os.path.join(GALLERY_OUT_DIR, f"{d_id}_*")):
+            try: os.remove(f)
+            except: pass
+    with open(DESC_CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(description_cache, f, ensure_ascii=False, indent=2)
+    with open(THUMB_META_FILE, 'w', encoding='utf-8') as f: json.dump(thumb_meta, f)
 
-print(f"[Build] Identifying new or changed items...")
+print(f"[Build] Identifying updates...")
 for folder in current_folders:
-    path = os.path.join(ROOT_FOLDER, folder)
-    if not os.path.isdir(path): continue
+    path = os.path.join(ROOT_FOLDER, folder); mtime = os.path.getmtime(path)
+    binary_path = os.path.join(path, "Binary")
+    files_fingerprint = get_dir_fingerprint(binary_path)
     
-    mtime = os.path.getmtime(path)
-    if not USE_STATIC_CACHE:
-        needs_update = True
-    else:
-        needs_update = FORCE_TRANSLATION or folder not in global_meta or global_meta[folder] < mtime or folder not in existing_database or folder in error_ids
+    # Store both timestamp and binary fingerprint
+    meta_entry = global_meta.get(folder, {})
+    if isinstance(meta_entry, (int, float)): meta_entry = {"time": meta_entry, "files": ""}
     
-    new_global_meta[folder] = mtime
-
-    if not needs_update:
-        continue
-
-    dirty_ids.add(folder)
-    manual_json = os.path.join(path, "item_descriptor.json")
+    needs_update = (FORCE_TRANSLATION or 
+                    folder not in global_meta or 
+                    meta_entry.get("time") < mtime or 
+                    meta_entry.get("files") != files_fingerprint or
+                    folder not in existing_database or 
+                    folder in error_ids if USE_STATIC_CACHE else True)
+    
+    new_global_meta[folder] = {"time": mtime, "files": files_fingerprint}
+    
+    if not needs_update: continue
+    dirty_ids.add(folder); manual_json = os.path.join(path, "item_descriptor.json")
     if os.path.exists(manual_json):
         with open(manual_json, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            name, author, desc, tags = data.get('name', 'N/A'), data.get('author', 'N/A'), data.get('description', ''), data.get('tags', [])
-            short_strings_to_translate.extend([name, author] + tags)
-            is_avatar = data.get('is_avatar', False)
-            asset_data_list.append(('custom', folder, (name, author, data, desc), path, data.get('wish_count', 0), is_avatar))
+            data = json.load(f); name, author, desc, tags = data.get('name', 'N/A'), data.get('author', 'N/A'), data.get('description', ''), data.get('tags', [])
+            short_strings_to_translate.extend([name, author] + tags); asset_data_list.append(('custom', folder, (name, author, data, desc), path, data.get('wish_count', 0), data.get('is_avatar', False)))
             if not SKIP_TRANSLATION and desc and (FORCE_TRANSLATION or folder not in description_cache or folder in error_ids) and contains_japanese(desc): desc_tasks[folder] = desc
         continue
-
     jsons = glob.glob(os.path.join(path, "_BoothPage.json")) or glob.glob(os.path.join(path, "_BoothInnerHtmlList.json"))
     if not jsons: continue
     with open(jsons[0], 'r', encoding='utf-8') as f:
         if jsons[0].endswith('_BoothPage.json'):
-            data = json.load(f)
-            name, author, desc = data.get('name', 'N/A'), data.get('shop', {}).get('name', 'N/A'), data.get('description', '')
-            tags = [t.get('name', '') for t in data.get('tags', [])]
-            short_strings_to_translate.extend([name, author] + tags)
-            cat = data.get('category', {})
-            is_avatar = cat.get('id') == 208 or cat.get('name') in ["3D Characters", "3Dキャラクター", "3D캐릭터"]
-            asset_data_list.append(('json', folder, (name, author, data, desc), path, data.get('wish_lists_count', 0), is_avatar))
+            data = json.load(f); name, author, desc = data.get('name', 'N/A'), data.get('shop', {}).get('name', 'N/A'), data.get('description', '')
+            tags = [t.get('name', '') for t in data.get('tags', [])]; short_strings_to_translate.extend([name, author] + tags)
+            is_av = cat.get('id') == 208 or cat.get('name') in ["3D Characters", "3Dキャラクター", "3D캐릭터"] if (cat := data.get('category', {})) else False
+            asset_data_list.append(('json', folder, (name, author, data, desc), path, data.get('wish_lists_count', 0), is_av))
             if not SKIP_TRANSLATION and desc and (FORCE_TRANSLATION or folder not in description_cache or folder in error_ids) and contains_japanese(desc): desc_tasks[folder] = desc
         else:
-            data = json.load(f)
-            item = data[0] if data else ""
+            data = json.load(f); item = data[0] if data else ""
             if item:
                 n_m, a_m = (re.search(r'break-all\">(.*?)<\/div>', item) or re.search(r'>(.*?)<\/div>', item)), re.search(r'text-text-gray600 break-all\">(.*?)<\/div>', item)
                 name, author = n_m.group(1) if n_m else "N/A", a_m.group(1) if a_m else "N/A"
-                short_strings_to_translate.extend([name, author])
-                asset_data_list.append(('limited', folder, (name, author, item, ""), path, 0, False))
+                short_strings_to_translate.extend([name, author]); asset_data_list.append(('limited', folder, (name, author, item, ""), path, 0, False))
 
-if len(dirty_ids) > 0:
-    print(f"[Build] Found {len(dirty_ids)} items to process.")
-else:
-    print(f"[Build] No new or updated items found.")
-
-bulk_translate_short_terms(short_strings_to_translate)
+if not SKIP_TRANSLATION:
+    new_strs = [t for t in list(set(str(t).strip() for t in short_strings_to_translate if t and contains_japanese(t))) if t not in translation_cache]
+    if new_strs:
+        print(f"[Translate] Processing {len(new_strs)} terms...")
+        with ThreadPoolExecutor(max_workers=MAX_TRANSLATION_WORKERS) as ex_trans:
+            futures_trans = {ex_trans.submit(lambda x: (x, GoogleTranslator(source='auto', target='en').translate(x)), term): term for term in new_strs}
+            for i, f in enumerate(as_completed(futures_trans)): 
+                try:
+                    orig, trans = f.result()
+                    translation_cache[orig] = trans
+                except: pass
+                print_progress(i+1, len(new_strs), "Translate")
+        with open(CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(translation_cache, f, ensure_ascii=False, indent=2)
 
 print("[Relate] Mapping Avatars...")
+new_avatars_detected = (len(deleted_ids) > 0)
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if is_avatar:
-        name, trans_name = data[0], translation_cache.get(data[0].strip(), "")
-        tags = [t.get('name', '') for t in data[2].get('tags', [])] if atype == 'json' else (data[2].get('tags', []) if atype == 'custom' else [])
-        avatar_profiles[folder] = get_avatar_search_profile(folder, name, trans_name, tags)
-
+        new_avatars_detected = True
+        avatar_profiles[folder] = get_avatar_search_profile(folder, data[0], translation_cache.get(data[0].strip(), ""), [t.get('name', '') for t in data[2].get('tags', [])] if atype == 'json' else (data[2].get('tags', []) if atype == 'custom' else []))
 if USE_STATIC_CACHE:
     for item_id, item in existing_database.items():
-        if item['isAvatar'] and item_id not in avatar_profiles:
-            avatar_profiles[item_id] = get_avatar_search_profile(item_id, item['nameOrig'], item['nameTrans'], item['tags'])
+        if item['isAvatar'] and item_id not in avatar_profiles: avatar_profiles[item_id] = get_avatar_search_profile(item_id, item['nameOrig'], item['nameTrans'], item['tags'])
+
+if new_avatars_detected and USE_STATIC_CACHE:
+    print("[Relate] Refreshing relationships...")
+    for item_id, item in existing_database.items():
+        if not item['isAvatar'] and not any(x[1] == item_id for x in asset_data_list): asset_data_list.append(('cached', item_id, (item['nameOrig'], item['authorOrig'], item, ""), "", item['wishCount'], False))
 
 assets_to_avatar, avatar_to_assets = {}, {}
-
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if atype == 'custom' and 'related_booth_ids' in data[2]:
         for target_id in [str(x) for x in data[2]['related_booth_ids']]:
             if is_avatar: avatar_to_assets.setdefault(folder, []).append(target_id); assets_to_avatar.setdefault(target_id, []).append(folder)
             else: assets_to_avatar.setdefault(folder, []).append(target_id); avatar_to_assets.setdefault(target_id, []).append(folder)
-
     if not is_avatar:
         t_name = (translation_cache.get(data[0].strip(), "") or data[0]).lower()
-        t_tags = [(translation_cache.get(t.get('name', ''), '') or t.get('name', '')).lower() for t in data[2].get('tags', [])] if atype == 'json' else ([(translation_cache.get(t.strip(), '') or t.strip()).lower() for t in data[2].get('tags', []) if t] if atype == 'custom' else [])
-        t_vars = [(translation_cache.get(v.get('name', ''), '') or v.get('name', '')).lower() for v in data[2].get('variations', []) if v.get('name')] if atype == 'json' else []
+        if atype == 'json':
+            t_tags = [(translation_cache.get(t.get('name', ''), '') or t.get('name', '')).lower() for t in data[2].get('tags', [])]
+            t_vars = [(translation_cache.get(v.get('name', ''), '') or v.get('name', '')).lower() for v in data[2].get('variations', []) if v.get('name')]
+        elif atype in ['custom', 'cached']: t_tags, t_vars = [t.lower() for t in data[2]['tags']], []
+        else: t_tags, t_vars = [], []
         for av_id, profile in avatar_profiles.items():
             if check_english_match((t_name, t_tags, t_vars), profile): assets_to_avatar.setdefault(folder, []).append(av_id); avatar_to_assets.setdefault(av_id, []).append(folder)
 
@@ -837,76 +835,93 @@ for d in [assets_to_avatar, avatar_to_assets]:
     for key in d: d[key] = sorted(list(set(d[key])))
 
 if desc_tasks:
-    total_descs = len(desc_tasks)
     print(f"[Translate] Processing descriptions...")
-    completed_descs = 0
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_to_folder = {executor.submit(translate_single_text, text): folder for folder, text in desc_tasks.items()}
-        for future in as_completed(future_to_folder):
-            description_cache[future_to_folder[future]] = future.result(); completed_descs += 1; print_progress(completed_descs, total_descs, "Translate")
+    with ThreadPoolExecutor(max_workers=MAX_TRANSLATION_WORKERS) as ex_desc:
+        f_to_f = {ex_desc.submit(translate_single_text, text): f for f, text in desc_tasks.items()}
+        for i, f in enumerate(as_completed(f_to_f)): description_cache[f_to_f[f]] = f.result(); print_progress(i+1, len(desc_tasks), "Translate")
     with open(DESC_CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(description_cache, f, ensure_ascii=False, indent=2)
 
 print(f"[Build] Compiling Database...")
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
-    name, author, content, desc = data
-    rel = avatar_to_assets.get(folder, []) if is_avatar else assets_to_avatar.get(folder, [])
-    if atype == 'json':
-        existing_database[folder] = create_asset_data(folder, name, author, [img.get('original', '') for img in content.get('images', [])], content.get('url', ''), path, [t.get('name', '') for t in content.get('tags', [])], content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', ''), description=desc, is_avatar=is_avatar, related_links=rel)
-    elif atype == 'custom':
-        existing_database[folder] = create_asset_data(folder, name, author, [], "", path, content.get('tags', []), content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', 0), description=desc, is_avatar=is_avatar, related_links=rel)
+    if atype == 'cached': existing_database[folder]['links'] = avatar_to_assets.get(folder, []) if is_avatar else assets_to_avatar.get(folder, [])
     else:
-        i_m, u_m = re.search(r'src=\"([^\"]+)\"', content), re.search(r'href=\"([^\"]+)\"', content)
-        existing_database[folder] = create_asset_data(folder, name, author, [i_m.group(1) if i_m else ""], u_m.group(1) if u_m else "", path, [], is_adult_content(name), 0, "", limited=True, related_links=rel)
-
-keys_to_remove = [k for k in existing_database if k not in new_global_meta]
-for k in keys_to_remove: del existing_database[k]
-
-database_output = list(existing_database.values())
-
-if OPTIMIZE_THUMBNAILS:
-    to_process = []
-    target_ids = dirty_ids if USE_STATIC_CACHE else existing_database.keys()
-    
-    for item_id in target_ids:
-        item = existing_database.get(item_id)
-        if not item or not item['gridThumb'] or item['gridThumb'].startswith('http'): continue
-        
-        orig_local_path = unquote(item['gridThumb']).replace('/', os.sep)
-        if not os.path.exists(orig_local_path): continue
-        
-        t_path = os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp")
-        crc = calculate_crc32(orig_local_path)
-        
-        if not os.path.exists(t_path) or thumb_meta.get(item['id']) != crc:
-            to_process.append((item, orig_local_path, crc))
+        name, author, content, desc = data; rel = avatar_to_assets.get(folder, []) if is_avatar else assets_to_avatar.get(folder, [])
+        if atype == 'json': existing_database[folder] = create_asset_data(folder, name, author, [img.get('original', '') for img in content.get('images', [])], content.get('url', ''), path, [t.get('name', '') for t in content.get('tags', [])], content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', ''), description=desc, is_avatar=is_avatar, related_links=rel)
+        elif atype == 'custom': existing_database[folder] = create_asset_data(folder, name, author, [], "", path, content.get('tags', []), content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', 0), description=desc, is_avatar=is_avatar, related_links=rel)
         else:
-            item['gridThumb'] = quote(t_path.replace('\\', '/'))
-    
-    if USE_STATIC_CACHE:
-        for item in database_output:
-            if item['id'] not in dirty_ids:
-                t_path = os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp")
-                if os.path.exists(t_path):
-                    item['gridThumb'] = quote(t_path.replace('\\', '/'))
+            i_m, u_m = re.search(r'src=\"([^\"]+)\"', content), re.search(r'href=\"([^\"]+)\"', content)
+            existing_database[folder] = create_asset_data(folder, name, author, [i_m.group(1) if i_m else ""], u_m.group(1) if u_m else "", path, [], is_adult_content(name), 0, "", limited=True, related_links=rel)
 
-    if to_process:
-        print(f"[Optimize] Updating {len(to_process)} thumbnails...")
-        for i, (item, path, crc) in enumerate(to_process):
-            item['gridThumb'] = get_optimized_thumb(item['id'], path, crc)
-            print_progress(i + 1, len(to_process), "Optimize")
-        with open(THUMB_META_FILE, 'w', encoding='utf-8') as f: json.dump(thumb_meta, f)
+if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
+    thumb_tasks, gallery_tasks, scan_list = [], [], list(existing_database.values())
+    print(f"[Optimize] Scanning {len(scan_list)} items for changes...")
+    def scan_item(item):
+        t_task, g_tasks = None, []
+        if OPTIMIZE_THUMBNAILS:
+            cur_thumb = unquote(item['gridThumb']).replace('/', os.sep)
+            if cur_thumb.startswith('web_data'):
+                if not os.path.exists(cur_thumb):
+                    orig_folder = os.path.join(ROOT_FOLDER, item['id'])
+                    local_files = [f for f in os.listdir(orig_folder) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))]
+                    if local_files: cur_thumb = os.path.join(orig_folder, local_files[0])
+            if os.path.exists(cur_thumb) and not cur_thumb.startswith('web_data'):
+                crc = calculate_crc32(cur_thumb)
+                if thumb_meta.get(item['id']) != crc or not os.path.exists(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp")):
+                    t_task = (item, cur_thumb, crc)
+                else: item['gridThumb'] = quote(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp").replace('\\', '/'))
+        if OPTIMIZE_GALLERY:
+            new_gal = []
+            orig_folder = os.path.join(ROOT_FOLDER, item['id'])
+            local_srcs = sorted([f for f in os.listdir(orig_folder) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))])
+            for img_path in item['allImages']:
+                img_path_unquoted = unquote(img_path)
+                local_p = img_path_unquoted.replace('/', os.sep)
+                if 'web_data/img/gallery' in img_path_unquoted:
+                    if os.path.exists(local_p): new_gal.append(img_path); continue
+                    else:
+                        match = re.search(rf"{item['id']}_[A-F0-9]+_(.*)\.webp", os.path.basename(local_p))
+                        orig_fn_part = match.group(1) if match else None; found_src = False
+                        for src_f in local_srcs:
+                            if orig_fn_part and src_f.startswith(orig_fn_part):
+                                local_p = os.path.join(orig_folder, src_f); found_src = True; break
+                        if not found_src: continue
+                if os.path.exists(local_p) and not local_p.startswith('web_data'):
+                    crc = calculate_crc32(local_p); file_name = os.path.basename(local_p)
+                    opt_name = f"{item['id']}_{crc}_{os.path.splitext(file_name)[0]}.webp"
+                    opt_path = os.path.join(GALLERY_OUT_DIR, opt_name)
+                    if not os.path.exists(opt_path): g_tasks.append((item, local_p, crc, len(new_gal))); new_gal.append(img_path)
+                    else: new_gal.append(quote(opt_path.replace('\\', '/')))
+                else: new_gal.append(img_path)
+            item['allImages'] = new_gal
+        return t_task, g_tasks
 
-with open(DATABASE_JS_FILE, 'w', encoding='utf-8') as f:
-    f.write("window.BOOTH_DATABASE = ")
-    json.dump(database_output, f, ensure_ascii=False)
-    f.write(";")
+    with ThreadPoolExecutor(max_workers=MAX_OPTIMIZATION_WORKERS) as ex_scan:
+        f_scan = [ex_scan.submit(scan_item, it) for it in scan_list]
+        for i, f in enumerate(as_completed(f_scan)):
+            t, g = f.result()
+            if t: thumb_tasks.append(t)
+            gallery_tasks.extend(g); print_progress(i+1, len(scan_list), "Scan")
 
-if USE_STATIC_CACHE:
-    with open(GLOBAL_META_FILE, 'w', encoding='utf-8') as f:
-        json.dump(new_global_meta, f)
+    with ThreadPoolExecutor(max_workers=MAX_OPTIMIZATION_WORKERS) as ex_opt:
+        if thumb_tasks:
+            print(f"[Optimize] Updating {len(thumb_tasks)} thumbnails...")
+            f_thumbs = {ex_opt.submit(get_optimized_thumb, t[0]['id'], t[1], t[2]): t for t in thumb_tasks}
+            for i, f in enumerate(as_completed(f_thumbs)):
+                res, crc = f.result(); item = f_thumbs[f][0]; item['gridThumb'] = res
+                if crc: thumb_meta[item['id']] = crc
+                print_progress(i+1, len(thumb_tasks), "Optimize")
+            with open(THUMB_META_FILE, 'w', encoding='utf-8') as f: json.dump(thumb_meta, f)
+        if gallery_tasks:
+            print(f"[Optimize] Processing {len(gallery_tasks)} gallery images...")
+            f_gal = {ex_opt.submit(get_optimized_gallery_img, g[0]['id'], g[1], g[2]): g for g in gallery_tasks}
+            for i, f in enumerate(as_completed(f_gal)):
+                res = f.result(); item, _, _, idx = f_gal[f]; item['allImages'][idx] = res
+                print_progress(i+1, len(gallery_tasks), "Optimize")
 
-final_html = HTML_TEMPLATE.replace("__L18N_INJECT_POINT__", json.dumps(l18n_data, ensure_ascii=False))
-final_html = final_html.replace("__REMOVABLES_INJECT_POINT__", json.dumps(STRINGS_TO_REMOVE, ensure_ascii=False))
-
+keys_to_remove = [k for k in existing_database if k not in current_folders]
+for k in keys_to_remove: del existing_database[k]
+with open(DATABASE_JS_FILE, 'w', encoding='utf-8') as f: f.write("window.BOOTH_DATABASE = "); json.dump(list(existing_database.values()), f, ensure_ascii=False); f.write(";")
+with open(GLOBAL_META_FILE, 'w', encoding='utf-8') as f: json.dump(new_global_meta, f)
+final_html = HTML_TEMPLATE.replace("__L18N_INJECT_POINT__", json.dumps(l18n_data, ensure_ascii=False)).replace("__REMOVABLES_INJECT_POINT__", json.dumps(STRINGS_TO_REMOVE, ensure_ascii=False))
 with open(OUTPUT_FILE, 'w', encoding='utf-8') as f: f.write(final_html)
-print(f"--- Library Updated Successfully ({len(database_output)} items) ---")
+print(f"--- Library Updated Successfully ({len(existing_database)} items) ---")
