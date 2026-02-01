@@ -320,7 +320,7 @@ HTML_TEMPLATE = r"""<!doctype html>
     <div id="fullscreenImageViewer" class="fullscreen-viewer" onclick="closeFullscreenImage()">
         <img id="fullscreenImage" src="" alt="Full size preview">
     </div>
-    <script src="web_data/database.js"></script>
+    <script src="__DATABASE_FILE_INJECT_POINT__"></script>
     <script>
         const l18n = __L18N_INJECT_POINT__;
         const translations = l18n.translations;
@@ -922,6 +922,12 @@ keys_to_remove = [k for k in existing_database if k not in current_folders]
 for k in keys_to_remove: del existing_database[k]
 with open(DATABASE_JS_FILE, 'w', encoding='utf-8') as f: f.write("window.BOOTH_DATABASE = "); json.dump(list(existing_database.values()), f, ensure_ascii=False); f.write(";")
 with open(GLOBAL_META_FILE, 'w', encoding='utf-8') as f: json.dump(new_global_meta, f)
-final_html = HTML_TEMPLATE.replace("__L18N_INJECT_POINT__", json.dumps(l18n_data, ensure_ascii=False)).replace("__REMOVABLES_INJECT_POINT__", json.dumps(STRINGS_TO_REMOVE, ensure_ascii=False))
+
+# Dynamic path injection into HTML
+final_html = (HTML_TEMPLATE
+              .replace("__L18N_INJECT_POINT__", json.dumps(l18n_data, ensure_ascii=False))
+              .replace("__REMOVABLES_INJECT_POINT__", json.dumps(STRINGS_TO_REMOVE, ensure_ascii=False))
+              .replace("__DATABASE_FILE_INJECT_POINT__", DATABASE_JS_FILE))
+
 with open(OUTPUT_FILE, 'w', encoding='utf-8') as f: f.write(final_html)
 print(f"--- Library Updated Successfully ({len(existing_database)} items) ---")
