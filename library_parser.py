@@ -32,8 +32,6 @@ MAX_TRANSLATION_WORKERS = 5
 MAX_OPTIMIZATION_WORKERS = 16
 
 # Database Cache Settings
-# USE_STATIC_CACHE is no longer used for logic flow, 
-# but we keep the file paths for loading existing data to merge.
 DATABASE_JS_FILE = "web_data/cache/database.js"
 GLOBAL_META_FILE = "web_data/cache/global_metadata.json"
 
@@ -57,7 +55,7 @@ FORBIDDEN_NAMES = {
     "fullset", "edition", "sf", "3dcg", "vrm", "mmd", "body", "set"
 }
 
-# Purely cosmetic: these strings will be stripped from the English UI display (AVATARS ONLY)
+# Purely cosmetic: these strings will be stripped from the English UI display
 STRINGS_TO_REMOVE = ["Original 3D Model", "Avatar", "3D Model", "[]", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", " /"]
 
 logger.info(f"--- Starting Library Generation ---")
@@ -174,7 +172,6 @@ def print_progress(current, total, label="Progress"):
             logger.info(f"[{label}] {percent:.1f}% ({current}/{total})")
 
 def calculate_crc32(filepath):
-    """Generates CRC32 checksum using memory-efficient chunked reading."""
     crc = 0
     try:
         with open(filepath, 'rb') as f:
@@ -220,6 +217,7 @@ HTML_TEMPLATE = r"""<!doctype html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Booth Asset Library</title>
+    <link rel="icon" type="image/svg+xml" href="web_data/favicon.svg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="web_data/style.css" />
     <style>
@@ -667,7 +665,6 @@ def get_dir_data(binary_folder):
     return files, total_size
 
 def get_dir_fingerprint(binary_folder):
-    """Generates a fast fingerprint of folder contents to detect file changes."""
     if not os.path.exists(binary_folder): return ""
     fingerprint = []
     for root, _, filenames in os.walk(binary_folder):
@@ -862,192 +859,85 @@ if not SKIP_TRANSLATION:
         except Exception:
              logger.error(f"Failed to save translation cache:\n{traceback.format_exc()}")
 
-# ---------------------------------------------------------
-# RELATION LOGIC REWORK
-# ---------------------------------------------------------
-
 logger.info("[Relate] Building Avatar Profiles...")
-
-# 1. Build profiles for all avatars (new and existing) first.
-# We iterate over existing_database to ensure we have profiles for everything currently known.
 for item_id, item in existing_database.items():
     if item['isAvatar']:
         avatar_profiles[item_id] = get_avatar_search_profile(item_id, item['nameOrig'], item['nameTrans'], item['tags'])
 
-# Override/Add profiles for items currently being processed (in case translation changed or it's new)
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
     if is_avatar:
         tags_source = []
-        if atype == 'json':
-            tags_source = [t.get('name', '') for t in data[2].get('tags', [])]
-        elif atype == 'custom':
-            tags_source = data[2].get('tags', [])
-        
+        if atype == 'json': tags_source = [t.get('name', '') for t in data[2].get('tags', [])]
+        elif atype == 'custom': tags_source = data[2].get('tags', [])
         avatar_profiles[folder] = get_avatar_search_profile(folder, data[0], translation_cache.get(data[0].strip(), ""), tags_source)
 
-# 2. Prepare "Candidate Pool"
-# We need to check new items against existing avatars, and existing items against new avatars.
-# To do this efficiently, we create a list of all items (new + existing) to iterate over once.
-logger.info("[Relate] Preparing candidate pool for matching...")
-
-# Dict to store temporary match data: {item_id: {'avatars': [], 'assets': []}}
-relation_map = {}
-
-# Initialize with existing data to preserve manually found links
-for item_id, item in existing_database.items():
-    # We reset links for avatars because we want to re-scan, 
-    # but we could preserve if needed. Resetting is cleaner to avoid 'ghost' links.
-    relation_map[item_id] = {'avatars': [], 'assets': []} 
-
-# Add new items to the map (or overwrite if they exist)
-for atype, folder, data, path, wish, is_avatar in asset_data_list:
-    relation_map[folder] = {'avatars': [], 'assets': []}
-
-# 3. Run Matching Loop
 logger.info("[Relate] Scanning for relationships...")
-# We iterate over the relation_map keys (all known IDs)
-all_ids = list(relation_map.keys())
-for item_id in all_ids:
-    # Determine if this item is an avatar
-    is_avatar = item_id in avatar_profiles
-    
-    # Retrieve item info (prefer new data from asset_data_list, else fallback to existing_database)
-    # This logic ensures we use the latest translated names for matching
-    item_info = None
+relation_map = {item_id: {'avatars': [], 'assets': []} for item_id in set(list(existing_database.keys()) + [a[1] for a in asset_data_list])}
+
+for item_id in relation_map:
+    item_info, is_av, content = None, False, {}
     found_in_new = False
-    
-    # Check if it's in the current processing batch
     for a_type, a_folder, a_data, a_path, a_wish, a_is_av in asset_data_list:
         if a_folder == item_id:
-            found_in_new = True
-            name, author, content, desc = a_data
-            
+            found_in_new, is_av, name, author, content, desc = True, a_is_av, *a_data
             t_name = (translation_cache.get(name.strip(), "") or name).lower()
-            
             if a_type == 'json':
                 t_tags = [(translation_cache.get(t.get('name', ''), '') or t.get('name', '')).lower() for t in content.get('tags', [])]
                 t_vars = [(translation_cache.get(v.get('name', ''), '') or v.get('name', '')).lower() for v in content.get('variations', []) if v.get('name')]
-            elif a_type == 'custom': 
-                t_tags = [t.lower() for t in content.get('tags', [])]
-                t_vars = []
-            else: 
-                t_tags, t_vars = [], []
-                
+            elif a_type == 'custom': t_tags, t_vars = [t.lower() for t in content.get('tags', [])], []
+            else: t_tags, t_vars = [], []
             item_info = (t_name, t_tags, t_vars)
-            is_avatar = a_is_av # Update flag based on new data
             break
-    
     if not found_in_new and item_id in existing_database:
         db_item = existing_database[item_id]
-        # Use existing translated names
-        t_name = (db_item.get('nameTrans') or db_item['nameOrig']).lower()
-        t_tags = [t.lower() for t in db_item['tags']]
-        t_vars = [] # We don't store variations in the DB currently
-        item_info = (t_name, t_tags, t_vars)
-        is_avatar = db_item['isAvatar']
+        item_info, is_av = ((db_item.get('nameTrans') or db_item['nameOrig']).lower(), [t.lower() for t in db_item['tags']], []), db_item['isAvatar']
 
-    if not item_info:
-        continue
-
-    # --- PASS 1: Manual Links (Custom JSONs) ---
-    if not found_in_new:
-        # If we didn't find it in the new list, we already have its relationships (or lack thereof) unless we want to rescan manual links?
-        # We skip re-processing manual links for old items to save time, assuming they are stable.
-        pass
-    else:
-        # Check for manual links in the new data
-        if 'related_booth_ids' in content:
-            for target_id in [str(x) for x in content['related_booth_ids']]:
-                if target_id == item_id: continue # Self link check
-                
-                # BIDIRECTIONAL: If I am an avatar, I link to an asset. The asset links to me.
-                # If I am an asset, I link to an avatar. The avatar links to me.
-                # Note: 'links' list in DB is "Avatar->Assets" or "Asset->Avatars".
-                
-                # We use 'avatars' list to track "This item is linked BY these avatars" (Used by Assets)
-                # We use 'assets' list to track "This item links TO these assets" (Used by Avatars)
-                
-                if is_avatar:
-                    # I am Avatar, Target is Asset
-                    # My 'links' should show the asset.
-                    relation_map[item_id]['assets'].append(target_id)
-                    # The target's 'links' should show me.
-                    if target_id in relation_map: relation_map[target_id]['avatars'].append(item_id)
-                else:
-                    # I am Asset, Target is Avatar
-                    # My 'links' should show the avatar.
-                    relation_map[item_id]['avatars'].append(target_id)
-                    # The target's 'links' should show me.
-                    if target_id in relation_map: relation_map[target_id]['assets'].append(item_id)
-
-    # --- PASS 2: Heuristic Match (English Name Match) ---
-    # Only Assets need to scan against Avatar Profiles. Avatars don't need to scan against other avatars usually.
-    if not is_avatar:
-        # Scan against all known avatars
+    if not item_info: continue
+    if found_in_new and 'related_booth_ids' in content:
+        for target_id in [str(x) for x in content['related_booth_ids']]:
+            if target_id == item_id: continue
+            if is_av:
+                relation_map[item_id]['assets'].append(target_id)
+                if target_id in relation_map: relation_map[target_id]['avatars'].append(item_id)
+            else:
+                relation_map[item_id]['avatars'].append(target_id)
+                if target_id in relation_map: relation_map[target_id]['assets'].append(item_id)
+    if not is_av:
         for av_id, profile in avatar_profiles.items():
-            if av_id == item_id: continue
-            
-            if check_english_match(item_info, profile):
-                # I am an Asset. I matched an Avatar.
-                # My 'links' (avatars list) should show this avatar.
+            if av_id != item_id and check_english_match(item_info, profile):
                 relation_map[item_id]['avatars'].append(av_id)
-                # The Avatar's 'links' (assets list) should show me.
                 if av_id in relation_map: relation_map[av_id]['assets'].append(item_id)
 
-# 4. Finalize Links (Deduplicate)
-assets_to_avatar = {}
-avatar_to_assets = {}
-
-for item_id, links in relation_map.items():
-    # Clean up lists
-    unique_avatars = sorted(list(set(links['avatars'])))
-    unique_assets = sorted(list(set(links['assets'])))
-    
-    if unique_avatars: assets_to_avatar[item_id] = unique_avatars
-    if unique_assets: avatar_to_assets[item_id] = unique_assets
-
-# ---------------------------------------------------------
-# END RELATION LOGIC
-# ---------------------------------------------------------
+assets_to_avatar = {k: sorted(list(set(v['avatars']))) for k, v in relation_map.items() if v['avatars']}
+avatar_to_assets = {k: sorted(list(set(v['assets']))) for k, v in relation_map.items() if v['assets']}
 
 if desc_tasks:
     logger.info(f"[Translate] Processing descriptions...")
     with ThreadPoolExecutor(max_workers=MAX_TRANSLATION_WORKERS) as ex_desc:
         f_to_f = {ex_desc.submit(translate_single_text, text): f for f, text in desc_tasks.items()}
         for i, f in enumerate(as_completed(f_to_f)):
-            try:
-                description_cache[f_to_f[f]] = f.result()
-            except Exception:
-                 logger.error(f"Description translation failed:\n{traceback.format_exc()}")
+            try: description_cache[f_to_f[f]] = f.result()
+            except Exception: logger.error(f"Description translation failed:\n{traceback.format_exc()}")
             print_progress(i+1, len(desc_tasks), "Translate")
     try:
         with open(DESC_CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(description_cache, f, ensure_ascii=False, indent=2)
-    except Exception:
-        logger.error(f"Failed to save description cache:\n{traceback.format_exc()}")
+    except Exception: logger.error(f"Failed to save description cache:\n{traceback.format_exc()}")
 
 logger.info(f"[Build] Compiling Database...")
 for atype, folder, data, path, wish, is_avatar in asset_data_list:
-    # Determine links from our generated maps
     links = avatar_to_assets.get(folder, []) if is_avatar else assets_to_avatar.get(folder, [])
-    
     name, author, content, desc = data
-    if atype == 'json': 
-        existing_database[folder] = create_asset_data(folder, name, author, [img.get('original', '') for img in content.get('images', [])], content.get('url', ''), path, [t.get('name', '') for t in content.get('tags', [])], content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', ''), description=desc, is_avatar=is_avatar, related_links=links)
-    elif atype == 'custom': 
-        existing_database[folder] = create_asset_data(folder, name, author, [], "", path, content.get('tags', []), content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', 0), description=desc, is_avatar=is_avatar, related_links=links)
+    if atype == 'json': existing_database[folder] = create_asset_data(folder, name, author, [img.get('original', '') for img in content.get('images', [])], content.get('url', ''), path, [t.get('name', '') for t in content.get('tags', [])], content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', ''), description=desc, is_avatar=is_avatar, related_links=links)
+    elif atype == 'custom': existing_database[folder] = create_asset_data(folder, name, author, [], "", path, content.get('tags', []), content.get('is_adult', False) or is_adult_content(name), wish, content.get('price', 0), description=desc, is_avatar=is_avatar, related_links=links)
     else:
         i_m, u_m = re.search(r'src=\"([^\"]+)\"', content), re.search(r'href=\"([^\"]+)\"', content)
         existing_database[folder] = create_asset_data(folder, name, author, [i_m.group(1) if i_m else ""], u_m.group(1) if u_m else "", path, [], is_adult_content(name), 0, "", limited=True, related_links=links)
 
-# Update links for existing items that weren't re-processed (stale cache items)
-# This ensures if we found a NEW relation to an OLD item, the OLD item gets updated in the DB.
 for item_id in existing_database:
     if item_id not in dirty_ids:
         item = existing_database[item_id]
         new_links = avatar_to_assets.get(item_id, []) if item['isAvatar'] else assets_to_avatar.get(item_id, [])
-        # Only update if links changed to avoid unnecessary churn
-        if set(new_links) != set(item.get('links', [])):
-            item['links'] = new_links
+        if set(new_links) != set(item.get('links', [])): item['links'] = new_links
 
 if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
     thumb_tasks, gallery_tasks, scan_list = [], [], list(existing_database.values())
@@ -1056,19 +946,16 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
         t_task, g_tasks = None, []
         if OPTIMIZE_THUMBNAILS:
             cur_thumb = unquote(item['gridThumb']).replace('/', os.sep)
-            if cur_thumb.startswith('web_data'):
-                if not os.path.exists(cur_thumb):
-                    orig_folder = os.path.join(ROOT_FOLDER, item['id'])
-                    local_files = [f for f in os.listdir(orig_folder) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))]
-                    if local_files: cur_thumb = os.path.join(orig_folder, local_files[0])
+            if cur_thumb.startswith('web_data') and not os.path.exists(cur_thumb):
+                orig_folder = os.path.join(ROOT_FOLDER, item['id'])
+                local_files = [f for f in os.listdir(orig_folder) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))]
+                if local_files: cur_thumb = os.path.join(orig_folder, local_files[0])
             if os.path.exists(cur_thumb) and not cur_thumb.startswith('web_data'):
                 crc = calculate_crc32(cur_thumb)
-                if crc and (thumb_meta.get(item['id']) != crc or not os.path.exists(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp"))):
-                    t_task = (item, cur_thumb, crc)
+                if crc and (thumb_meta.get(item['id']) != crc or not os.path.exists(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp"))): t_task = (item, cur_thumb, crc)
                 else: item['gridThumb'] = quote(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp").replace('\\', '/'))
         if OPTIMIZE_GALLERY:
-            new_gal = []
-            orig_folder = os.path.join(ROOT_FOLDER, item['id'])
+            new_gal, orig_folder = [], os.path.join(ROOT_FOLDER, item['id'])
             local_srcs = sorted([f for f in os.listdir(orig_folder) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))])
             for img_path in item['allImages']:
                 img_path_unquoted = unquote(img_path)
@@ -1079,15 +966,13 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
                         match = re.search(rf"{item['id']}_[A-F0-9]+_(.*)\.webp", os.path.basename(local_p))
                         orig_fn_part = match.group(1) if match else None; found_src = False
                         for src_f in local_srcs:
-                            if orig_fn_part and src_f.startswith(orig_fn_part):
-                                local_p = os.path.join(orig_folder, src_f); found_src = True; break
+                            if orig_fn_part and src_f.startswith(orig_fn_part): local_p, found_src = os.path.join(orig_folder, src_f), True; break
                         if not found_src: continue
                 if os.path.exists(local_p) and not local_p.startswith('web_data'):
                     crc = calculate_crc32(local_p)
                     if not crc: continue
                     file_name = os.path.basename(local_p)
-                    opt_name = f"{item['id']}_{crc}_{os.path.splitext(file_name)[0]}.webp"
-                    opt_path = os.path.join(GALLERY_OUT_DIR, opt_name)
+                    opt_path = os.path.join(GALLERY_OUT_DIR, f"{item['id']}_{crc}_{os.path.splitext(file_name)[0]}.webp")
                     if not os.path.exists(opt_path): g_tasks.append((item, local_p, crc, len(new_gal))); new_gal.append(img_path)
                     else: new_gal.append(quote(opt_path.replace('\\', '/')))
                 else: new_gal.append(img_path)
@@ -1101,8 +986,7 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
                 t, g = f.result()
                 if t: thumb_tasks.append(t)
                 gallery_tasks.extend(g)
-            except Exception:
-                logger.error(f"Error scanning item:\n{traceback.format_exc()}")
+            except Exception: logger.error(f"Error scanning item:\n{traceback.format_exc()}")
             print_progress(i+1, len(scan_list), "Scan")
 
     with ThreadPoolExecutor(max_workers=MAX_OPTIMIZATION_WORKERS) as ex_opt:
@@ -1115,14 +999,11 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
                     item = f_thumbs[f][0]
                     item['gridThumb'] = res
                     if crc: thumb_meta[item['id']] = crc
-                except Exception:
-                    logger.error(f"Thumbnail optimization failed:\n{traceback.format_exc()}")
+                except Exception: logger.error(f"Thumbnail optimization failed:\n{traceback.format_exc()}")
                 print_progress(i+1, len(thumb_tasks), "Optimize")
             try:
                 with open(THUMB_META_FILE, 'w', encoding='utf-8') as f: json.dump(thumb_meta, f)
-            except Exception:
-                logger.error(f"Failed to save thumbnail meta:\n{traceback.format_exc()}")
-                
+            except Exception: logger.error(f"Failed to save thumbnail meta:\n{traceback.format_exc()}")
         if gallery_tasks:
             logger.info(f"[Optimize] Processing {len(gallery_tasks)} gallery images...")
             f_gal = {ex_opt.submit(get_optimized_gallery_img, g[0]['id'], g[1], g[2]): g for g in gallery_tasks}
@@ -1131,8 +1012,7 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
                     res = f.result()
                     item, _, _, idx = f_gal[f]
                     item['allImages'][idx] = res
-                except Exception:
-                    logger.error(f"Gallery optimization failed:\n{traceback.format_exc()}")
+                except Exception: logger.error(f"Gallery optimization failed:\n{traceback.format_exc()}")
                 print_progress(i+1, len(gallery_tasks), "Optimize")
 
 keys_to_remove = [k for k in existing_database if k not in current_folders]
@@ -1142,14 +1022,10 @@ try:
     with open(DATABASE_JS_FILE, 'w', encoding='utf-8') as f: 
         f.write("window.BOOTH_DATABASE = "); json.dump(list(existing_database.values()), f, ensure_ascii=False); f.write(";")
     with open(GLOBAL_META_FILE, 'w', encoding='utf-8') as f: json.dump(new_global_meta, f)
-
-    # Dynamic path injection into HTML
     final_html = (HTML_TEMPLATE
                   .replace("__L18N_INJECT_POINT__", json.dumps(l18n_data, ensure_ascii=False))
                   .replace("__REMOVABLES_INJECT_POINT__", json.dumps(STRINGS_TO_REMOVE, ensure_ascii=False))
                   .replace("__DATABASE_FILE_INJECT_POINT__", DATABASE_JS_FILE))
-
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f: f.write(final_html)
     logger.info(f"--- Library Updated Successfully ({len(existing_database)} items) ---")
-except Exception:
-    logger.error(f"Critical failure saving database:\n{traceback.format_exc()}")
+except Exception: logger.error(f"Critical failure saving database:\n{traceback.format_exc()}")
