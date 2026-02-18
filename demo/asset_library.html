@@ -417,11 +417,11 @@
             });
         }
         function closeFullscreenImage() {
-            const viewer = document.getElementById('fullscreenImageViewer');
-            viewer.classList.remove('active');
-            setTimeout(() => {
-                if(!viewer.classList.contains('active')) viewer.remove('visible');
-            }, 400);
+             const viewer = document.getElementById('fullscreenImageViewer');
+             viewer.classList.remove('active');
+             setTimeout(() => {
+                if(!viewer.classList.contains('active')) viewer.classList.remove('visible');
+             }, 400);
         }
         function closeModal(skipHistory = false) { 
             const m = document.getElementById("detailModal"); m.classList.remove('active'); setTimeout(() => { if(!m.classList.contains('active')) m.classList.remove('visible'); }, 300);
