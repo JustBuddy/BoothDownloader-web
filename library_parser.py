@@ -56,7 +56,7 @@ FORBIDDEN_NAMES = {
 }
 
 # Purely cosmetic: these strings will be stripped from the English UI display
-STRINGS_TO_REMOVE = ["Original 3D Model", "Avatar", "3D Model", "[]", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", " /"]
+STRINGS_TO_REMOVE = ["Original 3D Model", "Avatar", "3D Model", "[]", "[Release sale]", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", " /"]
 
 logger.info(f"--- Starting Library Generation ---")
 
@@ -227,10 +227,6 @@ HTML_TEMPLATE = r"""<!doctype html>
         #mainWrapper { opacity: 0; transition: opacity 0.8s ease; visibility: hidden; }
         body.loaded #mainWrapper { opacity: 1; visibility: visible; }
         body.loaded #appLoader { opacity: 0; pointer-events: none; }
-        .asset-link-view-all { display: flex; align-items: center; justify-content: center; background: rgba(253, 218, 13, 0.05); border: 1px dashed #FDDA0D; border-radius: 6px; text-decoration: none; transition: 0.2s; padding: 8px; height: 46px; box-sizing: border-box; }
-        .asset-link-view-all:hover { background: rgba(253, 218, 13, 0.15); transform: translateY(-2px); }
-        .asset-link-view-all span { color: #FDDA0D; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
-        .asset-link-grid { align-items: stretch; }
         .asset .stats { display: flex; flex-wrap: wrap; gap: 4px 8px; height: auto; min-height: 1.2rem; }
         .asset .stats span { white-space: nowrap; }
     </style>
