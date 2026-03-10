@@ -601,13 +601,13 @@ body.no-blur .adult-content {
 
 .carousel-dots {
   position: absolute;
-  bottom: 20px;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
   z-index: 10;
 }
 
@@ -615,7 +615,7 @@ body.no-blur .adult-content {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 1);
+  background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   transition: 0.2s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
