@@ -821,9 +821,8 @@ body.no-blur .adult-content {
 .asset-link-name {
   font-size: 0.65rem;
   color: #eee;
-  white-space: nowrap;
+  white-space: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .asset-link-view-all { 
