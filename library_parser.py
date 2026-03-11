@@ -868,7 +868,15 @@ for atype, folder, data, path, wish, is_avatar in asset_data_list:
         avatar_profiles[folder] = get_avatar_search_profile(folder, data[0], translation_cache.get(data[0].strip(), ""), tags_source)
 
 logger.info("[Relate] Scanning for relationships...")
+# Initialize relationship map with all known items
 relation_map = {item_id: {'avatars': [], 'assets': []} for item_id in set(list(existing_database.keys()) + [a[1] for a in asset_data_list])}
+
+# Pre-populate with existing relations to avoid loss for "clean" items
+for item_id, item in existing_database.items():
+    for link_id in item.get('links', []):
+        if link_id in relation_map:
+            if item['isAvatar']: relation_map[item_id]['assets'].append(link_id)
+            else: relation_map[item_id]['avatars'].append(link_id)
 
 for item_id in relation_map:
     item_info, is_av, content = None, False, {}
