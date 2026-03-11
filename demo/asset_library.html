@@ -130,20 +130,22 @@
         const database = window.BOOTH_DATABASE || [];
         let currentCarouselIndex = 0, currentImages = [];
         let searchTimeout = null;
+        let bgLoadIndex = 0;
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
         const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), sortInvert: getLS('sortInvert', 'false') === 'true', adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
         const observerOptions = { root: null, rootMargin: '1000px', threshold: 0.01 };
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
+                const el = entry.target;
                 if (entry.isIntersecting) {
-                    const el = entry.target;
                     const img = el.querySelector('.image-thumbnail');
                     const glow = el.querySelector('.image-backglow');
                     if (img && !img.src) img.src = el.dataset.img;
                     if (glow && !glow.src) glow.src = el.dataset.img;
                     el.classList.add('is-visible');
-                    observer.unobserve(el);
+                } else {
+                    el.classList.remove('is-visible');
                 }
             });
         }, observerOptions);
@@ -156,9 +158,15 @@
                 opt.value = code; opt.innerText = name;
                 langSel.appendChild(opt);
             });
+            document.getElementById('gridRange').value = state.gridSize; 
+            document.getElementById('blurToggle').checked = state.disableBlur; 
+            document.getElementById('sortOrder').value = state.sortOrder; 
+            document.getElementById('sortInvert').checked = state.sortInvert;
+            document.getElementById('adultFilter').value = state.adultFilter; 
+            document.getElementById('typeFilter').value = state.typeFilter; 
+            document.getElementById('hideIdToggle').checked = state.hideIds; 
+            document.getElementById('translateToggle').checked = state.showTrans;
             updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
-            document.getElementById('gridRange').value = state.gridSize; document.getElementById('blurToggle').checked = state.disableBlur; document.getElementById('sortOrder').value = state.sortOrder; document.getElementById('sortInvert').checked = state.sortInvert;
-            document.getElementById('adultFilter').value = state.adultFilter; document.getElementById('typeFilter').value = state.typeFilter; document.getElementById('hideIdToggle').checked = state.hideIds; document.getElementById('translateToggle').checked = state.showTrans;
             calculateStats();
             const urlParams = new URLSearchParams(window.location.search);
             const queryParam = urlParams.get('q');
@@ -167,9 +175,28 @@
                 handleSearchInput(true);
             }
             sortAssets();
+            applyFilters();
             const targetId = urlParams.get('id');
             if (targetId) openDetails(targetId, true);
-            setTimeout(() => { document.body.classList.add('loaded'); }, 50);
+            setTimeout(() => { 
+                document.body.classList.add('loaded'); 
+                startBackgroundLoading();
+            }, 50);
+        }
+        function startBackgroundLoading() {
+            if (bgLoadIndex >= database.length) return;
+            const item = database[bgLoadIndex];
+            if (item && item.gridThumb) {
+                const img = new Image();
+                img.onload = img.onerror = () => {
+                    bgLoadIndex++;
+                    setTimeout(startBackgroundLoading, 0);
+                };
+                img.src = item.gridThumb;
+            } else {
+                bgLoadIndex++;
+                startBackgroundLoading();
+            }
         }
         function calculateStats() {
             let totalBinaryBytes = 0, totalImageBytes = 0;
