@@ -129,6 +129,7 @@
         const STRINGS_TO_REMOVE = ["Original 3D Model", "Avatar", "3D Model", "[]", "[Release sale]", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", " /"];
         const database = window.BOOTH_DATABASE || [];
         let currentCarouselIndex = 0, currentImages = [];
+        let searchTimeout = null;
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
         const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), sortInvert: getLS('sortInvert', 'false') === 'true', adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
@@ -161,8 +162,11 @@
             calculateStats();
             const urlParams = new URLSearchParams(window.location.search);
             const queryParam = urlParams.get('q');
-            if (queryParam) document.getElementById("searchInput").value = queryParam;
-            handleSearchInput(); sortAssets();
+            if (queryParam) {
+                document.getElementById("searchInput").value = queryParam;
+                handleSearchInput(true);
+            }
+            sortAssets();
             const targetId = urlParams.get('id');
             if (targetId) openDetails(targetId, true);
             setTimeout(() => { document.body.classList.add('loaded'); }, 50);
@@ -267,14 +271,19 @@
             const urlRegex = /(https?:\/\/[^\s\n]+)/g;
             return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" onclick="event.stopPropagation()">${url}</a>`);
         }
-        function handleSearchInput() { 
-            const query = document.getElementById("searchInput").value.toLowerCase();
-            const newUrl = new URL(window.location);
-            if (query) newUrl.searchParams.set('q', query); else newUrl.searchParams.delete('q');
-            window.history.replaceState({}, '', newUrl);
-            applyFilters(); 
+        function handleSearchInput(instant = false) { 
+            clearTimeout(searchTimeout);
+            const performSearch = () => {
+                const query = document.getElementById("searchInput").value.toLowerCase();
+                const newUrl = new URL(window.location);
+                if (query) newUrl.searchParams.set('q', query); else newUrl.searchParams.delete('q');
+                window.history.replaceState({}, '', newUrl);
+                applyFilters();
+            };
+            if (instant) performSearch();
+            else searchTimeout = setTimeout(performSearch, 300);
         }
-        function clearSearch() { const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(); i.focus(); }
+        function clearSearch() { const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(true); i.focus(); }
         function tagSearch(query, isAuthor = false) {
             const s = document.getElementById("searchInput");
             s.value = isAuthor ? `author:${query}` : query;
@@ -282,7 +291,7 @@
             newUrl.searchParams.set('q', s.value);
             window.history.pushState({}, '', newUrl);
             closeModal();
-            handleSearchInput();
+            handleSearchInput(true);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         function applyFilters(save = false) {

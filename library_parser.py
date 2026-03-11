@@ -342,6 +342,7 @@ HTML_TEMPLATE = r"""<!doctype html>
         const STRINGS_TO_REMOVE = __REMOVABLES_INJECT_POINT__;
         const database = window.BOOTH_DATABASE || [];
         let currentCarouselIndex = 0, currentImages = [];
+        let searchTimeout = null;
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
         const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), sortInvert: getLS('sortInvert', 'false') === 'true', adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
@@ -374,8 +375,11 @@ HTML_TEMPLATE = r"""<!doctype html>
             calculateStats();
             const urlParams = new URLSearchParams(window.location.search);
             const queryParam = urlParams.get('q');
-            if (queryParam) document.getElementById("searchInput").value = queryParam;
-            handleSearchInput(); sortAssets();
+            if (queryParam) {
+                document.getElementById("searchInput").value = queryParam;
+                handleSearchInput(true);
+            }
+            sortAssets();
             const targetId = urlParams.get('id');
             if (targetId) openDetails(targetId, true);
             setTimeout(() => { document.body.classList.add('loaded'); }, 50);
@@ -480,14 +484,19 @@ HTML_TEMPLATE = r"""<!doctype html>
             const urlRegex = /(https?:\/\/[^\s\n]+)/g;
             return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" onclick="event.stopPropagation()">${url}</a>`);
         }
-        function handleSearchInput() { 
-            const query = document.getElementById("searchInput").value.toLowerCase();
-            const newUrl = new URL(window.location);
-            if (query) newUrl.searchParams.set('q', query); else newUrl.searchParams.delete('q');
-            window.history.replaceState({}, '', newUrl);
-            applyFilters(); 
+        function handleSearchInput(instant = false) { 
+            clearTimeout(searchTimeout);
+            const performSearch = () => {
+                const query = document.getElementById("searchInput").value.toLowerCase();
+                const newUrl = new URL(window.location);
+                if (query) newUrl.searchParams.set('q', query); else newUrl.searchParams.delete('q');
+                window.history.replaceState({}, '', newUrl);
+                applyFilters();
+            };
+            if (instant) performSearch();
+            else searchTimeout = setTimeout(performSearch, 300);
         }
-        function clearSearch() { const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(); i.focus(); }
+        function clearSearch() { const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(true); i.focus(); }
         function tagSearch(query, isAuthor = false) {
             const s = document.getElementById("searchInput");
             s.value = isAuthor ? `author:${query}` : query;
@@ -495,7 +504,7 @@ HTML_TEMPLATE = r"""<!doctype html>
             newUrl.searchParams.set('q', s.value);
             window.history.pushState({}, '', newUrl);
             closeModal();
-            handleSearchInput();
+            handleSearchInput(true);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         function applyFilters(save = false) {
@@ -868,10 +877,7 @@ for atype, folder, data, path, wish, is_avatar in asset_data_list:
         avatar_profiles[folder] = get_avatar_search_profile(folder, data[0], translation_cache.get(data[0].strip(), ""), tags_source)
 
 logger.info("[Relate] Scanning for relationships...")
-# Initialize relationship map with all known items
 relation_map = {item_id: {'avatars': [], 'assets': []} for item_id in set(list(existing_database.keys()) + [a[1] for a in asset_data_list])}
-
-# Pre-populate with existing relations to avoid loss for "clean" items
 for item_id, item in existing_database.items():
     for link_id in item.get('links', []):
         if link_id in relation_map:
