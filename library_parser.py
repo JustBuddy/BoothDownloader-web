@@ -181,8 +181,16 @@ def calculate_crc32(filepath):
     except Exception:
         return None
 
+def get_dominant_color(img):
+    img = img.copy()
+    img.thumbnail((100, 100))
+    img = img.convert('P', palette=Image.ADAPTIVE, colors=1)
+    img = img.convert('RGB')
+    color = img.getpixel((0, 0))
+    return '#%02x%02x%02x' % color
+
 def get_optimized_thumb(asset_id, original_path, crc):
-    if not original_path or not os.path.exists(original_path): return ""
+    if not original_path or not os.path.exists(original_path): return "", None, "#252525"
     thumb_name = f"{asset_id}_thumb.webp"
     thumb_path = os.path.join(IMG_OUT_DIR, thumb_name)
     try:
@@ -192,11 +200,12 @@ def get_optimized_thumb(asset_id, original_path, crc):
                 min_dim = min(width, height)
                 img = img.crop(((width-min_dim)/2, (height-min_dim)/2, (width+min_dim)/2, (height+min_dim)/2))
             img.thumbnail(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
+            dominant_color = get_dominant_color(img)
             img.save(thumb_path, "WEBP", optimize=True, quality=80)
-            return quote(thumb_path.replace('\\', '/')), crc
+            return quote(thumb_path.replace('\\', '/')), crc, dominant_color
     except Exception:
         logger.error(f"Failed to optimize thumb {original_path}:\n{traceback.format_exc()}")
-        return quote(original_path.replace('\\', '/')), None
+        return quote(original_path.replace('\\', '/')), None, "#252525"
 
 def get_optimized_gallery_img(asset_id, original_path, crc):
     if not original_path or not os.path.exists(original_path): return ""
@@ -229,6 +238,9 @@ HTML_TEMPLATE = r"""<!doctype html>
         body.loaded #appLoader { opacity: 0; pointer-events: none; }
         .asset .stats { display: flex; flex-wrap: wrap; gap: 4px 8px; height: auto; min-height: 1.2rem; }
         .asset .stats span { white-space: nowrap; }
+        .asset { border-color: #252525; }
+        .asset:hover { border-color: var(--card-accent, var(--primary)) !important; }
+        .modal-card { border-color: var(--card-accent, var(--primary)); }
     </style>
 </head>
 <body>
@@ -432,7 +444,7 @@ HTML_TEMPLATE = r"""<!doctype html>
             const list = document.getElementById('assetList');
             list.innerHTML = database.map(item => {
                 const isAdult = item.adult ? 'adult-content' : '';
-                return `<li class="asset" id="asset-${item.id}" onclick="openDetails('${item.id}')" data-id="${item.id}">
+                return `<li class="asset" id="asset-${item.id}" onclick="openDetails('${item.id}')" data-id="${item.id}" style="--card-accent: ${item.accentColor || '#252525'}">
                     <div class="skeleton-shimmer"></div>
                     <div class="image-container">
                         <div class="asset-id-tag">#${item.id}</div>
@@ -582,6 +594,8 @@ HTML_TEMPLATE = r"""<!doctype html>
         function openDetails(id, skipHistory = false) {
             const item = database.find(d => d.id === id), t = translations[state.lang] || translations['en'];
             if(!item) return;
+            const mCard = document.querySelector(".modal-card");
+            mCard.style.setProperty('--card-accent', item.accentColor || 'var(--primary)');
             const track = document.getElementById("carouselTrack"), blurTrack = document.getElementById("carouselBlurTrack");
             track.style.transition = 'none'; blurTrack.style.transition = 'none';
             track.style.transform = 'translateX(0)'; blurTrack.style.transform = 'translateX(0)';
@@ -756,7 +770,7 @@ def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, 
         "wishCount": wish_count, "timestamp": int(os.path.getctime(folder_path)), "priceValue": price_val, 
         "priceCurrency": price_cur, "limited": limited, "descOrig": description, "descTrans": description_cache.get(asset_id, ""), 
         "vrcAvatarLink": vrc_av.group(1) if vrc_av else "", "vrcWorldLink": vrc_wr.group(1) if vrc_wr else "", 
-        "isAvatar": is_avatar, "links": related_links or [] 
+        "isAvatar": is_avatar, "links": related_links or [], "accentColor": "#252525"
     }
 
 def get_avatar_search_profile(asset_id, orig_name, trans_name, tags):
@@ -990,7 +1004,11 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
             if os.path.exists(cur_thumb) and not cur_thumb.startswith('web_data'):
                 crc = calculate_crc32(cur_thumb)
                 if crc and (thumb_meta.get(item['id']) != crc or not os.path.exists(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp"))): t_task = (item, cur_thumb, crc)
-                else: item['gridThumb'] = quote(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp").replace('\\', '/'))
+                else: 
+                    item['gridThumb'] = quote(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp").replace('\\', '/'))
+                    # Even if cached, we want to try and recover the accent color from existing file if possible
+                    # but typically create_asset_data already handles defaults. 
+                    # If this happens often, a separate color cache might be needed.
         if OPTIMIZE_GALLERY:
             new_gal, orig_folder = [], os.path.join(ROOT_FOLDER, item['id'])
             local_srcs = sorted([f for f in os.listdir(orig_folder) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))])
@@ -1032,9 +1050,10 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
             f_thumbs = {ex_opt.submit(get_optimized_thumb, t[0]['id'], t[1], t[2]): t for t in thumb_tasks}
             for i, f in enumerate(as_completed(f_thumbs)):
                 try:
-                    res, crc = f.result()
+                    res, crc, dominant_color = f.result()
                     item = f_thumbs[f][0]
                     item['gridThumb'] = res
+                    item['accentColor'] = dominant_color
                     if crc: thumb_meta[item['id']] = crc
                 except Exception: logger.error(f"Thumbnail optimization failed:\n{traceback.format_exc()}")
                 print_progress(i+1, len(thumb_tasks), "Optimize")

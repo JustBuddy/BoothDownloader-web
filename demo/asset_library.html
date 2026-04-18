@@ -16,6 +16,9 @@
         body.loaded #appLoader { opacity: 0; pointer-events: none; }
         .asset .stats { display: flex; flex-wrap: wrap; gap: 4px 8px; height: auto; min-height: 1.2rem; }
         .asset .stats span { white-space: nowrap; }
+        .asset { border-color: #252525; }
+        .asset:hover { border-color: var(--card-accent, var(--primary)) !important; }
+        .modal-card { border-color: var(--card-accent, var(--primary)); }
     </style>
 </head>
 <body>
@@ -219,7 +222,7 @@
             const list = document.getElementById('assetList');
             list.innerHTML = database.map(item => {
                 const isAdult = item.adult ? 'adult-content' : '';
-                return `<li class="asset" id="asset-${item.id}" onclick="openDetails('${item.id}')" data-id="${item.id}">
+                return `<li class="asset" id="asset-${item.id}" onclick="openDetails('${item.id}')" data-id="${item.id}" style="--card-accent: ${item.accentColor || '#252525'}">
                     <div class="skeleton-shimmer"></div>
                     <div class="image-container">
                         <div class="asset-id-tag">#${item.id}</div>
@@ -369,6 +372,8 @@
         function openDetails(id, skipHistory = false) {
             const item = database.find(d => d.id === id), t = translations[state.lang] || translations['en'];
             if(!item) return;
+            const mCard = document.querySelector(".modal-card");
+            mCard.style.setProperty('--card-accent', item.accentColor || 'var(--primary)');
             const track = document.getElementById("carouselTrack"), blurTrack = document.getElementById("carouselBlurTrack");
             track.style.transition = 'none'; blurTrack.style.transition = 'none';
             track.style.transform = 'translateX(0)'; blurTrack.style.transform = 'translateX(0)';
