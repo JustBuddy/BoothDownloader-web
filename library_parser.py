@@ -6,6 +6,7 @@ import sys
 import binascii
 import logging
 import traceback
+import colorsys
 from urllib.parse import quote, unquote
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from deep_translator import GoogleTranslator
@@ -181,13 +182,31 @@ def calculate_crc32(filepath):
     except Exception:
         return None
 
-def get_dominant_color(img):
-    img = img.copy()
+def get_vibrant_color(img):
+    """Extracts a stand-out color by looking for high saturation and brightness."""
+    # Resize and reduce palette to find primary color blocks
+    img = img.copy().convert('RGB')
     img.thumbnail((100, 100))
-    img = img.convert('P', palette=Image.ADAPTIVE, colors=1)
-    img = img.convert('RGB')
-    color = img.getpixel((0, 0))
-    return '#%02x%02x%02x' % color
+    # Get 24 colors from the image
+    palette = img.quantize(colors=24).getpalette()[:24*3]
+    
+    colors = []
+    for i in range(0, len(palette), 3):
+        r, g, b = palette[i], palette[i+1], palette[i+2]
+        # Convert to HSV to find 'striking' values
+        h, s, v = colorsys.rgb_to_hsv(r/255.0, g/255.0, b/255.0)
+        
+        # Scoring: High saturation and high brightness are 'vibrant'
+        # We penalize extremely dark or extremely washed out (white) colors
+        score = s * v 
+        if v < 0.2: score *= 0.1 # Too dark
+        if s < 0.1: score *= 0.1 # Too gray/white
+            
+        colors.append(((r, g, b), score))
+
+    # Return the color with the highest vibrancy score
+    best_color = max(colors, key=lambda x: x[1])[0]
+    return '#%02x%02x%02x' % best_color
 
 def get_optimized_thumb(asset_id, original_path, crc):
     if not original_path or not os.path.exists(original_path): return "", None, "#252525"
@@ -200,9 +219,12 @@ def get_optimized_thumb(asset_id, original_path, crc):
                 min_dim = min(width, height)
                 img = img.crop(((width-min_dim)/2, (height-min_dim)/2, (width+min_dim)/2, (height+min_dim)/2))
             img.thumbnail(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
-            dominant_color = get_dominant_color(img)
+            
+            # Find the vibrant color before saving
+            vibrant_color = get_vibrant_color(img)
+            
             img.save(thumb_path, "WEBP", optimize=True, quality=80)
-            return quote(thumb_path.replace('\\', '/')), crc, dominant_color
+            return quote(thumb_path.replace('\\', '/')), crc, vibrant_color
     except Exception:
         logger.error(f"Failed to optimize thumb {original_path}:\n{traceback.format_exc()}")
         return quote(original_path.replace('\\', '/')), None, "#252525"
@@ -238,6 +260,8 @@ HTML_TEMPLATE = r"""<!doctype html>
         body.loaded #appLoader { opacity: 0; pointer-events: none; }
         .asset .stats { display: flex; flex-wrap: wrap; gap: 4px 8px; height: auto; min-height: 1.2rem; }
         .asset .stats span { white-space: nowrap; }
+        
+        /* Dynamic Stand-out Borders */
         .asset { border-color: #252525; }
         .asset:hover { border-color: var(--card-accent, var(--primary)) !important; }
         .modal-card { border-color: var(--card-accent, var(--primary)); }
@@ -1006,9 +1030,6 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
                 if crc and (thumb_meta.get(item['id']) != crc or not os.path.exists(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp"))): t_task = (item, cur_thumb, crc)
                 else: 
                     item['gridThumb'] = quote(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp").replace('\\', '/'))
-                    # Even if cached, we want to try and recover the accent color from existing file if possible
-                    # but typically create_asset_data already handles defaults. 
-                    # If this happens often, a separate color cache might be needed.
         if OPTIMIZE_GALLERY:
             new_gal, orig_folder = [], os.path.join(ROOT_FOLDER, item['id'])
             local_srcs = sorted([f for f in os.listdir(orig_folder) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))])
@@ -1050,10 +1071,10 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
             f_thumbs = {ex_opt.submit(get_optimized_thumb, t[0]['id'], t[1], t[2]): t for t in thumb_tasks}
             for i, f in enumerate(as_completed(f_thumbs)):
                 try:
-                    res, crc, dominant_color = f.result()
+                    res, crc, vibrant_color = f.result()
                     item = f_thumbs[f][0]
                     item['gridThumb'] = res
-                    item['accentColor'] = dominant_color
+                    item['accentColor'] = vibrant_color
                     if crc: thumb_meta[item['id']] = crc
                 except Exception: logger.error(f"Thumbnail optimization failed:\n{traceback.format_exc()}")
                 print_progress(i+1, len(thumb_tasks), "Optimize")
