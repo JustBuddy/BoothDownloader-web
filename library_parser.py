@@ -347,6 +347,10 @@ HTML_TEMPLATE = r"""<!doctype html>
                             <span class="modal-section-title" id="relTitle">Relationships</span>
                             <div id="relationshipContainer" class="asset-link-grid"></div>
                         </div>
+                        <div id="authorSection" style="display:none; margin-top:20px;">
+                            <span class="modal-section-title" data-i18n="labelMoreAuthor">More by this author</span>
+                            <div id="authorWorksContainer" class="asset-link-grid"></div>
+                        </div>
                     </div>
                     <div id="pane-files" class="tab-pane">
                         <span class="modal-section-title">Package Contents</span>
@@ -664,6 +668,22 @@ HTML_TEMPLATE = r"""<!doctype html>
                 }).join('') + `<a href="#" class="asset-link-view-all" onclick="event.preventDefault(); tagSearch('rel:${item.id}')"><span>${t.labelViewRel}</span></a>`;
                 document.getElementById("relationshipContainer").innerHTML = relHtml;
             } else relSection.style.display = "none";
+            
+            // More by author logic
+            const authorItems = database.filter(d => d.authorOrig === item.authorOrig && d.id !== item.id);
+            const authorSection = document.getElementById("authorSection");
+            if (authorItems.length > 0) {
+                authorSection.style.display = "block";
+                document.getElementById("authorWorksContainer").innerHTML = authorItems.map(target => {
+                    const rawTargetName = (state.showTrans && target.nameTrans) ? target.nameTrans : target.nameOrig;
+                    const n = state.showTrans ? cleanUIName(rawTargetName, target.isAvatar) : rawTargetName;
+                    return `<a href="#" class="asset-link-item" onclick="event.preventDefault(); openDetails('${target.id}')">
+                        <img class="asset-link-thumb" src="${target.gridThumb}">
+                        <span class="asset-link-name">${n}</span>
+                    </a>`;
+                }).join('');
+            } else authorSection.style.display = "none";
+
             document.getElementById("fileList").innerHTML = item.files.sort((a,b) => b.name.localeCompare(a.name, undefined, {numeric:true})).map(f => `
                 <li class="file-item"><a class="file-link" href="${f.path}" target="_blank">${f.name}</a><span style="color:#666; font-size:0.7rem;">${f.size}</span></li>`).join('');
             const m = document.getElementById("detailModal"); m.classList.add('visible'); setTimeout(() => m.classList.add('active'), 10);
