@@ -805,7 +805,13 @@ def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, 
     img_bytes, all_imgs = get_image_folder_size(folder_path), get_all_local_images(asset_id, folder_path, web_images)
     name_trans, author_trans = translation_cache.get(asset_name.strip(), ""), translation_cache.get(author_name.strip(), "")
     price_val, price_cur = parse_price(price_str)
-    search_blob = f"{asset_id} {asset_name} {name_trans} {author_name} {author_trans} {' '.join(tags)}".lower()
+    
+    # Get aliases for searchblob
+    aliases = alias_data.get(str(asset_id), [])
+    if isinstance(aliases, str): aliases = [aliases]
+    alias_str = " ".join(aliases)
+
+    search_blob = f"{asset_id} {asset_name} {name_trans} {author_name} {author_trans} {alias_str} {' '.join(tags)}".lower()
     return { 
         "id": asset_id, "nameOrig": asset_name, "nameTrans": name_trans, "authorOrig": author_name, "authorTrans": author_trans, 
         "gridThumb": all_imgs[0] if all_imgs else "", "allImages": all_imgs, "bytes": total_bytes, "imgBytes": img_bytes, 
@@ -870,6 +876,9 @@ if deleted_ids:
          logger.error(f"Failed to save cache during cleanup:\n{traceback.format_exc()}")
 
 logger.info(f"[Build] Identifying updates...")
+# Check if alias file changed to mark dirty IDs
+alias_mtime = os.path.getmtime(ALIAS_FILE) if os.path.exists(ALIAS_FILE) else 0
+
 for folder in current_folders:
     path = os.path.join(ROOT_FOLDER, folder)
     mtime = os.path.getmtime(path)
@@ -879,14 +888,16 @@ for folder in current_folders:
     meta_entry = global_meta.get(folder, {})
     if isinstance(meta_entry, (int, float)): meta_entry = {"time": meta_entry, "files": ""}
     
+    # Also update if alias metadata is older than the alias file itself
     needs_update = (FORCE_TRANSLATION or 
                     folder not in global_meta or 
                     meta_entry.get("time") < mtime or 
                     meta_entry.get("files") != files_fingerprint or
+                    meta_entry.get("alias_time", 0) < alias_mtime or
                     folder not in existing_database or 
                     folder in error_ids)
     
-    new_global_meta[folder] = {"time": mtime, "files": files_fingerprint}
+    new_global_meta[folder] = {"time": mtime, "files": files_fingerprint, "alias_time": alias_mtime}
     
     if not needs_update: continue
     dirty_ids.add(folder)
