@@ -381,6 +381,30 @@
             const mCard = document.querySelector(".modal-card");
             mCard.style.setProperty('--card-accent', item.accentColor || 'var(--primary)');
             const track = document.getElementById("carouselTrack"), blurTrack = document.getElementById("carouselBlurTrack");
+
+            let horizontalAccumulator = 0;
+            const horizontalThreshold = 300; // Sensitivity for horizontal wheels
+
+            track.onwheel = (e) => {
+                if (currentImages.length <= 1) return;
+                e.preventDefault();
+
+                // If vertical scroll is dominant, trigger immediately
+                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                    if (Math.abs(e.deltaY) > 5) {
+                        carouselNext(e.deltaY > 0 ? 1 : -1);
+                        horizontalAccumulator = 0; // Clear horizontal progress
+                    }
+                } 
+                // If horizontal scroll is dominant, use the accumulator
+                else {
+                    horizontalAccumulator += e.deltaX;
+                    if (Math.abs(horizontalAccumulator) >= horizontalThreshold) {
+                        carouselNext(horizontalAccumulator > 0 ? 1 : -1);
+                        horizontalAccumulator = 0;
+                    }
+                }
+            };
             track.style.transition = 'none'; blurTrack.style.transition = 'none';
             track.style.transform = 'translateX(0)'; blurTrack.style.transform = 'translateX(0)';
             track.innerHTML = ""; blurTrack.innerHTML = "";

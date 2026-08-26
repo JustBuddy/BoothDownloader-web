@@ -63,6 +63,8 @@ logger.info(f"--- Starting Library Generation ---")
 
 # Ensure directories exist
 if not os.path.exists("web_data"): os.makedirs("web_data")
+# Ensure directories exist
+if not os.path.exists("web_data"): os.makedirs("web_data")
 if not os.path.exists("web_data/cache"): os.makedirs("web_data/cache")
 if OPTIMIZE_THUMBNAILS and not os.path.exists(IMG_OUT_DIR): os.makedirs(IMG_OUT_DIR)
 if OPTIMIZE_GALLERY and not os.path.exists(GALLERY_OUT_DIR): os.makedirs(GALLERY_OUT_DIR)
@@ -230,17 +232,21 @@ def get_optimized_thumb(asset_id, original_path, crc):
         return quote(original_path.replace('\\', '/')), None, "#252525"
 
 def get_optimized_gallery_img(asset_id, original_path, crc):
-    if not original_path or not os.path.exists(original_path): return ""
+    if not original_path or not os.path.exists(original_path):
+        return ""
     file_name = os.path.basename(original_path)
     opt_name = f"{asset_id}_{crc}_{os.path.splitext(file_name)[0]}.webp"
     opt_path = os.path.join(GALLERY_OUT_DIR, opt_name)
-    if os.path.exists(opt_path): return quote(opt_path.replace('\\', '/'))
+    if os.path.exists(opt_path):
+        return quote(opt_path.replace("\\", "/"))
     try:
         with Image.open(original_path) as img:
+            if OPTIMIZE_GALLERY_RESCALE:
+                img.thumbnail(GALLERY_IMAGE_MAX, Image.Resampling.LANCZOS)
             img.save(opt_path, "WEBP", optimize=True, quality=85)
-            return quote(opt_path.replace('\\', '/'))
+            return quote(opt_path.replace("\\", "/"))
     except Exception:
-        return quote(original_path.replace('\\', '/'))
+        return quote(original_path.replace("\\", "/"))
 
 HTML_TEMPLATE = r"""<!doctype html>
 <html lang="en">
@@ -625,6 +631,30 @@ HTML_TEMPLATE = r"""<!doctype html>
             const mCard = document.querySelector(".modal-card");
             mCard.style.setProperty('--card-accent', item.accentColor || 'var(--primary)');
             const track = document.getElementById("carouselTrack"), blurTrack = document.getElementById("carouselBlurTrack");
+
+            let horizontalAccumulator = 0;
+            const horizontalThreshold = 300; // Sensitivity for horizontal wheels
+
+            track.onwheel = (e) => {
+                if (currentImages.length <= 1) return;
+                e.preventDefault();
+
+                // If vertical scroll is dominant, trigger immediately
+                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                    if (Math.abs(e.deltaY) > 5) {
+                        carouselNext(e.deltaY > 0 ? 1 : -1);
+                        horizontalAccumulator = 0; // Clear horizontal progress
+                    }
+                } 
+                // If horizontal scroll is dominant, use the accumulator
+                else {
+                    horizontalAccumulator += e.deltaX;
+                    if (Math.abs(horizontalAccumulator) >= horizontalThreshold) {
+                        carouselNext(horizontalAccumulator > 0 ? 1 : -1);
+                        horizontalAccumulator = 0;
+                    }
+                }
+            };
             track.style.transition = 'none'; blurTrack.style.transition = 'none';
             track.style.transform = 'translateX(0)'; blurTrack.style.transform = 'translateX(0)';
             track.innerHTML = ""; blurTrack.innerHTML = "";
