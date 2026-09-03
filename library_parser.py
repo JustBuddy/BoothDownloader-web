@@ -363,7 +363,7 @@ def get_optimized_thumb(asset_id, original_path, crc):
             return quote(thumb_path.replace('\\', '/')), crc, vibrant_color
     except Exception:
         logger.error(f"Failed to optimize thumb {original_path}:\n{traceback.format_exc()}")
-        return quote(original_path.replace('\\', '/')), None, "#252525"
+        return quote(original_path.replace('\\', '/')), None, None
 
 def get_optimized_gallery_img(asset_id, original_path, crc):
     if not original_path or not os.path.exists(original_path):
@@ -620,7 +620,7 @@ HTML_TEMPLATE = r"""<!doctype html>
             const list = document.getElementById('assetList');
             list.innerHTML = database.map(item => {
                 const isAdult = item.adult ? 'adult-content' : '';
-                return `<li class="asset" id="asset-${item.id}" onclick="openDetails('${item.id}')" data-id="${item.id}" style="--card-accent: ${item.accentColor || '#252525'}">
+                return `<li class="asset" id="asset-${item.id}" onclick="openDetails('${item.id}')" data-id="${item.id}" style="--card-accent: ${item.accentColor || 'var(--primary)'}">
                     <div class="skeleton-shimmer"></div>
                     <div class="image-container">
                         <div class="asset-id-tag">#${item.id}</div>
@@ -1012,7 +1012,7 @@ def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, 
         "wishCount": wish_count, "timestamp": int(os.path.getctime(folder_path)), "priceValue": price_val, 
         "priceCurrency": price_cur, "limited": limited, "descOrig": description, "descTrans": description_cache.get(asset_id, ""), 
         "vrcAvatarLink": vrc_av.group(1) if vrc_av else "", "vrcWorldLink": vrc_wr.group(1) if vrc_wr else "", 
-        "isAvatar": is_avatar, "links": related_links or [], "accentColor": "#252525"
+        "isAvatar": is_avatar, "links": related_links or [], "accentColor": ""
     }
 
 def get_avatar_search_profile(asset_id, orig_name, trans_name, tags):
@@ -1258,9 +1258,14 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
                 if local_files: cur_thumb = os.path.join(orig_folder, local_files[0])
             if os.path.exists(cur_thumb) and not cur_thumb.startswith('web_data'):
                 crc = calculate_crc32(cur_thumb)
-                if crc and (thumb_meta.get(item['id']) != crc or not os.path.exists(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp"))): t_task = (item, cur_thumb, crc)
-                else: 
-                    item['gridThumb'] = quote(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp").replace('\\', '/'))
+                stored = thumb_meta.get(item['id'])
+                stored_crc = stored.get("crc") if isinstance(stored, dict) else stored
+                if crc and (stored_crc != crc or not os.path.exists(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp"))):
+                    t_task = (item, cur_thumb, crc)
+                else:
+                     item['gridThumb'] = quote(os.path.join(IMG_OUT_DIR, f"{item['id']}_thumb.webp").replace('\\', '/'))
+                     if isinstance(stored, dict) and stored.get("color"):
+                        item['accentColor'] = stored["color"]
         if OPTIMIZE_GALLERY:
             new_gal, orig_folder = [], os.path.join(ROOT_FOLDER, item['id'])
             local_srcs = sorted([f for f in os.listdir(orig_folder) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))])
@@ -1305,8 +1310,8 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
                     res, crc, vibrant_color = f.result()
                     item = f_thumbs[f][0]
                     item['gridThumb'] = res
-                    item['accentColor'] = vibrant_color
-                    if crc: thumb_meta[item['id']] = crc
+                    if vibrant_color and vibrant_color != "#252525": item['accentColor'] = vibrant_color
+                    if crc: thumb_meta[item['id']] = {"crc": crc, "color": vibrant_color}
                 except Exception: logger.error(f"Thumbnail optimization failed:\n{traceback.format_exc()}")
                 print_progress(i+1, len(thumb_tasks), "Optimize")
             try:
