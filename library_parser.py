@@ -439,7 +439,10 @@ HTML_TEMPLATE = r"""<!doctype html>
                     <option value="all" data-i18n="optAll">Show All</option><option value="hide" data-i18n="optHide">Hide Adult</option><option value="only" data-i18n="optOnly">Only Adult</option>
                 </select>
             </div>
-            <div class="setting-group"><span class="setting-label" data-i18n="labelWidth">Card Width</span><input type="range" id="gridRange" min="160" max="400" step="10" value="220" oninput="updateGrid(this.value)"></div>
+            <div class="setting-group">
+                <span class="setting-label" data-i18n="labelWidth">Card Width</span><input type="range" id="gridRange" min="160" max="400" step="10" value="220" oninput="updateGrid(this.value)">
+                <span class="setting-label" data-i18n="labelRelWidth">Thumbnail Size</span><input type="range" id="relSizeRange" min="12" max="128" step="8" value="64" oninput="updateRelSize(this.value)">
+            </div>
             <div class="setting-group">
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="blurToggle" onchange="updateBlur(this.checked)"> <span data-i18n="optBlur">Disable Blur</span></label>
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> <span data-i18n="optHideIds">Hide IDs</span></label>
@@ -529,7 +532,7 @@ HTML_TEMPLATE = r"""<!doctype html>
         const TAG_PREVIEW_LIMIT = 30;
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
-        const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), sortInvert: getLS('sortInvert', 'false') === 'true', adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
+        const state = { gridSize: getLS('gridSize', '220'), relSize: getLS('relSize', '64'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), sortInvert: getLS('sortInvert', 'false') === 'true', adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
         const observerOptions = { root: null, rootMargin: '1000px', threshold: 0.01 };
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -555,6 +558,7 @@ HTML_TEMPLATE = r"""<!doctype html>
                 langSel.appendChild(opt);
             });
             document.getElementById('gridRange').value = state.gridSize; 
+            document.getElementById('relSizeRange').value = state.relSize;
             document.getElementById('blurToggle').checked = state.disableBlur; 
             document.getElementById('sortOrder').value = state.sortOrder; 
             document.getElementById('sortInvert').checked = state.sortInvert;
@@ -564,6 +568,7 @@ HTML_TEMPLATE = r"""<!doctype html>
             document.getElementById('translateToggle').checked = state.showTrans;
             updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
             calculateStats();
+            updateRelSize(state.relSize);
             const urlParams = new URLSearchParams(window.location.search);
             const queryParam = urlParams.get('q');
             if (queryParam) {
@@ -652,6 +657,7 @@ HTML_TEMPLATE = r"""<!doctype html>
         }
         function toggleMenu(e, forceClose = false) { if(e) e.stopPropagation(); const menu = document.getElementById('flyoutMenu'), btn = document.getElementById('toggleBtn'), perim = document.getElementById('menuPerimeter'); const open = !forceClose && !menu.classList.contains('open'); menu.classList.toggle('open', open); btn.classList.toggle('active', open); perim.style.display = open ? 'block' : 'none'; }
         function updateGrid(v) { document.documentElement.style.setProperty('--grid-size', v + 'px'); localStorage.setItem('gridSize', v); }
+        function updateRelSize(v) { document.documentElement.style.setProperty('--rel-thumb', v + 'px'); localStorage.setItem('relSize', v); }
         function updateBlur(v) { document.body.classList.toggle('no-blur', v); localStorage.setItem('disableBlur', v); }
         function updateIdVisibility(v) { document.body.classList.toggle('hide-ids', v); localStorage.setItem('hideIds', v); }
         function cleanUIName(name, isAvatar) {

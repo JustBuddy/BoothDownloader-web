@@ -26,20 +26,20 @@
       "optId": "Folder ID",
       "optNew": "Recently Added",
       "optName": "A-Z Name",
-      "optRel": "Popularity",
-      "optSize": "Storage Size",
+      "optRel": "Relevance",
+      "optSize": "Total Size",
       "optInvert": "Invert Order",
-      "labelAdult": "Content Filter",
-      "optAll": "Show Everything",
+      "labelAdult": "Adult Filter",
+      "optAll": "Show All",
       "optHide": "Hide Adult",
-      "optOnly": "Adult Only",
+      "optOnly": "Only Adult",
       "labelWidth": "Card Width",
       "optBlur": "Disable Blur",
-      "optHideIds": "Hide Asset IDs",
-      "optTranslate": "Show English Titles",
-      "labelBinary": "Local Files",
-      "footBooth": "🛒 View on Booth",
-      "footFolder": "📂 Open Folder",
+      "optHideIds": "Hide IDs",
+      "optTranslate": "English Titles",
+      "labelBinary": "Files",
+      "footBooth": "🛒 Booth",
+      "footFolder": "📂 Folder",
       "footVrcAvatar": "👤 Public Avatar",
       "footVrcWorld": "🌐 Public World",
       "searchPre": "Searching ",
@@ -48,19 +48,20 @@
       "filePlural": "files",
       "moreTags": "+ {n} others",
       "hiddenResults": " ({n} items hidden by filter)",
-      "statItems": "Total Assets",
-      "statSize": "Library Size",
-      "statImgSize": "Graphics Size",
+      "statItems": "Items",
+      "statSize": "Binary Size",
+      "statImgSize": "Asset Graphics",
       "statSpent": "Estimated Investment",
-      "statUpdated": "Last Refreshed",
-      "labelTopTags": "Frequent Tags",
+      "statUpdated": "Last Updated",
+      "labelTopTags": "Top Tags",
       "btnDesc": "Description",
       "matchSingular": "match",
       "matchPlural": "matches",
       "labelType": "Item Type",
       "optTypeAll": "All Items",
       "optTypeAvatar": "Avatars",
-      "optTypeAsset": "Assets"
+      "optTypeAsset": "Assets",
+      "labelRelWidth": "Modal Card Size"
     },
     "ja": {
       "btnDetails": "詳細",
@@ -110,7 +111,8 @@
       "labelType": "アイテムの種類",
       "optTypeAll": "すべて表示",
       "optTypeAvatar": "アバターのみ",
-      "optTypeAsset": "アセットのみ"
+      "optTypeAsset": "アセットのみ",
+      "labelRelWidth": "モーダルカードサイズ"
     },
     "ko": {
       "btnDetails": "상세 정보",
@@ -160,7 +162,8 @@
       "labelType": "아이템 타입",
       "optTypeAll": "모든 아이템",
       "optTypeAvatar": "아바타",
-      "optTypeAsset": "에셋"
+      "optTypeAsset": "에셋",
+      "labelRelWidth": "모달 카드 크기"
     },
     "zh-Hans": {
       "btnDetails": "详细信息",
@@ -210,7 +213,8 @@
       "labelType": "项目类型",
       "optTypeAll": "全部项目",
       "optTypeAvatar": "仅化身",
-      "optTypeAsset": "仅资源"
+      "optTypeAsset": "仅资源",
+      "labelRelWidth": "弹窗卡片大小"
     },
     "zh-Hant": {
       "btnDetails": "詳細資訊",
@@ -260,7 +264,8 @@
       "labelType": "項目類型",
       "optTypeAll": "全部項目",
       "optTypeAvatar": "僅限化身",
-      "optTypeAsset": "僅限資源"
+      "optTypeAsset": "僅限資源",
+      "labelRelWidth": "彈窗卡片大小"
     },
     "de": {
       "btnDetails": "Details",
@@ -310,7 +315,8 @@
       "labelType": "Objekttyp",
       "optTypeAll": "Alle Objekte",
       "optTypeAvatar": "Avatare",
-      "optTypeAsset": "Assets"
+      "optTypeAsset": "Assets",
+      "labelRelWidth": "Modal-Kartengröße"
     },
     "nl": {
       "btnDetails": "Details",
@@ -318,7 +324,7 @@
       "labelDesigned": "Ontworpen voor",
       "labelMoreAuthor": "Meer van deze auteur",
       "labelViewRel": "Toon alles",
-      "warnDelisted": "<b>⚠️ Verwijderde Inhoud</b> Dit item is mogelijk nicht langer beschikbaar.",
+      "warnDelisted": "<b>⚠️ Verwijderde Inhoud</b> Dit item is mogelijk niet langer beschikbaar.",
       "navTitle": "Booth Bibliotheek",
       "optionsBtn": "Opties ⚙",
       "labelLanguage": "Taal",
@@ -360,7 +366,8 @@
       "labelType": "Itemtype",
       "optTypeAll": "Alle items",
       "optTypeAvatar": "Avatars",
-      "optTypeAsset": "Assets"
+      "optTypeAsset": "Assets",
+      "labelRelWidth": "Modalkaartgrootte"
     },
     "fr": {
       "btnDetails": "Détails",
@@ -410,7 +417,8 @@
       "labelType": "Type d'objet",
       "optTypeAll": "Tous les objets",
       "optTypeAvatar": "Avatars",
-      "optTypeAsset": "Assets"
+      "optTypeAsset": "Assets",
+      "labelRelWidth": "Taille des cartes (fenêtre)"
     },
     "es": {
       "btnDetails": "Details",
@@ -460,7 +468,8 @@
       "labelType": "Tipo de artículo",
       "optTypeAll": "Todos los artículos",
       "optTypeAvatar": "Avatares",
-      "optTypeAsset": "Activos"
+      "optTypeAsset": "Activos",
+      "labelRelWidth": "Tamaño de tarjeta del modal"
     },
     "pt": {
       "btnDetails": "Detalhes",
@@ -510,7 +519,8 @@
       "labelType": "Tipo de item",
       "optTypeAll": "Todos os itens",
       "optTypeAvatar": "Avatares",
-      "optTypeAsset": "Assets"
+      "optTypeAsset": "Assets",
+      "labelRelWidth": "Tamanho dos cards do modal"
     }
   }
 }
