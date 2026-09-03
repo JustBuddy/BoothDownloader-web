@@ -7,6 +7,8 @@ import binascii
 import logging
 import traceback
 import colorsys
+import time
+import random
 from urllib.parse import quote, unquote
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from deep_translator import GoogleTranslator
@@ -29,8 +31,23 @@ FILTER_FILE = "web_data/filters.json"
 L18N_FILE = "web_data/l18n.json"
 ALIAS_FILE = "web_data/alias.json"
 SKIP_TRANSLATION = False
-MAX_TRANSLATION_WORKERS = 5
+MAX_TRANSLATION_WORKERS = 1
 MAX_OPTIMIZATION_WORKERS = 16
+MAX_TRANSLATION_RETRIES = 10
+RETRY_BASE_DELAY = 5.0
+
+# deep_translator rejects >5000 chars per request, but the underlying GET
+# endpoint fails much earlier for CJK because percent-encoding expands
+# characters ~9x. Both limits are enforced when chunking/batching.
+GOOGLE_CHAR_LIMIT = 5000
+GOOGLE_ENCODED_LIMIT = 10000
+
+# Markers that Google returned an error page instead of a translation
+TRANSLATION_ERROR_MARKERS = (
+    "Error 500", "Error 504", "Server Error",
+    "That's an error", "That\u2019s an error",
+    "Please try again later", "all we know",
+)
 
 # Database Cache Settings
 DATABASE_JS_FILE = "web_data/cache/database.js"
@@ -38,9 +55,11 @@ GLOBAL_META_FILE = "web_data/cache/global_metadata.json"
 
 # Thumbnail Optimization
 OPTIMIZE_THUMBNAILS = True
-OPTIMIZE_GALLERY = False 
-THUMBNAIL_SIZE = (256, 256)
+OPTIMIZE_GALLERY = True 
+OPTIMIZE_GALLERY_RESCALE = False
+THUMBNAIL_SIZE = (512, 512)
 IMG_OUT_DIR = "web_data/img"
+GALLERY_IMAGE_MAX = (1024, 1024)
 GALLERY_OUT_DIR = "web_data/img/gallery"
 
 # Shared Body Groups (Case-insensitive)
@@ -61,8 +80,6 @@ STRINGS_TO_REMOVE = ["Original 3D Model", "Avatar", "3D Model", "[]", "[Release 
 
 logger.info(f"--- Starting Library Generation ---")
 
-# Ensure directories exist
-if not os.path.exists("web_data"): os.makedirs("web_data")
 # Ensure directories exist
 if not os.path.exists("web_data"): os.makedirs("web_data")
 if not os.path.exists("web_data/cache"): os.makedirs("web_data/cache")
@@ -109,14 +126,131 @@ if os.path.exists(DESC_CACHE_FILE):
         with open(DESC_CACHE_FILE, 'r', encoding='utf-8') as f: description_cache = json.load(f)
     except Exception: pass
 
-# Clean Error 504 from caches
 error_ids = set()
+def is_translation_error(text):
+    t = str(text)
+    return any(marker in t for marker in TRANSLATION_ERROR_MARKERS)
+
+def contains_japanese(text): return bool(re.search(r'[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]', str(text)))
+
+def translate_with_retry(text):
+    """Translates with exponential backoff. Returns None on persistent failure
+    so the caller does NOT cache a broken/original value."""
+    last_err = None
+    for attempt in range(1, MAX_TRANSLATION_RETRIES + 1):
+        try:
+            result = GoogleTranslator(source='auto', target='en').translate(text)
+            if result and not is_translation_error(result):
+                return result
+            last_err = f"error page returned: {str(result)[:60]}"
+        except Exception as e:
+            last_err = str(e)
+        logger.warning(f"[Translate] Attempt {attempt}/{MAX_TRANSLATION_RETRIES} failed for '{str(text)[:40]}': {last_err}")
+        if attempt < MAX_TRANSLATION_RETRIES:
+            time.sleep(RETRY_BASE_DELAY * (2 ** (attempt - 1)) + random.uniform(0.5, 1.5))
+    logger.error(f"[Translate] Giving up on '{str(text)[:40]}' after {MAX_TRANSLATION_RETRIES} attempts")
+    return None
+
+def _payload_limit(text):
+    """Max chars for this payload. Scales down for CJK so the percent-encoded
+    GET request stays in bounds."""
+    ratio = len(quote(text, safe='')) / max(1, len(text))
+    return max(200, min(GOOGLE_CHAR_LIMIT, int(GOOGLE_ENCODED_LIMIT / ratio)))
+
+def _split_hard(text, limit):
+    """Last resort split for a single oversized paragraph, at sentence
+    boundaries where possible."""
+    chunks = []
+    while len(text) > limit:
+        cut = max(text.rfind('。', 0, limit), text.rfind('！', 0, limit),
+                  text.rfind('？', 0, limit), text.rfind('. ', 0, limit),
+                  text.rfind(' ', 0, limit))
+        if cut < limit // 2: cut = limit - 1
+        chunks.append(text[:cut + 1].strip())
+        text = text[cut + 1:].strip()
+    if text: chunks.append(text)
+    return chunks
+
+def chunk_text(text, limit=None):
+    """Splits text into payloads under the request limits, preferring
+    paragraph boundaries."""
+    text = str(text).strip()
+    limit = limit or _payload_limit(text)
+    if len(text) <= limit: return [text]
+    chunks, current = [], ""
+    for para in text.split("\n"):
+        candidate = f"{current}\n{para}" if current else para
+        if len(candidate) <= limit:
+            current = candidate
+            continue
+        if current: chunks.append(current); current = ""
+        if len(para) > limit:
+            chunks.extend(_split_hard(para, limit))
+        else:
+            current = para
+    if current: chunks.append(current)
+    return chunks
+
+def translate_description(text):
+    """Translates long descriptions by chunking under the request limits.
+    Returns None on persistent failure so nothing broken gets cached."""
+    text = str(text or "").strip()
+    if not text or SKIP_TRANSLATION or not contains_japanese(text): return text
+    parts = []
+    for chunk in chunk_text(text):
+        res = translate_with_retry(chunk)
+        if res is None: return None
+        parts.append(res)
+    return "\n".join(parts)
+
+def _payload_fits(text):
+    return (len(text) <= GOOGLE_CHAR_LIMIT and
+            len(quote(text, safe='')) <= GOOGLE_ENCODED_LIMIT)
+
+def build_batches(terms):
+    """Packs short strings into newline-joined payloads under the limits."""
+    batches, current, payload = [], [], ""
+    for t in terms:
+        candidate = f"{payload}\n{t}" if payload else t
+        if current and not _payload_fits(candidate):
+            batches.append(current); current, payload = [], t
+        else:
+            current.append(t); payload = candidate
+    if current: batches.append(current)
+    return batches
+
+def translate_term_batch(terms):
+    """Translates several short strings as one newline-joined request.
+    Bisects when the line count doesn't come back, so one malformed term
+    costs log(n) extra requests instead of the whole batch."""
+    if not terms: return {}
+    if len(terms) == 1:
+        res = translate_with_retry(terms[0])
+        return {terms[0]: res} if res is not None else {}
+    result = translate_with_retry("\n".join(terms))
+    if result is not None:
+        lines = result.split("\n")
+        if len(lines) == len(terms):
+            return {t: line.strip() for t, line in zip(terms, lines)}
+        logger.warning(f"[Translate] Batch returned {len(lines)} lines for "
+                       f"{len(terms)} terms, bisecting")
+    mid = max(1, len(terms) // 2)
+    out = {}
+    out.update(translate_term_batch(terms[:mid]))
+    out.update(translate_term_batch(terms[mid:]))
+    return out
+
+def translate_single_text(text):
+    if not text or not contains_japanese(text) or SKIP_TRANSLATION: return text
+    return translate_with_retry(text)
+
+# Clean translation errors from caches
 def cleanup_translation_errors():
     global translation_cache, description_cache
-    to_delete_short = [k for k, v in translation_cache.items() if "Error 504" in str(v)]
+    to_delete_short = [k for k, v in translation_cache.items() if is_translation_error(v)]
     for k in to_delete_short: del translation_cache[k]
     
-    to_delete_desc = [k for k, v in description_cache.items() if "Error 504" in str(v)]
+    to_delete_desc = [k for k, v in description_cache.items() if is_translation_error(v)]
     for k in to_delete_desc: 
         del description_cache[k]
         error_ids.add(k) 
@@ -144,7 +278,14 @@ if os.path.exists(DATABASE_JS_FILE):
             db_list = json.loads(json_str)
             existing_database = {item['id']: item for item in db_list}
             for item in db_list:
-                if "Error 504" in str(item.get('nameTrans', '')) or "Error 504" in str(item.get('authorTrans', '')):
+                trans_fields = [item.get('nameTrans', ''), item.get('authorTrans', ''), item.get('descTrans', '')]
+                has_err = any(is_translation_error(v) for v in trans_fields)
+                # Flag items that should have a translation but ended up empty
+                # (e.g. translation gave up permanently in a previous run)
+                missing = (not SKIP_TRANSLATION and (
+                    (contains_japanese(item.get('nameOrig', '')) and not item.get('nameTrans')) or
+                    (contains_japanese(item.get('authorOrig', '')) and not item.get('authorTrans'))))
+                if has_err or missing:
                     error_ids.add(item['id'])
     except Exception: pass
 
@@ -153,13 +294,6 @@ if os.path.exists(L18N_FILE):
     try:
         with open(L18N_FILE, 'r', encoding='utf-8') as f: l18n_data = json.load(f)
     except Exception: logger.error(f"Could not load l18n.json:\n{traceback.format_exc()}")
-
-def contains_japanese(text): return bool(re.search(r'[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]', str(text)))
-
-def translate_single_text(text):
-    if not text or not contains_japanese(text) or SKIP_TRANSLATION: return text
-    try: return GoogleTranslator(source='auto', target='en').translate(text)
-    except Exception: return text
 
 def print_progress(current, total, label="Progress"):
     percent = (current / total) * 100
@@ -975,16 +1109,22 @@ for folder in current_folders:
 if not SKIP_TRANSLATION:
     new_strs = [t for t in list(set(str(t).strip() for t in short_strings_to_translate if t and contains_japanese(t))) if t not in translation_cache]
     if new_strs:
-        logger.info(f"[Translate] Processing {len(new_strs)} terms...")
+        # Stray newlines inside a term would corrupt the batch split
+        clean_map = {t: re.sub(r'\s*\n\s*', ' ', t).strip() for t in new_strs}
+        unique_clean = list(dict.fromkeys(clean_map.values()))
+        batches = build_batches(unique_clean)
+        logger.info(f"[Translate] Processing {len(unique_clean)} terms in {len(batches)} request(s)...")
+        batch_results = {}
         with ThreadPoolExecutor(max_workers=MAX_TRANSLATION_WORKERS) as ex_trans:
-            futures_trans = {ex_trans.submit(lambda x: (x, GoogleTranslator(source='auto', target='en').translate(x)), term): term for term in new_strs}
-            for i, f in enumerate(as_completed(futures_trans)): 
-                try:
-                    orig, trans = f.result()
-                    translation_cache[orig] = trans
+            futures = {ex_trans.submit(translate_term_batch, b): b for b in batches}
+            for i, f in enumerate(as_completed(futures)):
+                try: batch_results.update(f.result())
                 except Exception:
-                    logger.error(f"Translation failed for term:\n{traceback.format_exc()}")
-                print_progress(i+1, len(new_strs), "Translate")
+                    logger.error(f"Batch translation failed:\n{traceback.format_exc()}")
+                print_progress(i + 1, len(batches), "Translate")
+        for orig in new_strs:
+            trans = batch_results.get(clean_map[orig])
+            if trans: translation_cache[orig] = trans
         try:
             with open(CACHE_FILE, 'w', encoding='utf-8') as f: json.dump(translation_cache, f, ensure_ascii=False, indent=2)
         except Exception:
@@ -1050,9 +1190,11 @@ avatar_to_assets = {k: sorted(list(set(v['assets']))) for k, v in relation_map.i
 if desc_tasks:
     logger.info(f"[Translate] Processing descriptions...")
     with ThreadPoolExecutor(max_workers=MAX_TRANSLATION_WORKERS) as ex_desc:
-        f_to_f = {ex_desc.submit(translate_single_text, text): f for f, text in desc_tasks.items()}
+        f_to_f = {ex_desc.submit(translate_description, text): f for f, text in desc_tasks.items()}
         for i, f in enumerate(as_completed(f_to_f)):
-            try: description_cache[f_to_f[f]] = f.result()
+            try:
+                res = f.result()
+                if res: description_cache[f_to_f[f]] = res
             except Exception: logger.error(f"Description translation failed:\n{traceback.format_exc()}")
             print_progress(i+1, len(desc_tasks), "Translate")
     try:
