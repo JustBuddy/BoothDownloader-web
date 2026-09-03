@@ -802,6 +802,7 @@ body.no-blur .adult-content {
 
 /* Relationships */
 .asset-link-grid {
+  align-items: start;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(calc(var(--rel-thumb, 64px) + 176px), 1fr));
   gap: 6px;
