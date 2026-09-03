@@ -460,6 +460,11 @@ body.no-blur .adult-content {
   border-color: var(--primary);
 }
 
+.tag-pill-toggle {
+  border-style: dashed;
+  color: var(--primary);
+}
+
 /* MODAL */
 .modal {
   display: none;

@@ -524,6 +524,9 @@ HTML_TEMPLATE = r"""<!doctype html>
         let currentCarouselIndex = 0, currentImages = [];
         let searchTimeout = null;
         let bgLoadIndex = 0;
+        let currentModalItem = null;
+        let tagsExpanded = false;
+        const TAG_PREVIEW_LIMIT = 30;
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
         const state = { gridSize: getLS('gridSize', '220'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), sortInvert: getLS('sortInvert', 'false') === 'true', adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
@@ -813,7 +816,9 @@ HTML_TEMPLATE = r"""<!doctype html>
             document.getElementById("openVrcAvatarLink").href = item.vrcAvatarLink || "";
             document.getElementById("openVrcWorldLink").style.display = item.vrcWorldLink ? "block" : "none";
             document.getElementById("openVrcWorldLink").href = item.vrcWorldLink || "";
-            document.getElementById("modalTags").innerHTML = item.tags.map(tg => `<span class="tag-pill clickable" onclick="tagSearch('${tg.replace(/'/g, "\\\\'")}')">${tg}</span>`).join('');
+            currentModalItem = item;
+            tagsExpanded = false;
+            renderModalTags();
             document.getElementById("modalDesc").innerHTML = formatDescription((state.showTrans && item.descTrans) ? item.descTrans : item.descOrig);
             document.getElementById("tab-description").style.display = (item.descOrig) ? "block" : "none";
             const relSection = document.getElementById("relSection");
@@ -858,6 +863,23 @@ HTML_TEMPLATE = r"""<!doctype html>
             document.querySelectorAll('.tab-pane, .tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById('pane-' + tabId).classList.add('active');
             document.getElementById('tab-' + tabId).classList.add('active');
+        }
+        function renderModalTags() {
+            const item = currentModalItem;
+            if (!item) return;
+            const render = tg => `<span class="tag-pill clickable" onclick="tagSearch('${tg.replace(/'/g, "\\\\'")}')">${tg}</span>`;
+            const tags = item.tags;
+            let html;
+            if (!tagsExpanded && tags.length > TAG_PREVIEW_LIMIT) {
+                html = tags.slice(0, TAG_PREVIEW_LIMIT).map(render).join('')
+                    + `<span class="tag-pill clickable tag-pill-toggle" onclick="event.stopPropagation(); tagsExpanded = true; renderModalTags()">View all (${tags.length})</span>`;
+            } else {
+                html = tags.map(render).join('');
+                if (tags.length > TAG_PREVIEW_LIMIT) {
+                    html += `<span class="tag-pill clickable tag-pill-toggle" onclick="event.stopPropagation(); tagsExpanded = false; renderModalTags()">Show less</span>`;
+                }
+            }
+            document.getElementById("modalTags").innerHTML = html;
         }
         function carouselNext(dir) { if (currentImages.length <= 1) return; currentCarouselIndex = (currentCarouselIndex + dir + currentImages.length) % currentImages.length; updateCarousel(); }
         function updateCarousel(instant = false) {
