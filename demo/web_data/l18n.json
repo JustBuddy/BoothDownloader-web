@@ -61,6 +61,7 @@
       "optTypeAll": "All Items",
       "optTypeAvatar": "Avatars",
       "optTypeAsset": "Assets",
+      "optNoFiles": "Only items with no files",
       "labelRelWidth": "Modal Card Size"
     },
     "ja": {
@@ -112,6 +113,7 @@
       "optTypeAll": "すべて表示",
       "optTypeAvatar": "アバターのみ",
       "optTypeAsset": "アセットのみ",
+      "optNoFiles": "ファイルなしのアイテムのみ",
       "labelRelWidth": "モーダルカードサイズ"
     },
     "ko": {
@@ -163,6 +165,7 @@
       "optTypeAll": "모든 아이템",
       "optTypeAvatar": "아바타",
       "optTypeAsset": "에셋",
+      "optNoFiles": "파일 없는 항목만",
       "labelRelWidth": "모달 카드 크기"
     },
     "zh-Hans": {
@@ -214,6 +217,7 @@
       "optTypeAll": "全部项目",
       "optTypeAvatar": "仅化身",
       "optTypeAsset": "仅资源",
+      "optNoFiles": "仅显示无文件的项目",
       "labelRelWidth": "弹窗卡片大小"
     },
     "zh-Hant": {
@@ -265,6 +269,7 @@
       "optTypeAll": "全部項目",
       "optTypeAvatar": "僅限化身",
       "optTypeAsset": "僅限資源",
+      "optNoFiles": "僅顯示無檔案的項目",
       "labelRelWidth": "彈窗卡片大小"
     },
     "de": {
@@ -316,6 +321,7 @@
       "optTypeAll": "Alle Objekte",
       "optTypeAvatar": "Avatare",
       "optTypeAsset": "Assets",
+      "optNoFiles": "Nur Artikel ohne Dateien",
       "labelRelWidth": "Modal-Kartengröße"
     },
     "nl": {
@@ -367,6 +373,7 @@
       "optTypeAll": "Alle items",
       "optTypeAvatar": "Avatars",
       "optTypeAsset": "Assets",
+      "optNoFiles": "Alleen items zonder bestanden",
       "labelRelWidth": "Modalkaartgrootte"
     },
     "fr": {
@@ -418,6 +425,7 @@
       "optTypeAll": "Tous les objets",
       "optTypeAvatar": "Avatars",
       "optTypeAsset": "Assets",
+      "optNoFiles": "Uniquement les items sans fichiers",
       "labelRelWidth": "Taille des cartes (fenêtre)"
     },
     "es": {
@@ -469,6 +477,7 @@
       "optTypeAll": "Todos los artículos",
       "optTypeAvatar": "Avatares",
       "optTypeAsset": "Activos",
+      "optNoFiles": "Solo artículos sin archivos",
       "labelRelWidth": "Tamaño de tarjeta del modal"
     },
     "pt": {
@@ -520,6 +529,7 @@
       "optTypeAll": "Todos os itens",
       "optTypeAvatar": "Avatares",
       "optTypeAsset": "Assets",
+      "optNoFiles": "Apenas itens sem arquivos",
       "labelRelWidth": "Tamanho dos cards do modal"
     }
   }

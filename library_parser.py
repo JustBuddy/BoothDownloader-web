@@ -444,6 +444,7 @@ HTML_TEMPLATE = r"""<!doctype html>
                 <span class="setting-label" data-i18n="labelRelWidth">Thumbnail Size</span><input type="range" id="relSizeRange" min="12" max="128" step="8" value="64" oninput="updateRelSize(this.value)">
             </div>
             <div class="setting-group">
+                <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="noFilesToggle" onchange="updateNoFiles(this.checked)"> <span data-i18n="optNoFiles">Only items with no files</span></label>
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="blurToggle" onchange="updateBlur(this.checked)"> <span data-i18n="optBlur">Disable Blur</span></label>
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> <span data-i18n="optHideIds">Hide IDs</span></label>
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;"><input type="checkbox" id="translateToggle" onchange="updateTranslationVisibility(this.checked)"> <span data-i18n="optTranslate">English Titles</span></label>
@@ -532,7 +533,7 @@ HTML_TEMPLATE = r"""<!doctype html>
         const TAG_PREVIEW_LIMIT = 30;
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
-        const state = { gridSize: getLS('gridSize', '220'), relSize: getLS('relSize', '64'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), sortInvert: getLS('sortInvert', 'false') === 'true', adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true' };
+        const state = { gridSize: getLS('gridSize', '220'), relSize: getLS('relSize', '64'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), sortInvert: getLS('sortInvert', 'false') === 'true', adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true', noFiles: getLS('noFiles', 'false') === 'true' };
         const observerOptions = { root: null, rootMargin: '1000px', threshold: 0.01 };
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -566,6 +567,7 @@ HTML_TEMPLATE = r"""<!doctype html>
             document.getElementById('typeFilter').value = state.typeFilter; 
             document.getElementById('hideIdToggle').checked = state.hideIds; 
             document.getElementById('translateToggle').checked = state.showTrans;
+            document.getElementById('noFilesToggle').checked = state.noFiles;
             updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
             calculateStats();
             updateRelSize(state.relSize);
@@ -659,6 +661,7 @@ HTML_TEMPLATE = r"""<!doctype html>
         function updateGrid(v) { document.documentElement.style.setProperty('--grid-size', v + 'px'); localStorage.setItem('gridSize', v); }
         function updateRelSize(v) { document.documentElement.style.setProperty('--rel-thumb', v + 'px'); localStorage.setItem('relSize', v); }
         function updateBlur(v) { document.body.classList.toggle('no-blur', v); localStorage.setItem('disableBlur', v); }
+        function updateNoFiles(v) { state.noFiles = v; localStorage.setItem('noFiles', v); applyFilters(); }
         function updateIdVisibility(v) { document.body.classList.toggle('hide-ids', v); localStorage.setItem('hideIds', v); }
         function cleanUIName(name, isAvatar) {
             if (!name || !isAvatar) return name || "";
@@ -738,12 +741,13 @@ HTML_TEMPLATE = r"""<!doctype html>
                 const el = document.getElementById('asset-' + item.id);
                 const adultMatch = (mode === 'all') || (mode === 'hide' && !item.adult) || (mode === 'only' && item.adult);
                 const typeMatch = (typeMode === 'all') || (typeMode === 'avatar' && item.isAvatar) || (typeMode === 'asset' && !item.isAvatar);
+                const filesMatch = !state.noFiles || item.fileCount === 0;
                 let searchMatch = false;
                 if (isRelSearch) searchMatch = (item.id === relQuery) || item.links.includes(relQuery);
                 else if (isAuthorSearch) searchMatch = item.authorOrig.toLowerCase().includes(authorQuery) || item.authorTrans.toLowerCase().includes(authorQuery);
                 else if (isTypeSearch) searchMatch = (typeSearchVal === 'avatar' ? item.isAvatar : !item.isAvatar);
                 else searchMatch = item.searchBlob.includes(query);
-                if (searchMatch && adultMatch && typeMatch) { el.style.display = ""; count++; }
+                if (searchMatch && adultMatch && typeMatch && filesMatch) { el.style.display = ""; count++; }
                 else { el.style.display = "none"; if (searchMatch) hiddenCount++; }
             });
             document.getElementById("searchInput").placeholder = t.searchPre + count + t.searchSuf;
