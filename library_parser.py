@@ -965,7 +965,10 @@ def get_image_folder_size(folder_path):
         if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')): total_size += os.path.getsize(os.path.join(folder_path, f))
     return total_size
 
-def is_adult_content(text): return bool(re.search("|".join(ADULT_KEYWORDS), str(text), re.IGNORECASE))
+ADULT_PATTERN = re.compile("|".join(map(re.escape, ADULT_KEYWORDS)), re.IGNORECASE) if ADULT_KEYWORDS else None
+
+def is_adult_content(text):
+    return bool(ADULT_PATTERN and ADULT_PATTERN.search(str(text)))
 
 def get_all_local_images(asset_id, folder_path, web_urls=None):
     if web_urls is None: web_urls = []
@@ -1074,6 +1077,7 @@ if deleted_ids:
 logger.info(f"[Build] Identifying updates...")
 # Check if alias file changed to mark dirty IDs
 alias_mtime = os.path.getmtime(ALIAS_FILE) if os.path.exists(ALIAS_FILE) else 0
+filters_mtime = os.path.getmtime(FILTER_FILE) if os.path.exists(FILTER_FILE) else 0
 
 for folder in current_folders:
     path = os.path.join(ROOT_FOLDER, folder)
@@ -1089,11 +1093,13 @@ for folder in current_folders:
                     folder not in global_meta or 
                     meta_entry.get("time") < mtime or 
                     meta_entry.get("files") != files_fingerprint or
-                    meta_entry.get("alias_time", 0) < alias_mtime or
+                    meta_entry.get("alias_time", 0) != alias_mtime or
+                    meta_entry.get("filters_time", 0) != filters_mtime or
                     folder not in existing_database or 
                     folder in error_ids)
     
-    new_global_meta[folder] = {"time": mtime, "files": files_fingerprint, "alias_time": alias_mtime}
+    new_global_meta[folder] = {"time": mtime, "files": files_fingerprint,
+                               "alias_time": alias_mtime, "filters_time": filters_mtime}
     
     if not needs_update: continue
     dirty_ids.add(folder)
