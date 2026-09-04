@@ -21,6 +21,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def load_json(path, default):
+    """Loads a JSON file, returning `default` with a logged error on failure."""
+    if not os.path.exists(path):
+        return default
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception:
+        logger.error(f"Failed to load {path} (using defaults):\n{traceback.format_exc()}")
+        return default
+    if not isinstance(data, type(default)):
+        logger.error(f"{path} has unexpected type {type(data).__name__}, expected "
+                     f"{type(default).__name__}. Using defaults.")
+        return default
+    return data
+
 # Configuration
 ROOT_FOLDER = "BoothDownloaderOut"
 OUTPUT_FILE = "asset_library.html"
@@ -114,17 +130,9 @@ if os.path.exists(ALIAS_FILE):
         logger.error(f"Could not load alias.json:\n{traceback.format_exc()}")
 
 # Load Caches
-translation_cache = {}
-if os.path.exists(CACHE_FILE):
-    try:
-        with open(CACHE_FILE, 'r', encoding='utf-8') as f: translation_cache = json.load(f)
-    except Exception: pass
+translation_cache = load_json(CACHE_FILE, {})
 
-description_cache = {}
-if os.path.exists(DESC_CACHE_FILE):
-    try:
-        with open(DESC_CACHE_FILE, 'r', encoding='utf-8') as f: description_cache = json.load(f)
-    except Exception: pass
+description_cache = load_json(DESC_CACHE_FILE, {})
 
 error_ids = set()
 def is_translation_error(text):
@@ -257,17 +265,9 @@ def cleanup_translation_errors():
 
 cleanup_translation_errors()
 
-thumb_meta = {}
-if os.path.exists(THUMB_META_FILE):
-    try:
-        with open(THUMB_META_FILE, 'r', encoding='utf-8') as f: thumb_meta = json.load(f)
-    except Exception: pass
+thumb_meta = load_json(THUMB_META_FILE, {})
 
-global_meta = {}
-if os.path.exists(GLOBAL_META_FILE):
-    try:
-        with open(GLOBAL_META_FILE, 'r', encoding='utf-8') as f: global_meta = json.load(f)
-    except Exception: pass
+global_meta = load_json(GLOBAL_META_FILE, {})
 
 existing_database = {}
 if os.path.exists(DATABASE_JS_FILE):
@@ -276,6 +276,8 @@ if os.path.exists(DATABASE_JS_FILE):
             content = f.read()
             json_str = content.replace("window.BOOTH_DATABASE = ", "").rstrip(";")
             db_list = json.loads(json_str)
+            if not isinstance(db_list, list):
+                raise ValueError("database.js payload is not a list")
             existing_database = {item['id']: item for item in db_list}
             for item in db_list:
                 trans_fields = [item.get('nameTrans', ''), item.get('authorTrans', ''), item.get('descTrans', '')]
@@ -287,7 +289,8 @@ if os.path.exists(DATABASE_JS_FILE):
                     (contains_japanese(item.get('authorOrig', '')) and not item.get('authorTrans'))))
                 if has_err or missing:
                     error_ids.add(item['id'])
-    except Exception: pass
+    except Exception:
+        logger.error(f"Failed to load {DATABASE_JS_FILE}, rebuilding from sources:\n{traceback.format_exc()}")
 
 l18n_data = {"languages": {"en": "English"}, "translations": {"en": {}}}
 if os.path.exists(L18N_FILE):
