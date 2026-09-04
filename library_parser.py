@@ -147,7 +147,7 @@ def translate_with_retry(text):
             last_err = str(e)
         logger.warning(f"[Translate] Attempt {attempt}/{MAX_TRANSLATION_RETRIES} failed for '{str(text)[:40]}': {last_err}")
         if attempt < MAX_TRANSLATION_RETRIES:
-            time.sleep(RETRY_BASE_DELAY * (2 ** (attempt - 1)) + random.uniform(0.5, 1.5))
+            time.sleep(min(RETRY_BASE_DELAY * (2 ** (attempt - 1)), 60.0) + random.uniform(0.5, 1.5))
     logger.error(f"[Translate] Giving up on '{str(text)[:40]}' after {MAX_TRANSLATION_RETRIES} attempts")
     return None
 
