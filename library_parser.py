@@ -9,9 +9,10 @@ import traceback
 import colorsys
 import time
 import random
+import requests
 from urllib.parse import quote, unquote
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from deep_translator import GoogleTranslator
+from deep_translator import GoogleTranslator, DeeplTranslator
 from PIL import Image
 
 # Setup Logging
@@ -49,8 +50,37 @@ ALIAS_FILE = "web_data/alias.json"
 SKIP_TRANSLATION = False
 MAX_TRANSLATION_WORKERS = 3
 MAX_OPTIMIZATION_WORKERS = 16
-MAX_TRANSLATION_RETRIES = 10
+MAX_TRANSLATION_RETRIES = 5
 RETRY_BASE_DELAY = 5.0
+
+def _load_env(path=".env"):
+    """Minimal .env parser: KEY=VALUE lines, # comments, optional quotes,
+    optional 'export ' prefix. Returns a dict; missing file means empty."""
+    env = {}
+    full = os.path.join(os.path.dirname(os.path.abspath(__file__)), path)
+    if not os.path.exists(full):
+        return env
+    with open(full, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            if line.startswith('export '):
+                line = line[7:]
+            key, _, value = line.partition('=')
+            value = value.strip().strip('"').strip("'")
+            env[key.strip()] = value
+    return env
+
+_ENV = _load_env()
+
+# Provider selection. Whichever key is set first in this order wins:
+# DeepL -> Langbly -> Google (scraped). Leave both empty for Google.
+DEEPL_API_KEY = _ENV.get("DEEPL_API_KEY", "")
+LANGBLY_API_KEY = _ENV.get("LANGBLY_API_KEY", "")
+
+USING_API_PROVIDER = bool(DEEPL_API_KEY or LANGBLY_API_KEY)
+LANGBLY_ENDPOINT = "https://api.langbly.com/language/translate/v2"
 
 # deep_translator rejects >5000 chars per request, but the underlying GET
 # endpoint fails much earlier for CJK because percent-encoding expands
@@ -95,6 +125,10 @@ FORBIDDEN_NAMES = {
 STRINGS_TO_REMOVE = ["Original 3D Model", "Avatar", "3D Model", "[]", "[Release sale]", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", " /"]
 
 logger.info(f"--- Starting Library Generation ---")
+if DEEPL_API_KEY and LANGBLY_API_KEY:
+    logger.warning("[Translate] Both DEEPL_API_KEY and LANGBLY_API_KEY are set, using DeepL")
+_provider = "DeepL" if DEEPL_API_KEY else ("Langbly" if LANGBLY_API_KEY else "Google Translate")
+logger.info(f"[Translate] Provider: {_provider}")
 
 # Ensure directories exist
 if not os.path.exists("web_data"): os.makedirs("web_data")
@@ -147,7 +181,7 @@ def translate_with_retry(text):
     last_err = None
     for attempt in range(1, MAX_TRANSLATION_RETRIES + 1):
         try:
-            result = GoogleTranslator(source='auto', target='en').translate(text)
+            result = _translate_once(text)
             if result and not is_translation_error(result):
                 return result
             last_err = f"error page returned: {str(result)[:60]}"
@@ -159,9 +193,43 @@ def translate_with_retry(text):
     logger.error(f"[Translate] Giving up on '{str(text)[:40]}' after {MAX_TRANSLATION_RETRIES} attempts")
     return None
 
+def _translate_once(text):
+    """Single translation request via the configured provider.
+    Every call site gates on contains_japanese(), so language detection is
+    effectively a formality here; Langbly auto-detects when source is omitted."""
+    if DEEPL_API_KEY:
+        return DeeplTranslator(
+            api_key=DEEPL_API_KEY,
+            source='ja',
+            target='en',
+            use_free_api=DEEPL_API_KEY.endswith(':fx'),
+        ).translate(text)
+    if LANGBLY_API_KEY:
+        return _langbly_post({"q": text, "target": "en"})[0]
+    return GoogleTranslator(source='auto', target='en').translate(text)
+
+def _langbly_post(payload):
+    """POST to Langbly's v2-compatible endpoint. Raises on HTTP errors so
+    the existing retry/backoff path handles 429/5xx. Returns the list of
+    translated strings, in the same order as the 'q' input(s)."""
+    resp = requests.post(
+        LANGBLY_ENDPOINT,
+        headers={
+            "Authorization": f"Bearer {LANGBLY_API_KEY}",
+            "X-API-Key": LANGBLY_API_KEY,  # docs show both auth styles
+            "Content-Type": "application/json",
+        },
+        json=payload,
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return [t["translatedText"] for t in resp.json()["data"]["translations"]]
+
 def _payload_limit(text):
-    """Max chars for this payload. Scales down for CJK so the percent-encoded
-    GET request stays in bounds."""
+    """GET request stays in bounds. API providers take POST bodies, so the
+    encoded-size scaling only applies to scraped Google."""
+    if USING_API_PROVIDER:
+        return GOOGLE_CHAR_LIMIT
     ratio = len(quote(text, safe='')) / max(1, len(text))
     return max(200, min(GOOGLE_CHAR_LIMIT, int(GOOGLE_ENCODED_LIMIT / ratio)))
 
@@ -212,6 +280,8 @@ def translate_description(text):
     return "\n".join(parts)
 
 def _payload_fits(text):
+    if USING_API_PROVIDER:
+        return len(text) <= GOOGLE_CHAR_LIMIT
     return (len(text) <= GOOGLE_CHAR_LIMIT and
             len(quote(text, safe='')) <= GOOGLE_ENCODED_LIMIT)
 
@@ -235,12 +305,21 @@ def translate_term_batch(terms):
     if len(terms) == 1:
         res = translate_with_retry(terms[0])
         return {terms[0]: res} if res is not None else {}
-    result = translate_with_retry("\n".join(terms))
-    if result is not None:
-        lines = result.split("\n")
+    lines = None
+    if LANGBLY_API_KEY:
+        # q accepts an array and answers in order, no newline-merge risk
+        try:
+            lines = _langbly_post({"q": terms, "target": "en"})
+        except Exception as e:
+            logger.warning(f"[Translate] Langbly batch failed: {e}")
+    else:
+        result = translate_with_retry("\n".join(terms))
+        if result is not None:
+            lines = result.split("\n")
+    if lines is not None:
         if len(lines) == len(terms):
             return {t: line.strip() for t, line in zip(terms, lines)}
-        logger.warning(f"[Translate] Batch returned {len(lines)} lines for "
+        logger.warning(f"[Translate] Batch returned {len(lines)} results for "
                        f"{len(terms)} terms, bisecting")
     mid = max(1, len(terms) // 2)
     out = {}
