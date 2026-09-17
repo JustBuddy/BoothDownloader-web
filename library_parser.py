@@ -123,7 +123,8 @@ FORBIDDEN_NAMES = {
 }
 
 # Purely cosmetic: these strings will be stripped from the English UI display
-STRINGS_TO_REMOVE = ["Original 3D Model", "Avatar", "3D Model", "[]", "[Release sale]", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", "Release commemorative sale", " /"]
+STRINGS_TO_REMOVE_AVATAR = ["Original 3D Model", "Original model ", "Avatar", "3D Model", "[]", "[Release sale]", "[Free distribution] ", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", "[VRChat assumed ", "[ for VRChat] ", "Release commemorative sale", " /"]
+STRINGS_TO_REMOVE_ASSET = ["Original 3D costume", "【PB】", "[VRC assumption] ", "✦ On Sale ✦ ", "✨ Launch Sale ✨ ", "🎁 OPEN SALE 🎁", "⭐Sale⭐", "💝~On sale💝", "[Free for 48 hours only] ", "[🎉On sale for a limited time🎉]", "💙 Coming soon to release 🖤", "[Free sales event] ", "✦On sale✦ ", "【SALE】 ", " /"]
 
 logger.info(f"--- Starting Library Generation ---")
 if DEEPL_API_KEY and LANGBLY_API_KEY:
@@ -606,7 +607,8 @@ HTML_TEMPLATE = r"""<!doctype html>
     <script>
         const l18n = __L18N_INJECT_POINT__;
         const translations = l18n.translations;
-        const STRINGS_TO_REMOVE = __REMOVABLES_INJECT_POINT__;
+        const STRINGS_TO_REMOVE = __REMOVABLES_AVATAR_INJECT_POINT__;
+        const STRINGS_TO_REMOVE_ASSET = __REMOVABLES_ASSET_INJECT_POINT__;
         const database = window.BOOTH_DATABASE || [];
         let currentCarouselIndex = 0, currentImages = [];
         let searchTimeout = null;
@@ -747,10 +749,11 @@ HTML_TEMPLATE = r"""<!doctype html>
         function updateNoFiles(v) { state.noFiles = v; localStorage.setItem('noFiles', v); applyFilters(); }
         function updateIdVisibility(v) { document.body.classList.toggle('hide-ids', v); localStorage.setItem('hideIds', v); }
         function cleanUIName(name, isAvatar) {
-            if (!name || !isAvatar) return name || "";
-            let cleaned = name;
-            STRINGS_TO_REMOVE.forEach(s => {
-                const escaped = s.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+            if (!name) return name || "";
+            const norm = s => s.replace(/\u00A0/g, ' ');
+            let cleaned = norm(name);
+            (isAvatar ? STRINGS_TO_REMOVE : STRINGS_TO_REMOVE_ASSET).forEach(s => {
+                const escaped = norm(s).replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
                 cleaned = cleaned.replace(new RegExp(escaped, 'gi'), '');
             });
             return cleaned.trim();
@@ -1430,7 +1433,8 @@ try:
     with open(GLOBAL_META_FILE, 'w', encoding='utf-8') as f: json.dump(new_global_meta, f)
     final_html = (HTML_TEMPLATE
                   .replace("__L18N_INJECT_POINT__", json.dumps(l18n_data, ensure_ascii=False))
-                  .replace("__REMOVABLES_INJECT_POINT__", json.dumps(STRINGS_TO_REMOVE, ensure_ascii=False))
+                  .replace("__REMOVABLES_AVATAR_INJECT_POINT__", json.dumps(STRINGS_TO_REMOVE_AVATAR, ensure_ascii=False))
+                  .replace("__REMOVABLES_ASSET_INJECT_POINT__", json.dumps(STRINGS_TO_REMOVE_ASSET, ensure_ascii=False))
                   .replace("__DATABASE_FILE_INJECT_POINT__", DATABASE_JS_FILE))
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f: f.write(final_html)
     logger.info(f"--- Library Updated Successfully ({len(existing_database)} items) ---")
