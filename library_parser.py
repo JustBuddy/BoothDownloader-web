@@ -118,11 +118,12 @@ FORBIDDEN_NAMES = {
     "unlisted", "adult", "preview", "cloth", "clothing", "accessory", "hair",
     "eye", "texture", "physbone", "blendshape", "blender",
     "mobile", "compatible", "version", "support", "sdk3", "prefab", "physbones",
-    "fullset", "edition", "sf", "3dcg", "vrm", "mmd", "body", "set"
+    "fullset", "edition", "sf", "3dcg", "vrm", "mmd", "body", "set",
+    "sale", "release", "commemorative", "limited", "seal"
 }
 
 # Purely cosmetic: these strings will be stripped from the English UI display
-STRINGS_TO_REMOVE = ["Original 3D Model", "Avatar", "3D Model", "[]", "[Release sale]", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", " /"]
+STRINGS_TO_REMOVE = ["Original 3D Model", "Avatar", "3D Model", "[]", "[Release sale]", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", "Release commemorative sale", " /"]
 
 logger.info(f"--- Starting Library Generation ---")
 if DEEPL_API_KEY and LANGBLY_API_KEY:
