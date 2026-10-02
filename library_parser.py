@@ -526,7 +526,10 @@ HTML_TEMPLATE = r"""<!doctype html>
     <div id="mainWrapper">
         <div id="menuPerimeter" onclick="toggleMenu(event, true)"></div>
         <nav class="top-nav">
-            <div class="nav-logo" data-i18n="navTitle">Booth Asset Library</div>
+            <div class="nav-logo">
+                <img src="web_data/favicon.svg" class="nav-logo-icon" alt="">
+                <span data-i18n="navTitle">Booth Asset Library</span>
+            </div>
             <div class="search-container">
                 <input type="text" id="searchInput" class="search-input" placeholder="..." onkeyup="handleSearchInput()">
                 <button id="clearSearch" class="clear-search" onclick="clearSearch()">×</button>
