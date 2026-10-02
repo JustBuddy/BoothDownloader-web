@@ -9,6 +9,7 @@ import traceback
 import colorsys
 import time
 import random
+import subprocess
 import requests
 from urllib.parse import quote, unquote
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -107,6 +108,10 @@ THUMBNAIL_SIZE = (512, 512)
 IMG_OUT_DIR = "web_data/img"
 GALLERY_IMAGE_MAX = (1024, 1024)
 GALLERY_OUT_DIR = "web_data/img/gallery"
+
+# Square mp4 covers: a square video in an asset's root folder (not /Binary)
+# becomes an autoplaying grid tile cover.
+ENABLE_GRID_VIDEOS = True
 
 # Shared Body Groups (Case-insensitive)
 BODY_GROUPS = ["MameFriends", "MaruBody", "+Head", "Plushead", "Bodyset2"]
@@ -402,6 +407,28 @@ def calculate_crc32(filepath):
     except Exception:
         return None
 
+_FFPROBE_WARNED = False
+
+def is_square_video(path):
+    """True if ffprobe reports width == height. If ffprobe is not installed,
+    warns once and accepts the file rather than dropping the feature."""
+    global _FFPROBE_WARNED
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=width,height", "-of", "csv=p=0", path],
+            capture_output=True, text=True, timeout=10)
+        w, h = out.stdout.strip().split(",")[:2]
+        return int(w) == int(h)
+    except FileNotFoundError:
+        if not _FFPROBE_WARNED:
+            logger.warning("[Optimize] ffprobe not found; skipping square "
+                           "check for mp4 covers")
+            _FFPROBE_WARNED = True
+        return True
+    except Exception:
+        return False
+
 def get_vibrant_color(img):
     """Extracts a stand-out color by looking for high saturation and brightness."""
     # Resize and reduce palette to find primary color blocks
@@ -484,6 +511,9 @@ HTML_TEMPLATE = r"""<!doctype html>
         body.loaded #appLoader { opacity: 0; pointer-events: none; }
         .asset .stats { display: flex; flex-wrap: wrap; gap: 4px 8px; height: auto; min-height: 1.2rem; }
         .asset .stats span { white-space: nowrap; }
+
+        /* Square mp4 cover */
+        video.image-thumbnail { width: 100%; height: 100%; object-fit: cover; }
         
         /* Dynamic Stand-out Borders */
         .asset { border-color: #252525; }
@@ -530,7 +560,7 @@ HTML_TEMPLATE = r"""<!doctype html>
             <div class="setting-group">
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="noFilesToggle" onchange="updateNoFiles(this.checked)"> <span data-i18n="optNoFiles">Only items with no files</span></label>
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="blurToggle" onchange="updateBlur(this.checked)"> <span data-i18n="optBlur">Disable Blur</span></label>
-                <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> <span data-i18n="optHideIds">Hide IDs</span></label>
+                <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;"><input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> <span data-i18n="optHideIds">Hide IDs</span></label>
                 <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;"><input type="checkbox" id="translateToggle" onchange="updateTranslationVisibility(this.checked)"> <span data-i18n="optTranslate">English Titles</span></label>
             </div>
             <div class="stats-footer">
@@ -624,12 +654,16 @@ HTML_TEMPLATE = r"""<!doctype html>
             entries.forEach(entry => {
                 const el = entry.target;
                 if (entry.isIntersecting) {
-                    const img = el.querySelector('.image-thumbnail');
+                    const media = el.querySelector('.image-thumbnail');
                     const glow = el.querySelector('.image-backglow');
-                    if (img && !img.src) img.src = el.dataset.img;
+                    const src = media && media.tagName === 'VIDEO' ? el.dataset.video : el.dataset.img;
+                    if (media && src && !media.getAttribute('src')) media.src = src;
                     if (glow && !glow.src) glow.src = el.dataset.img;
+                    if (media && media.tagName === 'VIDEO') media.play().catch(() => {});
                     el.classList.add('is-visible');
                 } else {
+                    const media = el.querySelector('.image-thumbnail');
+                    if (media && media.tagName === 'VIDEO') media.pause();
                     el.classList.remove('is-visible');
                 }
             });
@@ -712,7 +746,9 @@ HTML_TEMPLATE = r"""<!doctype html>
                     <div class="image-container">
                         <div class="asset-id-tag">#${item.id}</div>
                         ${item.adult ? '<div class="adult-badge">18+</div>' : ''}
-                        <img class="image-thumbnail ${isAdult}" loading="lazy">
+                        ${item.gridVideo
+                            ? `<video class="image-thumbnail ${isAdult}" autoplay muted loop playsinline preload="none"></video>`
+                            : `<img class="image-thumbnail ${isAdult}" loading="lazy">`}
                     </div>
                     <img class="image-backglow"><div class="content">
                         <div class="name"><span class="name-primary"></span></div>
@@ -725,6 +761,7 @@ HTML_TEMPLATE = r"""<!doctype html>
             database.forEach(item => {
                 const el = document.getElementById('asset-' + item.id);
                 el.dataset.img = item.gridThumb;
+                el.dataset.video = item.gridVideo || '';
                 observer.observe(el);
             });
         }
@@ -1343,9 +1380,43 @@ for item_id in existing_database:
 
 if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
     thumb_tasks, gallery_tasks, scan_list = [], [], list(existing_database.values())
+    thumb_meta_dirty = False
     logger.info(f"[Optimize] Scanning {len(scan_list)} items for changes...")
     def scan_item(item):
         t_task, g_tasks = None, []
+        v_dirty = False
+        if ENABLE_GRID_VIDEOS:
+            root = os.path.join(ROOT_FOLDER, item['id'])
+            mp4s = sorted(f for f in (os.listdir(root) if os.path.exists(root) else [])
+                          if f.lower().endswith('.mp4'))
+            stored = thumb_meta.get(item['id'])
+            v_meta = stored.get("video") if isinstance(stored, dict) else None
+            chosen = None
+            for f in mp4s:
+                fp = os.path.join(root, f)
+                try:
+                    st = os.stat(fp)
+                except OSError:
+                    continue
+                sig = {"file": f, "size": st.st_size, "mtime": int(st.st_mtime)}
+                cached = v_meta if (v_meta and v_meta.get("file") == f and
+                                    v_meta.get("size") == sig["size"] and
+                                    v_meta.get("mtime") == sig["mtime"]) else None
+                sq = cached["square"] if cached else is_square_video(fp)
+                if sq:
+                    chosen = fp
+                    if not cached:
+                        base = stored if isinstance(stored, dict) else {}
+                        base["video"] = {**sig, "square": True}
+                        thumb_meta[item['id']] = base
+                        v_dirty = True
+                    break
+            if chosen:
+                item['gridVideo'] = quote(os.path.relpath(
+                    chosen, start=os.getcwd()).replace('\\', '/'))
+            elif 'gridVideo' in item:
+                del item['gridVideo']
+                v_dirty = True
         if OPTIMIZE_THUMBNAILS:
             cur_thumb = unquote(item['gridThumb']).replace('/', os.sep)
             if cur_thumb.startswith('web_data') and not os.path.exists(cur_thumb):
@@ -1385,13 +1456,14 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
                     else: new_gal.append(quote(opt_path.replace('\\', '/')))
                 else: new_gal.append(img_path)
             item['allImages'] = new_gal
-        return t_task, g_tasks
+        return t_task, g_tasks, v_dirty
 
     with ThreadPoolExecutor(max_workers=MAX_OPTIMIZATION_WORKERS) as ex_scan:
         f_scan = [ex_scan.submit(scan_item, it) for it in scan_list]
         for i, f in enumerate(as_completed(f_scan)):
             try:
-                t, g = f.result()
+                t, g, v = f.result()
+                if v: thumb_meta_dirty = True
                 if t: thumb_tasks.append(t)
                 gallery_tasks.extend(g)
             except Exception: logger.error(f"Error scanning item:\n{traceback.format_exc()}")
@@ -1408,11 +1480,9 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
                     item['gridThumb'] = res
                     if vibrant_color and vibrant_color != "#252525": item['accentColor'] = vibrant_color
                     if crc: thumb_meta[item['id']] = {"crc": crc, "color": vibrant_color}
+                    thumb_meta_dirty = True
                 except Exception: logger.error(f"Thumbnail optimization failed:\n{traceback.format_exc()}")
                 print_progress(i+1, len(thumb_tasks), "Optimize")
-            try:
-                with open(THUMB_META_FILE, 'w', encoding='utf-8') as f: json.dump(thumb_meta, f)
-            except Exception: logger.error(f"Failed to save thumbnail meta:\n{traceback.format_exc()}")
         if gallery_tasks:
             logger.info(f"[Optimize] Processing {len(gallery_tasks)} gallery images...")
             f_gal = {ex_opt.submit(get_optimized_gallery_img, g[0]['id'], g[1], g[2]): g for g in gallery_tasks}
@@ -1423,6 +1493,10 @@ if OPTIMIZE_THUMBNAILS or OPTIMIZE_GALLERY:
                     item['allImages'][idx] = res
                 except Exception: logger.error(f"Gallery optimization failed:\n{traceback.format_exc()}")
                 print_progress(i+1, len(gallery_tasks), "Optimize")
+        if thumb_meta_dirty:
+            try:
+                with open(THUMB_META_FILE, 'w', encoding='utf-8') as f: json.dump(thumb_meta, f)
+            except Exception: logger.error(f"Failed to save thumbnail meta:\n{traceback.format_exc()}")
 
 keys_to_remove = [k for k in existing_database if k not in current_folders]
 for k in keys_to_remove: del existing_database[k]
