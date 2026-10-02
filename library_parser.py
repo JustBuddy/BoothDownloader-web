@@ -129,7 +129,7 @@ FORBIDDEN_NAMES = {
 
 # Purely cosmetic: these strings will be stripped from the English UI display
 STRINGS_TO_REMOVE_AVATAR = ["Original 3D Model", "Original model ", "Avatar", "3D Model", "[]", "[Release sale]", "[Free distribution] ", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", "[VRChat assumed ", "[ for VRChat] ", "Release commemorative sale", " /"]
-STRINGS_TO_REMOVE_ASSET = ["Original 3D costume", "【PB】", "[VRC assumption] ", "✦ On Sale ✦ ", "✨ Launch Sale ✨ ", "🎁 OPEN SALE 🎁", "⭐Sale⭐", "💝~On sale💝", "[Free for 48 hours only] ", "[🎉On sale for a limited time🎉]", "💙 Coming soon to release 🖤", "[Free sales event] ", "✦On sale✦ ", "【SALE】 ", " /"]
+STRINGS_TO_REMOVE_ASSET = ["Original 3D costume", "【PB】", "[VRC assumption] ", "✦ On Sale ✦ ", "✨ Launch Sale ✨ ", "🎁 OPEN SALE 🎁", "⭐Sale⭐", "💝~On sale💝", "[Free for 48 hours only] ", "[🎉On sale for a limited time🎉]", "💙 Coming soon to release 🖤", "[Free sales event] ", "✦On sale✦ ", "【SALE】 ", "✨ On sale ✨ ", " /"]
 
 logger.info(f"--- Starting Library Generation ---")
 if DEEPL_API_KEY and LANGBLY_API_KEY:
