@@ -53,12 +53,3 @@ The following variables can be adjusted at the top of the script:
 
 ## Contributing
 Feel free to submit Pull Requests for translations, UI improvements or bug fixes. Please maintain the existing color palette (Inter font, dark aesthetic, yellow accents).
-
-## Benchmark
-Database entries: 1667 items  
-Initial build /w translations: around 20 minutes (6506 short terms, 1544 descriptions)  
-Subsequent cached build: 2.4s (NVME SSD, important)  
-  
-What kind of storage this lives on matters a lot, an NVME will net you best results.  
-Having it on an HDD network storage drive usually slows generation down by 3-4x.   
-Effective performance using the page didn't noticable change, but faster storage will make item loading faster.  
