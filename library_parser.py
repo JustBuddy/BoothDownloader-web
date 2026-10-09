@@ -114,7 +114,7 @@ GALLERY_OUT_DIR = "web_data/img/gallery"
 ENABLE_GRID_VIDEOS = True
 
 # Shared Body Groups (Case-insensitive)
-BODY_GROUPS = ["MameFriends", "MaruBody", "+Head", "Plushead", "Bodyset2"]
+BODY_GROUPS = ["MameFriends", "MaruBody", "+Head", "Plushead", "Bodyset2", "NeoBody対応", "NeoBody"]
 
 # Keywords that should NEVER be considered an avatar name
 FORBIDDEN_NAMES = {
