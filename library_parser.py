@@ -526,7 +526,7 @@ HTML_TEMPLATE = r"""<!doctype html>
     <div id="mainWrapper">
         <div id="menuPerimeter" onclick="toggleMenu(event, true)"></div>
         <nav class="top-nav">
-            <div class="nav-logo">
+            <div class="nav-logo" onclick="clearSearch()" style="cursor: pointer;">
                 <img src="web_data/favicon.svg" class="nav-logo-icon" alt="">
                 <span data-i18n="navTitle">Booth Asset Library</span>
             </div>
