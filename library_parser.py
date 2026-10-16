@@ -839,6 +839,7 @@ HTML_TEMPLATE = r"""<!doctype html>
                 if (query) newUrl.searchParams.set('q', query); else newUrl.searchParams.delete('q');
                 window.history.replaceState({}, '', newUrl);
                 applyFilters();
+                sortAssets();
             };
             if (instant) performSearch();
             else searchTimeout = setTimeout(performSearch, 300);
@@ -885,8 +886,10 @@ HTML_TEMPLATE = r"""<!doctype html>
         function sortAssets(save = false) {
             const list = document.getElementById('assetList'), order = document.getElementById('sortOrder').value, invert = document.getElementById('sortInvert').checked;
             if(save) { localStorage.setItem('sortOrder', order); localStorage.setItem('sortInvert', invert); state.sortInvert = invert; }
+            const query = document.getElementById("searchInput").value.toLowerCase().trim();
             const sorted = [...database].sort((a, b) => {
                 let res = 0;
+                if (query && a.isAvatar !== b.isAvatar) return a.isAvatar ? -1 : 1;
                 if (order === 'id') res = isNaN(a.id) || isNaN(b.id) ? a.id.localeCompare(b.id) : parseInt(a.id) - parseInt(b.id);
                 else if (order === 'new') res = b.timestamp - a.timestamp;
                 else if (order === 'rel') res = b.wishCount - a.wishCount;
