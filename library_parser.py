@@ -561,10 +561,10 @@ HTML_TEMPLATE = r"""<!doctype html>
                 <span class="setting-label" data-i18n="labelRelWidth">Thumbnail Size</span><input type="range" id="relSizeRange" min="12" max="128" step="8" value="64" oninput="updateRelSize(this.value)">
             </div>
             <div class="setting-group">
-                <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="noFilesToggle" onchange="updateNoFiles(this.checked)"> <span data-i18n="optNoFiles">Only items with no files</span></label>
-                <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem; margin-bottom:10px;"><input type="checkbox" id="blurToggle" onchange="updateBlur(this.checked)"> <span data-i18n="optBlur">Disable Blur</span></label>
-                <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;"><input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> <span data-i18n="optHideIds">Hide IDs</span></label>
-                <label style="display:flex; gap:10px; cursor:pointer; font-size:0.9rem;"><input type="checkbox" id="translateToggle" onchange="updateTranslationVisibility(this.checked)"> <span data-i18n="optTranslate">English Titles</span></label>
+                <label><input type="checkbox" id="noFilesToggle" onchange="updateNoFiles(this.checked)"> <span data-i18n="optNoFiles">Only items with no files</span></label>
+                <label><input type="checkbox" id="blurToggle" onchange="updateBlur(this.checked)"> <span data-i18n="optBlur">Disable Blur</span></label>
+                <label><input type="checkbox" id="hideIdToggle" onchange="updateIdVisibility(this.checked)"> <span data-i18n="optHideIds">Hide IDs</span></label>
+                <label><input type="checkbox" id="translateToggle" onchange="updateTranslationVisibility(this.checked)"> <span data-i18n="optTranslate">English Titles</span></label>
             </div>
             <div class="stats-footer">
                 <div class="stat-row"><span data-i18n="statItems">Items</span>: <b id="statCount">0</b></div>
