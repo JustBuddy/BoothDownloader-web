@@ -1009,3 +1009,13 @@ body.no-blur .adult-content {
     flex: 1;
   }
 }
+
+.feature-badges { 
+  display: none; 
+  flex-wrap: wrap; 
+  gap: 6px; 
+  margin-top: 8px; 
+}
+
+.feature-badge { font-size: 0.72rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--primary, var(--primary)); color: var(--primary, var(--primary)); background: rgba(255,255,255,0.04); cursor: pointer; transition: background 0.15s ease; }
+.feature-badge:hover { background: rgba(255,255,255,0.1); }

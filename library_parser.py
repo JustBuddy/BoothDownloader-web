@@ -591,6 +591,7 @@ HTML_TEMPLATE = r"""<!doctype html>
                 <div class="modal-header-fixed">
                     <div id="modalName" class="modal-name"></div>
                     <div id="modalSubtitle" class="modal-subtitle"></div>
+                    <div id="modalFeatureBadges" class="feature-badges"></div>
                     <div id="delistedWarn" class="delisted-warning" data-i18n-html="warnDelisted"></div>
                 </div>
                 <div class="modal-tabs">
@@ -649,6 +650,7 @@ HTML_TEMPLATE = r"""<!doctype html>
         let currentModalItem = null;
         let tagsExpanded = false;
         const TAG_PREVIEW_LIMIT = 30;
+        const FEATURE_LABELS = { faceTracking: ['🤖', 'Face Tracking', '⚙Face Tracking'], quest: ['📱', 'Mobile', '⚙Mobile'], mochi: ['🍡', 'MochiFitter', '⚙MochiFitter'] };
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
         const state = { gridSize: getLS('gridSize', '220'), relSize: getLS('relSize', '64'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), sortInvert: getLS('sortInvert', 'false') === 'true', adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true', noFiles: getLS('noFiles', 'false') === 'true' };
@@ -940,6 +942,10 @@ HTML_TEMPLATE = r"""<!doctype html>
             const authorDisp = (state.showTrans && item.authorTrans) ? item.authorTrans : item.authorOrig;
             document.getElementById("modalName").innerText = state.showTrans ? cleanUIName(rawTitle, item.isAvatar) : rawTitle;
             document.getElementById("modalSubtitle").innerHTML = `by <a class="modal-author-link" onclick="tagSearch('${item.authorOrig.replace(/'/g, "\\\\'")}', true)"><b>${authorDisp}</b></a>`;
+            const badgeHtml = (item.features || []).map(f => FEATURE_LABELS[f] ? `<span class="feature-badge" onclick="event.stopPropagation(); tagSearch('${FEATURE_LABELS[f][2]}')">${FEATURE_LABELS[f][0]} ${FEATURE_LABELS[f][1]}</span>` : '').join('');
+            const badgeWrap = document.getElementById('modalFeatureBadges');
+            badgeWrap.innerHTML = badgeHtml;
+            badgeWrap.style.display = badgeHtml ? 'flex' : 'none';
             let metaHtml = (item.nameTrans && state.showTrans) ? `<div class="meta-pill">${item.nameOrig}</div>` : "";
             metaHtml += `<div class="meta-pill">${item.priceCurrency} ${item.priceValue.toLocaleString()}</div>`;
             document.getElementById("modalMeta").innerHTML = metaHtml;
@@ -1121,8 +1127,15 @@ def parse_price(price_str):
     return (float(match.group(1)), (match.group(2) or "JPY")) if match else (0.0, "JPY")
 
 def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, folder_path, tags, is_adult, wish_count, price_str, limited=False, description="", is_avatar=False, related_links=None):
+    det = f"{asset_name} {' '.join(tags)} {description} {description_cache.get(asset_id, '')}".lower()
+    face_tracking = bool(re.search(r'face[\s_-]*tracking|フェイストラッキング|顔トラッキング', det))
+    quest = bool(re.search(r'\bquest\b|android|mobile|クエスト|モバイル', det))
+    mochi = bool(re.search(r'mochifitta|mochifitter|モチフィッタ', det))
     if limited and "⚙Unlisted" not in tags: tags.append("⚙Unlisted")
     if is_adult and "⚙Adult" not in tags: tags.append("⚙Adult")
+    if face_tracking and "⚙Face Tracking" not in tags: tags.append("⚙Face Tracking")
+    if quest and "⚙Mobile" not in tags: tags.append("⚙Mobile")
+    if mochi and "⚙MochiFitter" not in tags: tags.append("⚙MochiFitter")
     vrc_av = re.search(r'(https://vrchat\.com/home/avatar/avtr_[a-f0-9-]+)', description)
     vrc_wr = re.search(r'(https://vrchat\.com/home/(?:world/|launch\?worldId=)wrld_[a-f0-9-]+)', description)
     if (vrc_av or vrc_wr) and "⚙Preview" not in tags: tags.append("⚙Preview")
@@ -1145,7 +1158,8 @@ def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, 
         "wishCount": wish_count, "timestamp": int(os.path.getctime(folder_path)), "priceValue": price_val, 
         "priceCurrency": price_cur, "limited": limited, "descOrig": description, "descTrans": description_cache.get(asset_id, ""), 
         "vrcAvatarLink": vrc_av.group(1) if vrc_av else "", "vrcWorldLink": vrc_wr.group(1) if vrc_wr else "", 
-        "isAvatar": is_avatar, "links": related_links or [], "accentColor": ""
+        "isAvatar": is_avatar, "links": related_links or [], "accentColor": "",
+        "features": [k for k, on in (("faceTracking", face_tracking), ("quest", quest), ("mochi", mochi)) if on]
     }
 
 def get_avatar_search_profile(asset_id, orig_name, trans_name, tags):

@@ -96,6 +96,7 @@
                 <div class="modal-header-fixed">
                     <div id="modalName" class="modal-name"></div>
                     <div id="modalSubtitle" class="modal-subtitle"></div>
+                    <div id="modalFeatureBadges" class="feature-badges"></div>
                     <div id="delistedWarn" class="delisted-warning" data-i18n-html="warnDelisted"></div>
                 </div>
                 <div class="modal-tabs">
@@ -154,6 +155,7 @@
         let currentModalItem = null;
         let tagsExpanded = false;
         const TAG_PREVIEW_LIMIT = 30;
+        const FEATURE_LABELS = { faceTracking: ['🤖', 'Face Tracking', '⚙Face Tracking'], quest: ['📱', 'Mobile', '⚙Mobile'], mochi: ['🍡', 'MochiFitter', '⚙MochiFitter'] };
         const baseTitle = "Booth Asset Library";
         const getLS = (k, def) => localStorage.getItem(k) || def;
         const state = { gridSize: getLS('gridSize', '220'), relSize: getLS('relSize', '64'), disableBlur: getLS('disableBlur', 'false') === 'true', sortOrder: getLS('sortOrder', 'id'), sortInvert: getLS('sortInvert', 'false') === 'true', adultFilter: getLS('adultFilter', 'all'), typeFilter: getLS('typeFilter', 'all'), hideIds: getLS('hideIds', 'false') === 'true', lang: getLS('lang', 'en'), showTrans: getLS('showTrans', 'true') === 'true', noFiles: getLS('noFiles', 'false') === 'true' };
@@ -445,6 +447,10 @@
             const authorDisp = (state.showTrans && item.authorTrans) ? item.authorTrans : item.authorOrig;
             document.getElementById("modalName").innerText = state.showTrans ? cleanUIName(rawTitle, item.isAvatar) : rawTitle;
             document.getElementById("modalSubtitle").innerHTML = `by <a class="modal-author-link" onclick="tagSearch('${item.authorOrig.replace(/'/g, "\\\\'")}', true)"><b>${authorDisp}</b></a>`;
+            const badgeHtml = (item.features || []).map(f => FEATURE_LABELS[f] ? `<span class="feature-badge" onclick="event.stopPropagation(); tagSearch('${FEATURE_LABELS[f][2]}')">${FEATURE_LABELS[f][0]} ${FEATURE_LABELS[f][1]}</span>` : '').join('');
+            const badgeWrap = document.getElementById('modalFeatureBadges');
+            badgeWrap.innerHTML = badgeHtml;
+            badgeWrap.style.display = badgeHtml ? 'flex' : 'none';
             let metaHtml = (item.nameTrans && state.showTrans) ? `<div class="meta-pill">${item.nameOrig}</div>` : "";
             metaHtml += `<div class="meta-pill">${item.priceCurrency} ${item.priceValue.toLocaleString()}</div>`;
             document.getElementById("modalMeta").innerHTML = metaHtml;
