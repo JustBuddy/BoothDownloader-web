@@ -691,6 +691,9 @@ HTML_TEMPLATE = r"""<!doctype html>
             document.getElementById('hideIdToggle').checked = state.hideIds; 
             document.getElementById('translateToggle').checked = state.showTrans;
             document.getElementById('noFilesToggle').checked = state.noFiles;
+            document.getElementById('searchInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') document.getElementById('searchInput').blur();
+            });
             updateLanguage(state.lang); updateGrid(state.gridSize); updateBlur(state.disableBlur); updateIdVisibility(state.hideIds); updateTranslationVisibility(state.showTrans);
             calculateStats();
             updateRelSize(state.relSize);
@@ -840,7 +843,7 @@ HTML_TEMPLATE = r"""<!doctype html>
             if (instant) performSearch();
             else searchTimeout = setTimeout(performSearch, 300);
         }
-        function clearSearch() { const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(true); i.focus(); }
+        function clearSearch() { const i = document.getElementById("searchInput"); i.value = ""; handleSearchInput(true); if (!('ontouchstart' in window)) i.focus(); }
         function tagSearch(query, isAuthor = false) {
             const s = document.getElementById("searchInput");
             s.value = isAuthor ? `author:${query}` : query;
