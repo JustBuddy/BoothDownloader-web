@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <title>Booth Asset Library</title>
     <link rel="icon" type="image/svg+xml" href="web_data/favicon.svg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -135,6 +135,7 @@
                     </div>
                 </div>
             </div>
+            <button id="modalClose" class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
         </div>
     </div>
     <div id="fullscreenImageViewer" class="fullscreen-viewer" onclick="closeFullscreenImage()">
@@ -501,6 +502,7 @@
             document.getElementById("fileList").innerHTML = item.files.sort((a,b) => b.name.localeCompare(a.name, undefined, {numeric:true})).map(f => `
                 <li class="file-item"><a class="file-link" href="${f.path}" target="_blank">${f.name}</a><span style="color:#666; font-size:0.7rem;">${f.size}</span></li>`).join('');
             const m = document.getElementById("detailModal"); m.classList.add('visible'); setTimeout(() => m.classList.add('active'), 10);
+            document.body.classList.add('modal-open');
             document.title = baseTitle + " - #" + id;
             if (!skipHistory) { const newUrl = new URL(window.location); newUrl.searchParams.set('id', id); window.history.pushState({id: id}, '', newUrl); }
         }
@@ -559,10 +561,45 @@
         }
         function closeModal(skipHistory = false) { 
             const m = document.getElementById("detailModal"); m.classList.remove('active'); setTimeout(() => { if(!m.classList.contains('active')) m.classList.remove('visible'); }, 300);
+            document.body.classList.remove('modal-open');
             document.title = baseTitle; if (!skipHistory) { const newUrl = new URL(window.location); newUrl.searchParams.delete('id'); window.history.pushState({}, '', newUrl); }
         }
         window.onpopstate = () => { const p = new URLSearchParams(window.location.search); if (p.get('id')) openDetails(p.get('id'), true); else closeModal(true); };
         document.addEventListener('keydown', e => { if(e.key === "Escape") { if(document.getElementById('fullscreenImageViewer').classList.contains('active')) closeFullscreenImage(); else { closeModal(); toggleMenu(null, true); } } if(e.key === "ArrowRight") carouselNext(1); if(e.key === "ArrowLeft") carouselNext(-1); });
+        (function initCarouselSwipe() {
+            let sx = 0, sy = 0, tracking = false;
+            const car = document.getElementById('modalCarouselContainer');
+            car.addEventListener('touchstart', (e) => {
+                sx = e.touches[0].clientX; sy = e.touches[0].clientY; tracking = true;
+            }, { passive: true });
+            car.addEventListener('touchmove', (e) => {
+                // Horizontal intent wins over page scroll, vertical passes through
+                if (tracking && Math.abs(e.touches[0].clientX - sx) > Math.abs(e.touches[0].clientY - sy)) e.preventDefault();
+            }, { passive: false });
+            car.addEventListener('touchend', (e) => {
+                if (!tracking) return; tracking = false;
+                const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+                if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) carouselNext(dx < 0 ? 1 : -1);
+            }, { passive: true });
+        })();
+        (function keyboardAwareBar() {
+            const vv = window.visualViewport;
+            const nav = document.querySelector('.top-nav');
+            const input = document.getElementById('searchInput');
+            if (!vv || !nav) return;
+            const update = () => {
+                // Only compensate while the keyboard is actually up,
+                // otherwise pinch-zoom would also trigger this
+                const overlap = document.activeElement === input
+                    ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+                    : 0;
+                nav.style.transform = overlap > 0 ? `translateY(-${overlap}px)` : '';
+            };
+            vv.addEventListener('resize', update);
+            vv.addEventListener('scroll', update);
+            input.addEventListener('focus', update);
+            input.addEventListener('blur', update);
+        })();
         init();
     </script>
 </body>
