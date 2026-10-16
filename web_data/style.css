@@ -162,7 +162,7 @@ body {
   align-items: center;
   cursor: pointer;
   font-size: 0.9rem;
-  margin-bottom: 5x;
+  margin-bottom: 5px;
 }
 
 .setting-group label:last-of-type {
@@ -661,7 +661,7 @@ body.no-blur .adult-content {
   flex-direction: column;
   background: #16161a;
   overflow: hidden;
-  height: 100$;
+  height: 100%;
 }
 
 .modal-header-fixed {
