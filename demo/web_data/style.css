@@ -195,13 +195,6 @@ body {
   display: block;
 }
 
-.common-tags-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 10px;
-}
-
 select,
 input[type="range"],
 input[type="checkbox"] {

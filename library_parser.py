@@ -572,8 +572,6 @@ HTML_TEMPLATE = r"""<!doctype html>
                 <div class="stat-row"><span data-i18n="statImgSize">Asset Graphics</span>: <b id="statImgSize">0B</b></div>
                 <div class="stat-row"><span data-i18n="statSpent">Estimated Investment</span>: <b id="statSpent">0</b></div>
                 <div class="stat-row"><span data-i18n="statUpdated">Last Updated</span>: <b id="statDate">N/A</b></div>
-                <span class="setting-label" style="margin-top:10px;" data-i18n="labelTopTags">Top Tags</span>
-                <div id="commonTags" class="common-tags-grid"></div>
             </div>
         </div>
         <div class="container"><ul id="assetList"></ul><div id="filterNotice"></div></div>
@@ -727,15 +725,12 @@ HTML_TEMPLATE = r"""<!doctype html>
         }
         function calculateStats() {
             let totalBinaryBytes = 0, totalImageBytes = 0;
-            const tagCounts = {}, spent = {};
+            const spent = {};
             database.forEach(item => {
                 totalBinaryBytes += item.bytes;
                 totalImageBytes += item.imgBytes;
-                item.tags.forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1);
                 if (item.priceValue > 0 && item.priceCurrency) spent[item.priceCurrency] = (spent[item.priceCurrency] || 0) + item.priceValue;
             });
-            const topTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
-            document.getElementById('commonTags').innerHTML = topTags.map(([tag]) => `<span class="tag-pill clickable" onclick="tagSearch('${tag.replace(/'/g, "\\\\'")}')">${tag}</span>`).join('');
             document.getElementById('statCount').innerText = database.length;
             document.getElementById('statSize').innerText = formatBytes(totalBinaryBytes);
             document.getElementById('statImgSize').innerText = formatBytes(totalImageBytes);
