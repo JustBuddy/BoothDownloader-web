@@ -129,9 +129,7 @@ body {
   top: 75px;
   right: 30px;
   width: 320px;
-  background: rgba(26, 26, 31, 0.98);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(26, 26, 31, 1);
   border: 1px solid rgba(253, 218, 13, 0.3);
   z-index: 2000;
   padding: 25px;
@@ -403,12 +401,7 @@ body.no-blur .adult-content {
   flex-direction: column;
   z-index: 10;
   position: relative;
-  background: rgba(18, 18, 22, 0.8) !important;
-}
-
-.asset.is-visible .content {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(18, 18, 22, 0.85) !important;
 }
 
 .name {
@@ -991,7 +984,6 @@ body.modal-open {
 
 .fullscreen-viewer.active {
   background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(10px);
 }
 
 .fullscreen-viewer img {
@@ -1068,8 +1060,8 @@ body.modal-open {
     padding: 10px 12px;
     gap: 10px;
     background: rgba(22, 22, 27, 0.82);
-    backdrop-filter: blur(20px) saturate(1.4);
-    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(12px) saturate(1.4);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
     border: 1px solid rgba(253, 218, 13, 0.18);
     border-radius: 20px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65);
@@ -1149,9 +1141,8 @@ body.modal-open {
     transform: translateY(30px);
   }
   .modal.active .modal-card {
-    transform: translateY(0);
-  }
-
+    transform: translateY(0); 
+}
   .modal-close {
     display: flex;
     position: absolute;
@@ -1164,9 +1155,7 @@ body.modal-open {
     justify-content: center;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.90);
     color: #fff;
     font-size: 1.3rem;
     line-height: 1;
