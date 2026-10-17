@@ -215,7 +215,7 @@
             if (Math.abs(lastX - startX) < 5) return;
             // Real drag only now: first time we touch any layers
             moved = true;
-            splitter.classList.add('dragging', 'used');
+            splitter.classList.add('dragging');
             document.body.classList.add('splitting');
         }
         ghost.style.transform = `translateX(${startW + (lastX - startX)}px)`;
@@ -227,6 +227,7 @@
         if (!moved) return; // pure tap: nothing was changed, nothing to undo
         splitter.classList.remove('dragging');
         document.body.classList.remove('splitting');
+        splitter.classList.add('used');
         const rect = card.getBoundingClientRect();
         const w = Math.min(rect.width * 0.7, Math.max(rect.width * 0.25, startW + lastX - startX));
         ratio = w / rect.width;
