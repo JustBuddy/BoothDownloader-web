@@ -124,12 +124,13 @@ FORBIDDEN_NAMES = {
     "eye", "texture", "physbone", "blendshape", "blender",
     "mobile", "compatible", "version", "support", "sdk3", "prefab", "physbones",
     "fullset", "edition", "sf", "3dcg", "vrm", "mmd", "body", "set",
-    "sale", "release", "commemorative", "limited", "seal"
+    "sale", "release", "commemorative", "limited", "seal", "dlc",
+    "face", "tracking", "facial", "facetracking", "facialtracking"
 }
 
 # Purely cosmetic: these strings will be stripped from the English UI display
 STRINGS_TO_REMOVE_AVATAR = ["Original 3D Model", "Original model ", "Avatar", "3D Model", "[]", "[Release sale]", "[Free distribution] ", "Original 3D : ", "Original 3D", "[PhysBones compatible]", "(PB compatible)", "[PB compatible]", "[VRChat assumed ", "[ for VRChat] ", "Release commemorative sale", " /"]
-STRINGS_TO_REMOVE_ASSET = ["Original 3D costume", "【PB】", "[VRC assumption] ", "✦ On Sale ✦ ", "✨ Launch Sale ✨ ", "🎁 OPEN SALE 🎁", "⭐Sale⭐", "💝~On sale💝", "[Free for 48 hours only] ", "[🎉On sale for a limited time🎉]", "💙 Coming soon to release 🖤", "[Free sales event] ", "✦On sale✦ ", "【SALE】 ", "✨ On sale ✨ ", " /"]
+STRINGS_TO_REMOVE_ASSET = ["Original 3D costume", "【PB】", "[VRC assumption] ", "✦ On Sale ✦ ", "✨ Launch Sale ✨ ", "🎁 OPEN SALE 🎁", "⭐Sale⭐", "💝~On sale💝", "[Free for 48 hours only] ", "[🎉On sale for a limited time🎉]", "💙 Coming soon to release 🖤", "[Free sales event] ", "✦On sale✦ ", "【SALE】 ", "✨ On sale ✨ ", " - [Quest・Face Tracking Compatible]", " /"]
 
 logger.info(f"--- Starting Library Generation ---")
 if DEEPL_API_KEY and LANGBLY_API_KEY:
@@ -1202,6 +1203,7 @@ def create_asset_data(asset_id, asset_name, author_name, web_images, booth_url, 
 
 def get_avatar_search_profile(asset_id, orig_name, trans_name, tags):
     search_terms, groups = set(), set()
+    tags = [t for t in tags if not t.startswith('⚙')]
     all_ctx = (orig_name + " " + (trans_name or "") + " " + " ".join(tags)).lower()
     for g in BODY_GROUPS:
         if g.lower() in all_ctx: groups.add(g.lower())
@@ -1210,7 +1212,10 @@ def get_avatar_search_profile(asset_id, orig_name, trans_name, tags):
         for a in (alias if isinstance(alias, list) else [alias]): search_terms.add(str(a).lower())
     def add_val(cand):
         cleaned = re.sub(r'Original 3D Model|3D Model|Avatar|Ver\..*|#\w+|chan|kun|vrc|quest|pc|compatible|set', '', cand, flags=re.IGNORECASE).strip()
-        if len(cleaned) > 2 and cleaned.lower() not in FORBIDDEN_NAMES: search_terms.add(cleaned.lower())
+        words = [w for w in re.split(r'[^a-zA-Z0-9]+', cleaned.lower()) if w]
+        if (len(cleaned) > 2 and cleaned.lower() not in FORBIDDEN_NAMES
+                and not any(w in FORBIDDEN_NAMES for w in words)):
+            search_terms.add(cleaned.lower())
     if trans_name:
         add_val(trans_name)
         for q in re.findall(r"['\"\[「](.*?)['\"\]\"「」]", trans_name): add_val(q)
@@ -1220,6 +1225,7 @@ def get_avatar_search_profile(asset_id, orig_name, trans_name, tags):
 
 def check_english_match(asset_info, profile):
     title, tags, vars = asset_info
+    tags = [t for t in tags if not t.startswith('⚙')]
     ctx = (title + " " + " ".join(tags) + " " + " ".join(vars)).lower()
     for group in profile.get("groups", []):
         if group in ctx: return True
