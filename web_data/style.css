@@ -528,6 +528,16 @@ body.no-blur .adult-content {
   overflow: hidden;
 }
 
+body.splitting {
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+body.splitting .modal-carousel,
+body.splitting .modal-info {
+  pointer-events: none;
+}
+
 /* CAROUSEL TRACKS */
 .carousel-track,
 .carousel-blur-track {
@@ -1250,7 +1260,55 @@ body.modal-open {
     height: auto;
     align-self: stretch;
     border-right: 1px solid #222;
+    max-width: none;
   }
+  /* Swipe and arrow keys navigate; the edge buttons are dead weight here */
+  .carousel-btn {
+    display: none !important;
+  }
+  /* Draggable divider between image and content */
+  .modal-splitter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 16px;
+    cursor: col-resize;
+    background: #16161a;
+    border-left: 1px solid #222;
+    border-right: 1px solid #222;
+    touch-action: none;
+    z-index: 15;
+  }
+  .modal-splitter:hover,
+  .modal-splitter.dragging {
+    background: color-mix(in srgb, var(--primary) 12%, #16161a);
+  }
+  .splitter-grip {
+    width: 4px;
+    height: 56px;
+    border-radius: 4px;
+    background: #444;
+    transition: background 0.15s;
+  }
+  .modal-splitter:hover .splitter-grip,
+  .modal-splitter.dragging .splitter-grip {
+    background: var(--primary);
+  }
+  /* Pulse until the first drag so the affordance is discoverable */
+  .modal-splitter:not(.used) .splitter-grip {
+    animation: splitterHint 1.8s ease-in-out infinite;
+  }
+  @keyframes splitterHint {
+    0%,
+    100% {
+      transform: scaleY(1);
+      opacity: 0.55;
+    }
+    50% {
+      transform: scaleY(1.35);
+      opacity: 1;
+    }
+   }
   .modal-name {
     font-size: 1.4rem;
   }

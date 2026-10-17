@@ -90,6 +90,9 @@
                 <button id="carouselNext" class="carousel-btn btn-next" onclick="carouselNext(1)">❯</button>
                 <div id="carouselDots" class="carousel-dots"></div>
             </div>
+            <div id="modalSplitter" class="modal-splitter" title="Drag to resize">
+                <div class="splitter-grip"></div>
+            </div>
             <div class="modal-info">
                 <div class="modal-header-fixed">
                     <div id="modalName" class="modal-name"></div>
@@ -177,6 +180,46 @@
                 }
             });
         }, observerOptions);
+        (function initSplitter() {
+    const splitter = document.getElementById('modalSplitter');
+    const carousel = document.querySelector('.modal-carousel');
+    const card = document.querySelector('.modal-card');
+    if (!splitter || !carousel || !card) return;
+    const mq = window.matchMedia('(min-width: 801px) and (max-width: 1099px)');
+    let ratio = parseFloat(getLS('splitRatio', '0.42'));
+    if (isNaN(ratio) || ratio < 0.2 || ratio > 0.75) ratio = 0.42;
+    const apply = () => { carousel.style.flexBasis = (ratio * 100).toFixed(2) + '%'; };
+    const sync = () => { if (mq.matches) apply(); else carousel.style.flexBasis = ''; };
+    mq.addEventListener ? mq.addEventListener('change', sync) : mq.addListener(sync);
+    sync();
+    let dragging = false, startX = 0, startW = 0;
+    splitter.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        startX = e.clientX;
+        startW = carousel.getBoundingClientRect().width;
+        splitter.setPointerCapture(e.pointerId);
+        splitter.classList.add('dragging', 'used');
+        document.body.classList.add('splitting');
+    });
+    splitter.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const rect = card.getBoundingClientRect();
+        const w = Math.min(rect.width * 0.7, Math.max(rect.width * 0.25, startW + e.clientX - startX));
+        ratio = w / rect.width;
+        apply();
+    });
+    const end = (e) => {
+        if (!dragging) return;
+        dragging = false;
+        try { splitter.releasePointerCapture(e.pointerId); } catch (_) {}
+        splitter.classList.remove('dragging');
+        document.body.classList.remove('splitting');
+        localStorage.setItem('splitRatio', String(ratio));
+        localStorage.setItem('splitterUsed', 'true');
+    };
+    splitter.addEventListener('pointerup', end);
+    splitter.addEventListener('pointercancel', end);
+})();
         function init() {
             renderLibrary();
             const langSel = document.getElementById('langSelect');
