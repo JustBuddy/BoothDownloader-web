@@ -952,7 +952,7 @@ HTML_TEMPLATE = r"""<!doctype html>
             const track = document.getElementById("carouselTrack"), blurTrack = document.getElementById("carouselBlurTrack");
 
             let horizontalAccumulator = 0;
-            const horizontalThreshold = 300; // Sensitivity for horizontal wheels
+            const horizontalThreshold = 50; // Sensitivity for horizontal wheels
 
             track.onwheel = (e) => {
                 if (currentImages.length <= 1) return;
