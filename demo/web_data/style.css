@@ -1137,27 +1137,34 @@ body.modal-open {
   .modal-close {
     display: flex;
     position: absolute;
-    top: calc(10px + env(safe-area-inset-top));
-    right: calc(12px + env(safe-area-inset-right));
+    top: calc(12px + env(safe-area-inset-top));
+    right: calc(14px + env(safe-area-inset-right));
     z-index: 30;
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(0, 0, 0, 0.90);
-    color: #fff;
-    font-size: 1.3rem;
+    border-radius: 10px;
+    border: 1px solid #333;
+    background: rgba(11, 11, 13, 0.85);
+    color: #999;
+    font-size: 1rem;
     line-height: 1;
     cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
   }
+
+  .modal-close:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+   }
 
   /* Carousel: share the screen with content instead of eating 400px fixed */
   .modal-carousel {
     flex: 0 0 42vh;
-    height: 42vh;
-    min-height: 260px;
+    height: auto;
+    align-self: stretch;
+    border-right: 1px solid #222;
   }
   .carousel-btn {
     width: 64px; /* wider edge tap zone; swipe is the primary gesture */
@@ -1169,7 +1176,7 @@ body.modal-open {
 
   /* Header + tabs */
   .modal-header-fixed {
-    padding: 12px 16px 0;
+    padding: 12px 56px 0 16px;
   }
   .modal-name {
     white-space: normal;
@@ -1240,8 +1247,9 @@ body.modal-open {
   }
   .modal-carousel {
     flex: 0 0 min(52dvh, 600px);
-    height: min(52dvh, 600px);
-    min-height: 300px;
+    height: auto;
+    align-self: stretch;
+    border-right: 1px solid #222;
   }
   .modal-name {
     font-size: 1.4rem;
