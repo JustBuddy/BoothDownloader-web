@@ -401,7 +401,7 @@ body.no-blur .adult-content {
   flex-direction: column;
   z-index: 10;
   position: relative;
-  background: rgba(18, 18, 22, 0.85) !important;
+  background: rgba(18, 18, 22, 0.85);
 }
 
 .name {
