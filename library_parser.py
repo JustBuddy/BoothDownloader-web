@@ -759,7 +759,6 @@ HTML_TEMPLATE = r"""<!doctype html>
                         <div class="name"><span class="name-primary"></span></div>
                         <div class="author-label">by <b class="author-primary"></b></div>
                         <div class="stats"></div>
-                        <div class="tag-row"></div>
                     </div>
                 </li>`;
             }).join('');
@@ -809,7 +808,6 @@ HTML_TEMPLATE = r"""<!doctype html>
                 const rawName = (v && item.nameTrans) ? item.nameTrans : item.nameOrig;
                 el.querySelector('.name-primary').innerText = v ? cleanUIName(rawName, item.isAvatar) : rawName;
                 el.querySelector('.author-primary').innerText = (v && item.authorTrans) ? item.authorTrans : item.authorOrig;
-                el.querySelector('.tag-row').innerHTML = item.tags.slice(0, 12).map(tg => `<span class="tag-pill">${tg}</span>`).join('');
                 let statsHtml = item.bytes > 0 ? `<span>${formatBytes(item.bytes)}</span>` : "";
                 if (item.fileCount > 0) statsHtml += `<span>${item.fileCount} ${item.fileCount === 1 ? t.fileSingular : t.filePlural}</span>`;
                 if (item.links.length > 0) statsHtml += `<span>${item.links.length} ${item.links.length === 1 ? t.matchSingular : t.matchPlural}</span>`;
