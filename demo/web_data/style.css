@@ -1092,6 +1092,14 @@ body.modal-open {
     background: rgba(255, 255, 255, 0.06);
   }
 
+  .clear-search {
+    right: 5px;
+    width: 36px;
+    height: 36px;
+    font-size: 1.5rem;
+    color: #999;
+  }
+
   /* Settings: icon only (text is wiped by updateLanguage, so hide via font-size) */
   .nav-btn {
     font-size: 0;
