@@ -688,46 +688,28 @@ HTML_TEMPLATE = r"""<!doctype html>
     const sync = () => { if (mq.matches) apply(); else carousel.style.flexBasis = ''; };
     mq.addEventListener ? mq.addEventListener('change', sync) : mq.addListener(sync);
     sync();
-    let dragging = false, moved = false, startX = 0, startW = 0, lastX = 0;
-    let ghost = document.getElementById('splitterGhost');
-    if (!ghost) {
-        ghost = document.createElement('div');
-        ghost.id = 'splitterGhost';
-        ghost.className = 'modal-splitter-ghost';
-        card.appendChild(ghost);
-    }
+    let dragging = false, startX = 0, startW = 0;
     splitter.addEventListener('pointerdown', (e) => {
         dragging = true;
-        moved = false;
         startX = e.clientX;
-        lastX = e.clientX;
         startW = carousel.getBoundingClientRect().width;
         splitter.setPointerCapture(e.pointerId);
+        splitter.classList.add('dragging', 'used');
+        document.body.classList.add('splitting');
     });
     splitter.addEventListener('pointermove', (e) => {
         if (!dragging) return;
-        lastX = e.clientX;
-        if (!moved) {
-            if (Math.abs(lastX - startX) < 5) return;
-            // Real drag only now: first time we touch any layers
-            moved = true;
-            splitter.classList.add('dragging', 'used');
-            document.body.classList.add('splitting');
-        }
-        ghost.style.transform = `translateX(${startW + (lastX - startX)}px)`;
+        const rect = card.getBoundingClientRect();
+        const w = Math.min(rect.width * 0.7, Math.max(rect.width * 0.25, startW + e.clientX - startX));
+        ratio = w / rect.width;
+        apply();
     });
     const end = (e) => {
         if (!dragging) return;
         dragging = false;
         try { splitter.releasePointerCapture(e.pointerId); } catch (_) {}
-        if (!moved) return; // pure tap: nothing was changed, nothing to undo
         splitter.classList.remove('dragging');
         document.body.classList.remove('splitting');
-        const rect = card.getBoundingClientRect();
-        const w = Math.min(rect.width * 0.7, Math.max(rect.width * 0.25, startW + lastX - startX));
-        ratio = w / rect.width;
-        apply();
-        ghost.style.transform = 'translateX(0)';
         localStorage.setItem('splitRatio', String(ratio));
         localStorage.setItem('splitterUsed', 'true');
     };

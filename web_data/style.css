@@ -1176,26 +1176,6 @@ body.modal-open {
     align-self: stretch;
     border-right: 1px solid #222;
   }
-  /* Drag preview: committed resize flashes black tiles on Android,
-     so show a ghost line during drag and resize once on release */
-  .modal-splitter-ghost {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 2px;
-    background: var(--primary);
-    z-index: 30;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    will-change: transform, opacity;
-    transform: translateZ(0);
-  }
-  body.splitting .modal-splitter-ghost {
-    opacity: 1;
-    visibility: visible;
-  }
   .carousel-btn {
     width: 64px; /* wider edge tap zone; swipe is the primary gesture */
   }
