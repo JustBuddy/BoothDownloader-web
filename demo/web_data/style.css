@@ -371,7 +371,6 @@ body.no-blur .adult-badge {
   pointer-events: none;
   transform: scale(1.6);
   opacity: 0; /* Hide by default */
-  will-change: transform, filter, opacity; /* Preparation hint */
   transition: opacity 0.3s ease; /* Smooth fade in */
 }
 
